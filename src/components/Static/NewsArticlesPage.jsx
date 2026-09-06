@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   FaArrowRight,
   FaBolt,
@@ -402,6 +402,39 @@ const formatStoryLabel = (story) => {
   return story.label || "News";
 };
 
+const normalizeStoryCategory = (value = "") =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const buildNewsCategories = (stories = []) => {
+  const categories = new Map();
+
+  stories.forEach((story) => {
+    const slug = normalizeStoryCategory(story?.category) || "news";
+    const current = categories.get(slug);
+    const storyTime = parseStoryTime(story);
+    if (!current) {
+      categories.set(slug, {
+        slug,
+        label: story?.label || "News",
+        count: 1,
+        latestTime: storyTime,
+      });
+    } else {
+      current.count += 1;
+      current.latestTime = Math.max(current.latestTime, storyTime);
+    }
+  });
+
+  return [...categories.values()].sort(
+    (left, right) => right.latestTime - left.latestTime,
+  );
+};
+
 const readStoryText = (story) =>
   `${story?.title || ""} ${story?.summary || ""} ${story?.category || ""} ${
     story?.label || ""
@@ -584,7 +617,7 @@ const buildNewsLayout = (stories = []) => {
   );
   const guides = take(ranked, 6, (story) => getStoryBucket(story) === "guides");
   const latest = recent.slice(0, 12);
-  const topNews = take(ranked, 9);
+  const topNews = recent.slice(0, 9);
 
   return {
     hero,
@@ -1568,8 +1601,47 @@ const LoadingGrid = () => (
   </div>
 );
 
+const NewsCategoryRail = ({ categories = [], activeCategory = "" }) => {
+  if (!categories.length) return null;
+
+  return (
+    <nav
+      aria-label="News categories"
+      className="mb-7 overflow-x-auto border-y border-[#dbe5f2] bg-white"
+    >
+      <div className="flex min-w-max items-center gap-2 px-1 py-3">
+        <Link
+          to="/news"
+          className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+            !activeCategory
+              ? "bg-[#111827] text-white"
+              : "text-[#64748b] hover:bg-[#eef4ff] hover:text-[#1263f6]"
+          }`}
+        >
+          All news
+        </Link>
+        {categories.map((category) => (
+          <Link
+            key={category.slug}
+            to={`/news?category=${encodeURIComponent(category.slug)}`}
+            className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+              activeCategory === category.slug
+                ? "bg-[#1263f6] text-white"
+                : "text-[#64748b] hover:bg-[#eef4ff] hover:text-[#1263f6]"
+            }`}
+          >
+            {category.label} <span className="ml-1 opacity-60">{category.count}</span>
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+};
+
 const NewsArticlesPage = () => {
   const { slug = "", "*": newsRouteTail = "" } = useParams();
+  const [searchParams] = useSearchParams();
+  const activeCategory = normalizeStoryCategory(searchParams.get("category"));
   const newsRouteTailSegments = useMemo(
     () =>
       String(newsRouteTail || "")
@@ -1601,10 +1673,21 @@ const NewsArticlesPage = () => {
   const { stories, loading, error } = usePublicNewsFeed({
     limit: NEWS_GRID_LIMIT,
   });
-  const routedStories = useMemo(
-    () => filterStoriesForTaxonomyRoute(stories, taxonomyRoute),
-    [stories, taxonomyRoute],
+  const availableCategories = useMemo(
+    () => buildNewsCategories(stories),
+    [stories],
   );
+  const routedStories = useMemo(() => {
+    const taxonomyStories = filterStoriesForTaxonomyRoute(stories, taxonomyRoute);
+    const categoryStories = activeCategory
+      ? taxonomyStories.filter(
+          (story) => normalizeStoryCategory(story?.category) === activeCategory,
+        )
+      : taxonomyStories;
+    return [...categoryStories].sort(
+      (left, right) => parseStoryTime(right) - parseStoryTime(left),
+    );
+  }, [activeCategory, stories, taxonomyRoute]);
   const deviceContext = useDevice({ resources: ["brands"] });
   const storySchemaItems = useStoryListSchemaItems(routedStories);
   const layout = useMemo(() => buildNewsLayout(routedStories), [routedStories]);
@@ -1696,6 +1779,12 @@ const NewsArticlesPage = () => {
         />
 
         <div className="hooks-news-shell mx-auto max-w-[1280px] px-4 pb-5 sm:px-6 sm:pb-10 lg:px-8">
+          {!taxonomyRoute ? (
+            <NewsCategoryRail
+              categories={availableCategories}
+              activeCategory={activeCategory}
+            />
+          ) : null}
           {error ? (
             <div className="mb-6 rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-4 text-sm text-[#1d4ed8]">
               {error}

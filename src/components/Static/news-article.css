@@ -80,11 +80,11 @@
   margin: 0;
   color: #111827;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(38px, 4vw, 58px);
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.045em;
-  text-wrap: pretty;
+  text-wrap: balance;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
@@ -399,14 +399,6 @@
   margin: 0 0 22px;
 }
 
-.hooks-article-prose > p:first-child::first-letter {
-  float: left;
-  margin: 8px 8px 0 0;
-  color: var(--article-blue);
-  font-size: 54px;
-  font-weight: 800;
-  line-height: 0.76;
-}
 
 .hooks-article-prose h2,
 .hooks-article-prose h3,
@@ -1313,8 +1305,12 @@
   }
 
   .hooks-article-header h1 {
-    font-size: clamp(32px, 9vw, 43px);
-    line-height: 1.1;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    text-wrap: pretty;
   }
 
   .hooks-article-deck {
@@ -1365,7 +1361,7 @@
   }
 
   .hooks-article-content-section {
-    padding: 22px 0 50px;
+    padding: 22px 0 calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .hooks-article-body-grid {
@@ -1455,7 +1451,7 @@
   }
 
   .hooks-article-header h1 {
-    font-size: 31px;
+    font-size: 20px;
   }
 
   .hooks-article-byline-separator {
@@ -1463,12 +1459,28 @@
   }
 
   .hooks-article-content-card {
-    padding-inline: 16px;
+    padding: 20px 14px 28px;
   }
 
-  .hooks-article-prose > p:first-child::first-letter {
-    font-size: 46px;
+  .hooks-article-prose {
+    line-height: 1.75;
   }
+
+  .hooks-article-prose p {
+    margin-bottom: 18px;
+  }
+
+  .hooks-article-prose h2 {
+    margin-top: 28px;
+    font-size: 23px;
+  }
+
+  .hooks-article-prose h3 {
+    margin-top: 24px;
+    font-size: 19px;
+    line-height: 1.32;
+  }
+
 
   .hooks-article-author-card {
     align-items: flex-start;

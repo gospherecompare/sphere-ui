@@ -1087,7 +1087,7 @@ const CompetitorCard = ({
           />
           <InsightSection type="common" items={visibleGroups.common} />
 
-          {hiddenInsightCount > 0 || isExpanded ? (
+          {!expanded && (hiddenInsightCount > 0 || isExpanded) ? (
             <button
               type="button"
               onClick={() => setLocalExpanded((current) => !current)}
@@ -1236,8 +1236,6 @@ const CompetitorCards = ({
       !readPreloadedApiResponse(competitorsEndpoint),
   );
   const [error, setError] = useState("");
-  const [expandAll, setExpandAll] = useState(false);
-  const [collapsedMap, setCollapsedMap] = useState({});
   const railRef = useRef(null);
   const [railControls, setRailControls] = useState({
     canScrollLeft: false,
@@ -1404,10 +1402,6 @@ const CompetitorCards = ({
   ]);
   const hasRecentLaunches = showRecentLaunches && recentLaunchRows.length > 0;
 
-  useEffect(() => {
-    setExpandAll(false);
-    setCollapsedMap({});
-  }, [productId, limitedCompetitors.length]);
 
   useEffect(() => {
     const updateRailControls = () => {
@@ -1486,20 +1480,6 @@ const CompetitorCards = ({
     navigate(basePath);
   };
 
-  const handleExpandAll = () => {
-    setExpandAll(true);
-    setCollapsedMap({});
-  };
-
-  const handleCollapseSingle = (competitorId) => {
-    const key = String(competitorId || "");
-    if (!key) return;
-    setExpandAll(true);
-    setCollapsedMap((prev) => ({
-      ...prev,
-      [key]: true,
-    }));
-  };
 
   const scrollRail = (direction) => {
     const node = railRef.current;
@@ -1645,9 +1625,7 @@ const CompetitorCards = ({
                     productLabel={productLabel}
                     productPath={productPath}
                     comparePath={comparePath}
-                    expanded={expandAll && !collapsedMap[String(competitor.id)]}
-                    onExpandAll={handleExpandAll}
-                    onCollapseSelf={handleCollapseSingle}
+                    expanded={true}
                     onCompare={handleCompare}
                     compareDisabled={compareDisabled}
                   />

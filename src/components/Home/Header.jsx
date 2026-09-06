@@ -2268,11 +2268,6 @@ const Header = () => {
     { label: "Upcoming", href: "/smartphones/upcoming", icon: FaBolt },
     { label: "Trending", href: "/trending/smartphones", icon: FaStar },
     { label: "TVs", href: "/tvs", icon: FaTv },
-    {
-      label: "Under ₹25K",
-      href: buildSmartphoneFilterPath("under-25000"),
-      icon: FaTag,
-    },
   ];
 
   // Responsive application header: dedicated mobile/tablet and desktop systems.

@@ -237,7 +237,11 @@ const DetailPageNavigator = ({
           isPinned ? "fixed left-0 right-0" : "relative"
         } z-[55] w-full !bg-white shadow-none transition-[top] duration-300 ease-out  ${className}`}
       >
-        <div className="mx-auto w-full max-w-[1440px] px-2 py-0 sm:px-5 lg:px-8 lg:py-1.5 ">
+        <div className="relative mx-auto w-full max-w-[1440px] px-2 py-0 sm:px-5 lg:px-8 lg:py-1.5 ">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 right-3 top-0 border-t border-[#eef2f7] sm:hidden"
+          />
           <nav
             ref={scrollRef}
             aria-label="Smartphone detail page sections"
@@ -257,10 +261,10 @@ const DetailPageNavigator = ({
                   type="button"
                   onClick={() => navigate(section.id)}
                   aria-current={isActive ? "location" : undefined}
-                  className={`inline-flex min-h-9 shrink-0 snap-center items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-colors sm:min-h-10 sm:gap-2 sm:px-4 sm:text-[13px] ${
+                  className={`inline-flex min-h-9 shrink-0 snap-center items-center gap-1.5 rounded-none px-3 py-1.5 text-[11px] font-semibold transition-colors sm:min-h-10 sm:gap-2 sm:px-4 sm:text-[13px] ${
                     isActive
-                      ? "bg-blue-600 text-white "
-                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700    "
+                      ? "border-b-2 border-blue-600 text-blue-700 "
+                      : "border-b-2 border-transparent text-slate-600 hover:text-blue-700 "
                   }`}
                 >
                   {Icon ? (

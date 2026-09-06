@@ -191,7 +191,7 @@ const decodeHtmlEntitiesOnce = (value) => {
 };
 
 const containsArticleMarkup = (value) =>
-  /<\s*\/?(?:p|br|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|code|figure|figcaption|img)\b/i.test(
+  /<\s*\/?(?:p|br|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|code|a|strong|em|b|i|u|s|del|figure|figcaption|img)\b/i.test(
     String(value || ""),
   );
 
@@ -242,14 +242,14 @@ const applyInlineBoldMarkers = (value) =>
 
           return part
             .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
-              const text = String(inner || "").trim();
+              const text = String(inner || "");
 
-              return text ? `<strong>${text}</strong>` : full;
+              return text.trim() ? `<strong>${text}</strong>` : full;
             })
             .replace(/__([\s\S]*?)__/g, (full, inner) => {
-              const text = String(inner || "").trim();
+              const text = String(inner || "");
 
-              return text ? `<strong>${text}</strong>` : full;
+              return text.trim() ? `<strong>${text}</strong>` : full;
             });
         })
         .join("");
@@ -257,7 +257,7 @@ const applyInlineBoldMarkers = (value) =>
     .join("");
 
 const hasStructuredArticleMarkup = (value) =>
-  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote|pre|code|figure|figcaption|img)\b/i.test(
+  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote|pre|code|a|strong|em|b|i|u|s|del|figure|figcaption|img)\b/i.test(
     normalizeArticleHtml(value),
   );
 
