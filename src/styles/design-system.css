@@ -667,6 +667,14 @@ html[data-route-group="company"] h1 {
 /* Dark mode compatibility for existing Tailwind utility-heavy pages */
 
 @media (max-width: 1023px) {
+  html,
+  body,
+  #root,
+  .hooks-app-shell,
+  .hooks-product-detail {
+    background: #ffffff !important;
+  }
+
   .hooks-decision-grid,
   .hooks-link-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
