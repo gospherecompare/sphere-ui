@@ -10,6 +10,7 @@ import {
 import SEO from "../SEO";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
+import { toCloudinaryOgImage } from "../../utils/cloudinaryImage";
 
 // Icons
 import {
@@ -1344,7 +1345,7 @@ const NetworkingDetailCard = () => {
     if (!origin) return url;
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
-  const ogImage = toAbsoluteUrl(metaImage);
+  const ogImage = toCloudinaryOgImage(toAbsoluteUrl(metaImage));
   const productSchemaJson = (() => {
     const productName =
       deviceData?.name || deviceData?.model || metaTitle || "";

@@ -11,6 +11,7 @@ import SEO from "../SEO";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import Breadcrumbs from "../Breadcrumbs";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
+import { toCloudinaryOgImage } from "../../utils/cloudinaryImage";
 
 // Icons
 import {
@@ -2568,7 +2569,7 @@ const TVDetailCard = () => {
     if (!origin) return url;
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
-  const ogImage = toAbsoluteUrl(metaImage);
+  const ogImage = toCloudinaryOgImage(toAbsoluteUrl(metaImage));
   const productSchemaJson = (() => {
     const productName = metaNameWithBrand || metaName || metaTitle || "";
     if (!productName) return null;

@@ -504,8 +504,7 @@ const buildCompareTitleText = ({ names = [], publishedTitle = "" } = {}) => {
   const cleanNames = names.filter(Boolean).map((name) => String(name).trim());
   const vsJoined = cleanNames.join(" vs ");
 
-  if (!vsJoined)
-    return "Compare Smartphones, TVs & Gadgets Side by Side | MobilesX";
+  if (!vsJoined) return "Compare Mobile Phones, TVs & Gadgets | MobilesX";
 
   if (cleanNames.length === 2) {
     return `${vsJoined} | MobilesX`;
@@ -515,7 +514,7 @@ const buildCompareTitleText = ({ names = [], publishedTitle = "" } = {}) => {
     return `${vsJoined} | MobilesX`;
   }
 
-  return "Compare Smartphones, TVs & Gadgets Side by Side | MobilesX";
+  return "Compare Mobile Phones, TVs & Gadgets | MobilesX";
 };
 
 const buildCompareDescriptionText = ({
@@ -4260,7 +4259,10 @@ const MobileCompare = () => {
       .filter(Boolean);
   }, [queryDeviceEntries, availableDevices]);
 
-  const selectedNames = activeDevices.map((d) => d.name).filter(Boolean);
+  const selectedNames = activeDevices
+    .map((device) => device?.name || device?.model || device?.title || "")
+    .map((name) => String(name).trim())
+    .filter(Boolean);
   const publishedCompareNames = Array.isArray(publishedComparePage?.items)
     ? publishedComparePage.items
         .map((item) => item?.product_name || "")
@@ -4288,6 +4290,7 @@ const MobileCompare = () => {
           activeDevices.length > 0 ? activeDevices : [],
         )
       : "");
+  const isMobileOnlyCompare = catalogLockedType === "smartphone";
   const metaTitle =
     seoSelectedNames.length > 0
       ? buildCompareTitleText({
@@ -4296,8 +4299,10 @@ const MobileCompare = () => {
           publishedTitle: publishedComparePage?.title || "",
         })
       : canonicalCompareEntries.length > 0
-        ? `Compare Selected Devices: Specs, Prices & Differences | MobilesX`
-        : `Compare Technology Products Side by Side | MobilesX`;
+          ? isMobileOnlyCompare
+            ? `Compare Mobile Phones in India | MobilesX`
+            : `Compare Selected Devices: Specs, Prices & Differences | MobilesX`
+        : `Compare Mobile Phones, TVs & Gadgets | MobilesX`;
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =

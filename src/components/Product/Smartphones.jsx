@@ -2607,7 +2607,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best Smartphones in India (${currentMonthYear}) | MobilesX`;
+  let seoTitle = `Mobile Phones in India (${currentMonthYear}) | MobilesX`;
   let seoDescription = sanitizeDescription(
     "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on MobilesX.",
   );
@@ -2616,19 +2616,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     : "";
 
   if (isSingleSmartphonePath) {
-    seoTitle = `Best Smartphones in India (${currentMonthYear}) | MobilesX`;
+    seoTitle = `Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
       "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on MobilesX.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones in India (${currentMonthYear}) | MobilesX`;
+    seoTitle = `Latest Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
       "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on MobilesX.";
   } else if (isTrendingFilterPath) {
-    seoTitle = `Trending Smartphones in India (${currentMonthYear}) | MobilesX`;
+    seoTitle = `Trending Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
       "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on MobilesX.";
   } else if (isUpcomingFilterPath) {
-    seoTitle = `Upcoming Smartphones in India (${currentMonthYear}) | MobilesX`;
+    seoTitle = `Upcoming Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
       "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on MobilesX.";
   } else if (currentFeatureMeta) {
@@ -2640,14 +2640,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ].filter(Boolean);
     const featureContext = featureContextParts.join(" ");
     const featureLabel = currentFeatureMeta.name.toLowerCase();
-    const featureTitle = getSmartphoneFeatureTitle(currentFeatureMeta.name);
+    const featureTitle = getSmartphoneFeatureTitle(currentFeatureMeta.name).replace(
+      /\s+(?:phones|smartphones)$/i,
+      "",
+    );
     const featureDescription = currentFeatureMeta.description
       ? `${currentFeatureMeta.description.toLowerCase()}`
       : featureLabel;
 
     seoTitle = currentBrandObj
-      ? `Best ${currentBrandObj.name} ${featureTitle} in India (${currentMonthYear}) | MobilesX`
-      : `Best ${featureTitle} in India (${currentMonthYear}) | MobilesX`;
+      ? `Best ${currentBrandObj.name} ${featureTitle} Mobile Phones in India (${currentMonthYear}) | MobilesX`
+      : `Best ${featureTitle} Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription = sanitizeDescription(
       `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on MobilesX. Discover phones focused on ${featureDescription}.`,
     );
@@ -2655,15 +2658,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const priceLabel = priceFilter.max.toLocaleString("en-IN");
     seoTitle =
       priceFilter.max === MAX_PRICE
-        ? `Best Phones Above ₹${priceFilter.min.toLocaleString("en-IN")} in India (${currentMonthYear}) | MobilesX`
-        : `Best Phones Under ₹${priceLabel} in India (${currentMonthYear}) | MobilesX`;
+        ? `Best Mobile Phones Above ₹${priceFilter.min.toLocaleString("en-IN")} in India (${currentMonthYear}) | MobilesX`
+        : `Best Mobile Phones Under ₹${priceLabel} in India (${currentMonthYear}) | MobilesX`;
     seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget on MobilesX.`;
   } else if (currentBrandObj) {
     const brandTitle =
       currentBrandObj.name.toLowerCase() === "apple"
-        ? "Apple iPhones"
-        : `${currentBrandObj.name} Smartphones`;
-    seoTitle = `Best ${brandTitle} in India (${currentMonthYear}) | MobilesX`;
+        ? "Apple"
+        : currentBrandObj.name;
+    seoTitle = `${brandTitle} Mobile Phones in India (${currentMonthYear}) | MobilesX`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
         `Discover the latest ${currentBrandObj.name} smartphones with prices, specifications, launches, reviews, comparisons, news, and buying guides on MobilesX.`,

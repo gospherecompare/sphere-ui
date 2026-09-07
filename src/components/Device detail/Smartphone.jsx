@@ -81,6 +81,10 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
+import {
+  CLOUDINARY_OG_DIMENSIONS,
+  toCloudinaryOgImage,
+} from "../../utils/cloudinaryImage";
 
 const MobilesXScoreLogo = ({ className }) => (
   <svg
@@ -4454,9 +4458,16 @@ Price: ${price}
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
     : null;
-  const ogImage = toAbsoluteUrl(primaryImage);
-  const ogImageWidth = 1200;
-  const ogImageHeight = 630;
+  const ogImage = toCloudinaryOgImage(toAbsoluteUrl(primaryImage));
+  const productImages = useMemo(
+    () =>
+      Array.isArray(mobileData?.images)
+        ? mobileData.images.filter(Boolean).map(toAbsoluteUrl)
+        : [],
+    [mobileData?.images],
+  );
+  const ogImageWidth = CLOUDINARY_OG_DIMENSIONS.width;
+  const ogImageHeight = CLOUDINARY_OG_DIMENSIONS.height;
   const ogImageAlt =
     [metaBrand, metaName].filter(Boolean).join(" ").trim() || metaTitle;
   const pageSchema = useMemo(() => {
@@ -4472,7 +4483,7 @@ Price: ${price}
       createProductSchema({
         name: titleWithBrand || metaName || name,
         description: metaDescription,
-        image: ogImage,
+        image: productImages.length > 0 ? productImages : ogImage,
         imageWidth: ogImageWidth,
         imageHeight: ogImageHeight,
         imageAlt: ogImageAlt,
@@ -4510,6 +4521,7 @@ Price: ${price}
     titleWithBrand,
     metaBrand,
     ogImage,
+    productImages,
     ogImageWidth,
     ogImageHeight,
     ogImageAlt,
