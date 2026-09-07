@@ -39,6 +39,7 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import { toCloudinaryOgImage } from "../../utils/cloudinaryImage";
 
 const SITE_ORIGIN = "https://mobilesx.in";
 
@@ -1736,7 +1737,7 @@ const LaptopDetailCard = () => {
     if (!origin) return url;
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
-  const ogImage = toAbsoluteUrl(metaImage);
+  const ogImage = toCloudinaryOgImage(toAbsoluteUrl(metaImage));
   const productSchemaJson = (() => {
     const productName = metaNameWithBrand || metaBaseName || metaTitle || "";
     if (!productName) return null;

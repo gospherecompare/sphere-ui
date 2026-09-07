@@ -295,8 +295,8 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
   return (
     <>
       <SEO
-        title="Popular Smartphone Comparisons in India | MobilesX"
-        description="Explore popular smartphone comparisons and compare specifications, features and important differences side by side."
+        title="Popular Mobile Comparisons in India | MobilesX"
+        description="Explore popular smartphone comparisons in India with side-by-side specifications, key differences, features and buying insights."
         url="https://mobilesx.in/popular-comparisons"
       />
       <section
@@ -417,9 +417,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
               }}
               aria-label={`Go to comparison group ${index + 1}`}
               className={`h-1.5 rounded-full transition-all ${
-                index === activeDot
-                  ? "w-6 bg-blue-600 "
-                  : "w-2 bg-slate-300 "
+                index === activeDot ? "w-6 bg-blue-600 " : "w-2 bg-slate-300 "
               }`}
             />
           ))}

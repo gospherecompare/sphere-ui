@@ -57,6 +57,10 @@ const Home = () => {
   return (
     <>
       <SEO
+        title="Mobile Phones & TVs | AI-Powered Comparisons & Insights | MobilesX"
+        description="Explore mobile phones and TVs with AI-powered comparisons, summaries and insights, plus the latest technology information on MobilesX."
+        url="https://mobilesx.in/"
+      />
   title="Mobile Phones & TVs | AI-Powered Comparisons & Insights | MobilesX"
   description="Explore mobile phones and TVs with AI-powered comparisons, summaries and insights, plus the latest technology information on MobilesX."
   url="https://mobilesx.in/"
