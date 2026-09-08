@@ -61,10 +61,6 @@ const Home = () => {
         description="Explore mobile phones and TVs with AI-powered comparisons, summaries and insights, plus the latest technology information on MobilesX."
         url="https://mobilesx.in/"
       />
-  title="Mobile Phones & TVs | AI-Powered Comparisons & Insights | MobilesX"
-  description="Explore mobile phones and TVs with AI-powered comparisons, summaries and insights, plus the latest technology information on MobilesX."
-  url="https://mobilesx.in/"
-/>
       <HomeDataProvider>
         <main className="hooks-home home-v2 min-h-screen overflow-x-hidden [&_h1]:font-[Space_Grotesk] [&_h2]:font-[Space_Grotesk] [&_h3]:font-[Space_Grotesk]">
           <HeroSection />

@@ -48,6 +48,7 @@ const AiChat = () => {
     setMessages((previous) => [...previous, { role: "user", message }]);
     setIsSending(true);
     try {
+      // TODO: AI chat backend integration and production response handling are still pending.
       const response = await fetch(buildApiUrl("/ai/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,7 +121,9 @@ const AiChat = () => {
                     <AgentProfile label="Madh, the MobilesX assistant" />
                   </span>
                   <div className="max-w-[calc(100%-2.75rem)] rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3.5 text-sm leading-5 text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                    <p className="font-semibold text-slate-900">Welcome to Ask Madh</p>
+                    <p className="font-semibold text-slate-900">
+                      Welcome to Ask Madh
+                    </p>
                     <p className="mt-1">
                       I can help you find a device, compare options, or catch up
                       on the latest technology news.
@@ -201,7 +204,9 @@ const AiChat = () => {
                   <AgentProfile label="Madh, the MobilesX assistant" />
                 </span>
                 <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  <span className="font-medium text-slate-600">Madh is typing</span>
+                  <span className="font-medium text-slate-600">
+                    Madh is typing
+                  </span>
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500 [animation-delay:150ms]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500 [animation-delay:300ms]" />
