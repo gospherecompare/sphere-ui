@@ -12,6 +12,7 @@ import {
   FaInstagram,
   FaMobileAlt,
   FaNewspaper,
+  FaPlus,
   FaRocket,
   FaRss,
   FaSignal,
@@ -1817,6 +1818,14 @@ const NewsArticlesPage = () => {
               <div className="hooks-news-content-layout grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
                 <div className="min-w-0 space-y-7 sm:space-y-9">
                   <TopNewsSection stories={display.topNews} />
+
+                  <Link
+                    to="/content/news-articles"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-[#1263f6] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(18,99,246,0.2)] transition hover:bg-[#0f4fc7] sm:hidden"
+                  >
+                    <FaPlus aria-hidden="true" />
+                    <span>Publish New</span>
+                  </Link>
 
                   <StorySection
                     sectionId="reviews"

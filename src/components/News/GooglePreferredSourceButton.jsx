@@ -60,7 +60,7 @@ const GooglePreferredSourceButton = ({
       aria-label="Add MobilesX as a preferred source on Google"
       className={[
         isArticle
-          ? "group flex w-full max-w-full flex-col items-start gap-3 rounded-sm bg-[#f8fafc] px-4 py-3 text-left transition hover:bg-[#f3f6fb] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2 sm:min-h-[64px] sm:flex-row sm:items-center sm:justify-between"
+          ? "group flex w-full max-w-full flex-row items-center justify-between gap-2 rounded-sm bg-[#f8fafc] px-3 py-3 text-left transition hover:bg-[#f3f6fb] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2 sm:min-h-[64px] sm:gap-3 sm:px-4"
           : "inline-flex max-w-full items-center gap-3 rounded-[8px] bg-[#111111] px-4 py-3 text-left text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-[#202124] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2",
         compact ? "w-full" : "",
         className,
@@ -75,7 +75,7 @@ const GooglePreferredSourceButton = ({
             className={[
               "block font-bold",
               isArticle
-                ? "text-[13px] leading-5 text-[#111827] sm:text-[14px]"
+                ? "text-[12px] leading-4 text-[#111827] sm:text-[14px] sm:leading-5"
                 : "text-[13px] leading-4 text-white sm:text-[14px]",
             ].join(" ")}
           >
@@ -87,7 +87,7 @@ const GooglePreferredSourceButton = ({
             className={[
               "mt-0.5 block font-medium",
               isArticle
-                ? "text-[11px] leading-4 text-[#667085] sm:text-[12px]"
+                ? "text-[10px] leading-3.5 text-[#667085] sm:text-[12px] sm:leading-4"
                 : "text-[11px] leading-4 text-white/72",
             ].join(" ")}
           >
@@ -98,7 +98,7 @@ const GooglePreferredSourceButton = ({
         </span>
       </span>
       {isArticle ? (
-        <span className="hidden shrink-0 rounded-full bg-[#111827] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-white transition group-hover:bg-[#2563eb] sm:inline-flex">
+        <span className="inline-flex shrink-0 rounded-full bg-[#111827] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white transition group-hover:bg-[#2563eb] sm:text-[11px]">
           Add
         </span>
       ) : null}
