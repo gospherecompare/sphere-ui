@@ -246,21 +246,12 @@ const decodeHtmlEntitiesOnce = (value) => {
   return text;
 };
 
-const containsArticleMarkup = (value) =>
-  /<\s*\/?(?:p|br|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|code|figure|figcaption|img)\b/i.test(
-    String(value || ""),
-  );
-
 const normalizeHtmlContent = (value) => {
   let text = String(value || "")
     .replace(/\r\n?/g, "\n")
     .trim();
 
-  for (
-    let pass = 0;
-    pass < 3 && text && !containsArticleMarkup(text);
-    pass += 1
-  ) {
+  for (let pass = 0; pass < 3 && text; pass += 1) {
     const next = decodeHtmlEntitiesOnce(text);
     if (next === text) break;
     text = next;
