@@ -1,3 +1,3 @@
-import AppPushOptInPrompt from "../ui/AppPushOptInPrompt";
-
-export default AppPushOptInPrompt;
+export default function NewsPushOptInCard() {
+  return null;
+}

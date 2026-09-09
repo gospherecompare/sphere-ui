@@ -1,5 +1,5 @@
 // src/App.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import Header from "./components/Home/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Home/Footer";
@@ -14,8 +14,8 @@ import {
   useParams,
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
-import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import RouteExperience from "./components/ui/RouteExperience";
+import { registerForAppPush } from "./lib/appPushNotifications";
 import { useDevice } from "./hooks/useDevice";
 import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
@@ -120,6 +120,24 @@ const toReadableTitleFromSlug = (slug = "") => {
 };
 
 function App() {
+  useEffect(() => {
+    const enableNotifications = async () => {
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "default") return;
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          await registerForAppPush();
+        }
+      } catch {
+        // Let the browser decide whether to show the permission prompt.
+      }
+    };
+
+    void enableNotifications();
+  }, []);
+
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -231,7 +249,6 @@ function App() {
   return (
     <Router>
       <RouteExperience />
-      <AppPushOptInPrompt />
       <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 
