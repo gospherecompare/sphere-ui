@@ -84,6 +84,29 @@ export const parseDateValue = (value) => {
 export const isUpcomingProduct = (product, today = new Date()) => {
   if (!product) return false;
 
+  const saleStage = String(
+    product?.lifecycle?.sale?.stage ??
+      product?.sale_status ??
+      product?.saleStatus ??
+      "",
+  ).toLowerCase();
+  const saleDate =
+    product?.lifecycle?.sale?.start_date ??
+    product?.sale_start_date ??
+    product?.saleStartDate ??
+    product?.available_date ??
+    product?.availableDate;
+  const todayDate = new Date(today);
+  todayDate.setUTCHours(0, 0, 0, 0);
+  const parsedSaleDate = parseDateValue(saleDate);
+  if (
+    saleStage === "sale_scheduled" &&
+    parsedSaleDate &&
+    parsedSaleDate > todayDate
+  ) {
+    return true;
+  }
+
   const override = normalizeLaunchStatus(
     product?.launch_status_override ?? product?.launchStatusOverride ?? "",
   );

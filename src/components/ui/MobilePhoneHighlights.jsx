@@ -21,7 +21,10 @@ import {
 } from "../../utils/smartphoneListingRoutes";
 import { API_ORIGIN_URL, buildApiUrl } from "../../utils/apiUrl";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
-import { getCanonicalLifecycle } from "../../utils/canonicalLifecycle";
+import {
+  getCanonicalLifecycle,
+  resolveSmartphoneDisplayState,
+} from "../../utils/canonicalLifecycle";
 
 const SMARTPHONE_HIGHLIGHTS_ENDPOINT = buildApiUrl(
   "/public/smartphones/highlights",
@@ -134,9 +137,7 @@ const getSaleStartDate = (device) => {
 };
 
 const isUpcomingPhone = (device) =>
-  ["rumored", "announced", "upcoming"].includes(
-    getCanonicalLifecycle(device).launch.stage,
-  );
+  resolveSmartphoneDisplayState(device).isUpcoming;
 
 const uniquePhones = (devices = []) => {
   const seen = new Set();

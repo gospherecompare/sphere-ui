@@ -3,7 +3,20 @@ const UPCOMING_LAUNCH_STAGES = new Set(["rumored", "announced", "upcoming"]);
 export const getCanonicalLifecycle = (device) => {
   const lifecycle = device?.lifecycle;
   if (lifecycle?.launch && lifecycle?.sale && lifecycle?.store) {
-    return lifecycle;
+    const unreleased = UPCOMING_LAUNCH_STAGES.has(lifecycle.launch.stage);
+    const saleScheduled = lifecycle.sale.stage === "sale_scheduled";
+    return {
+      ...lifecycle,
+      render: {
+        ...(lifecycle.render || {}),
+        type: unreleased || saleScheduled ? "upcoming" : "released",
+        display_status: unreleased
+          ? "Expected"
+          : saleScheduled
+            ? "Upcoming"
+            : "Released",
+      },
+    };
   }
 
   const launchStage = String(
@@ -15,6 +28,8 @@ export const getCanonicalLifecycle = (device) => {
   const storeStage = String(
     device?.store_stage ?? device?.storeStage ?? "none",
   ).toLowerCase();
+  const unreleased = UPCOMING_LAUNCH_STAGES.has(launchStage);
+  const saleScheduled = saleStage === "sale_scheduled";
 
   return {
     launch: {
@@ -34,10 +49,12 @@ export const getCanonicalLifecycle = (device) => {
     },
     store: { stage: storeStage },
     render: {
-      type: UPCOMING_LAUNCH_STAGES.has(launchStage) ? "upcoming" : "released",
-      display_status: UPCOMING_LAUNCH_STAGES.has(launchStage)
-        ? "Upcoming"
-        : "Released",
+      type: unreleased || saleScheduled ? "upcoming" : "released",
+      display_status: unreleased
+        ? "Expected"
+        : saleScheduled
+          ? "Upcoming"
+          : "Released",
     },
     allow_compare: device?.allow_compare ?? device?.allowCompare ?? false,
     allow_competitors:
@@ -61,6 +78,47 @@ export const getCanonicalRenderType = (device) =>
 
 export const getCanonicalSaleStartDate = (device) =>
   getCanonicalLifecycle(device).sale.start_date;
+
+export const resolveSmartphoneDisplayState = (device, today = new Date()) => {
+  const lifecycle = getCanonicalLifecycle(device);
+  const saleDate = lifecycle.sale.start_date
+    ? String(lifecycle.sale.start_date).slice(0, 10)
+    : null;
+  const todayDate = new Date(today);
+  todayDate.setHours(0, 0, 0, 0);
+  const parsedSaleDate = saleDate ? new Date(`${saleDate}T00:00:00`) : null;
+  const saleScheduled =
+    lifecycle.sale.stage === "sale_scheduled" &&
+    parsedSaleDate &&
+    !Number.isNaN(parsedSaleDate.getTime()) &&
+    parsedSaleDate > todayDate;
+  const unreleased = UPCOMING_LAUNCH_STAGES.has(lifecycle.launch.stage);
+  const upcoming = Boolean(saleScheduled || unreleased);
+
+  return {
+    primaryLabel: upcoming
+      ? unreleased
+        ? "Expected"
+        : "Upcoming"
+      : lifecycle.sale.stage === "sale_tbd"
+        ? "Sale TBA"
+        : lifecycle.store.stage === "listed"
+          ? "Listed"
+          : "Available now",
+    dateLabel: upcoming && saleScheduled ? "Sale starts" : null,
+    date: upcoming && saleScheduled ? saleDate : null,
+    storeLabel:
+      lifecycle.store.stage === "prebooking"
+        ? "Pre-booking"
+        : lifecycle.store.stage === "listed"
+          ? "Listed"
+          : lifecycle.store.stage === "live"
+            ? "Available"
+            : null,
+    showBuyButton: lifecycle.store.stage === "live" && !upcoming,
+    isUpcoming: upcoming,
+  };
+};
 
 export const getCanonicalPolicy = (device) => {
   const lifecycle = getCanonicalLifecycle(device);
