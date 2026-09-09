@@ -1153,18 +1153,16 @@ export const usePublicNewsFeed = ({
     }
 
     const preloadedPayload = readPreloadedApiResponse(endpoint);
-    if (preloadedPayload) {
-      setStories(normalizeStoriesFromPayload(preloadedPayload));
-      setLoading(false);
-      setError("");
-      return undefined;
-    }
+    const preloadedStoriesForEndpoint = normalizeStoriesFromPayload(
+      preloadedPayload,
+    );
+    if (preloadedPayload) setStories(preloadedStoriesForEndpoint);
 
     const controller = new AbortController();
     let active = true;
 
     const loadStories = async () => {
-      setLoading(true);
+      setLoading(!preloadedStoriesForEndpoint.length);
       setError("");
 
       try {
@@ -1174,7 +1172,7 @@ export const usePublicNewsFeed = ({
         setStories(normalizeStoriesFromPayload(data));
       } catch (err) {
         if (!active || err?.name === "AbortError") return;
-        setStories([]);
+        if (!preloadedStoriesForEndpoint.length) setStories([]);
         setError(err?.message || "Failed to load news stories");
       } finally {
         if (active) setLoading(false);
