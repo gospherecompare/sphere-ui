@@ -427,7 +427,13 @@ export const registerForAppPush = async () => {
     throw new Error(serverStatus.reason);
   }
 
-  const permission = await Notification.requestPermission();
+  const permission =
+    typeof window !== "undefined" && "Notification" in window
+      ? Notification.permission === "default"
+        ? await Notification.requestPermission()
+        : Notification.permission
+      : "default";
+
   if (permission !== "granted") {
     throw new Error(
       permission === "denied"
