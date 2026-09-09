@@ -662,6 +662,21 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return getCanonicalRenderType(device);
   };
 
+  const isUpcomingCatalogDevice = (device) => {
+    if (getCanonicalSaleStage(device) !== "sale_scheduled") return false;
+
+    const saleDate = getCanonicalSaleStartDate(device);
+    if (!saleDate) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const parsedSaleDate = new Date(`${String(saleDate).slice(0, 10)}T00:00:00`);
+    return (
+      !Number.isNaN(parsedSaleDate.getTime()) &&
+      parsedSaleDate.getTime() > today.getTime()
+    );
+  };
+
   const getCompareLimitForDevices = (devices = []) =>
     (Array.isArray(devices) ? devices : []).reduce((limit, device) => {
       const policy = resolveDevicePolicy(device);
@@ -3220,7 +3235,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     baseCards = baseCards.filter((device) =>
       listFilter === "upcoming"
-        ? getRenderType(device) === "upcoming"
+        ? isUpcomingCatalogDevice(device)
         : getRenderType(device) === "released",
     );
 
@@ -5981,8 +5996,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           device.predicted_available_date ||
                           null;
                         const availableDateParsed =
-                          parseDateValue(availableDateRaw);
-                        const availableOnText = null;
+                          parseDateValue(availableDateRaw) ||
+                          resolveSaleStartDate(device);
+                        const availableOnText =
+                          isUpcomingCard && availableDateParsed
+                            ? formatLaunchDate(availableDateParsed)
+                            : null;
                         const displaySummary = (() => {
                           const rawDisplay =
                             device.display || device.specs?.display;

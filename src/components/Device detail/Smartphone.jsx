@@ -81,6 +81,7 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
+import { resolveSmartphoneDisplayState } from "../../utils/canonicalLifecycle";
 import {
   CLOUDINARY_OG_DIMENSIONS,
   toCloudinaryOgImage,
@@ -1355,6 +1356,34 @@ const MobileDetailCard = () => {
 
   const getDeviceLaunchStatus = (device) => {
     if (!device) return null;
+
+    const canonicalLaunchStage = String(
+      device?.lifecycle?.launch?.stage ||
+        device?.launch_status ||
+        device?.launchStatus ||
+        "",
+    ).toLowerCase();
+    if (["rumored", "announced"].includes(canonicalLaunchStage)) {
+      return canonicalLaunchStage;
+    }
+
+    const launchDate = normalizeDateLikeValue(
+      device?.lifecycle?.launch?.date ||
+        device?.launch_date ||
+        device?.launchDate ||
+        null,
+    );
+    if (launchDate) {
+      const today = new Date(`${getLocalDateOnlyString()}T00:00:00`);
+      return new Date(launchDate).getTime() > today.getTime()
+        ? "upcoming"
+        : "available";
+    }
+
+    if (canonicalLaunchStage === "released" || canonicalLaunchStage === "available") {
+      return "available";
+    }
+
     const saleStart = getSaleStartDateFromDevice(device);
     if (saleStart) {
       const today = new Date(`${getLocalDateOnlyString()}T00:00:00`);
@@ -1840,6 +1869,10 @@ const MobileDetailCard = () => {
 
   const launchStatus = useMemo(
     () => getDeviceLaunchStatus(mobileData),
+    [mobileData],
+  );
+  const displayState = useMemo(
+    () => resolveSmartphoneDisplayState(mobileData),
     [mobileData],
   );
   const hasMeaningfulSpecContent = (value) => {
@@ -5228,12 +5261,16 @@ Price: ${price}
       })
     : "Date not announced";
 
-  const heroMarketLabel =
-    launchStatus === "upcoming"
-      ? "Upcoming"
-      : launchStatus === "available" || launchStatus === "released"
-        ? "In stock"
-        : "Availability pending";
+  const heroMarketLabel = displayState.primaryLabel;
+  const heroDateLabel = displayState.dateLabel ||
+    (displayState.isUpcoming ? "Expected" : "Launched");
+  const heroDateText = displayState.date
+    ? new Date(`${displayState.date}T00:00:00`).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : formattedHeroLaunchDate;
 
   if (shouldRenderAliasNotFound) {
     return <NotFound />;
@@ -5446,14 +5483,14 @@ Price: ${price}
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ${
-                            launchStatus === "upcoming"
+                            displayState.isUpcoming
                               ? "bg-violet-50 text-violet-700 ring-violet-100   "
                               : "bg-emerald-50 text-emerald-700 ring-emerald-100   "
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              launchStatus === "upcoming"
+                              displayState.isUpcoming
                                 ? "bg-violet-500"
                                 : "bg-emerald-500"
                             }`}
@@ -5560,24 +5597,22 @@ Price: ${price}
                             Market status
                           </p>
                           <p
-                            className={`mt-1 text-base font-black ${launchStatus === "upcoming" ? "text-violet-600 " : "text-emerald-600 "}`}
+                            className={`mt-1 text-base font-black ${displayState.isUpcoming ? "text-violet-600 " : "text-emerald-600 "}`}
                           >
                             {heroMarketLabel}
                           </p>
                         </div>
                         <span className="text-right text-xs leading-5 text-slate-500 ">
-                          {launchStatus === "upcoming"
-                            ? "Expected"
-                            : "Launched"}
+                          {heroDateLabel}
                           <br />
                           <strong className="text-slate-800 ">
-                            {formattedHeroLaunchDate}
+                            {heroDateText}
                           </strong>
                         </span>
                       </div>
                       <div className="mt-4">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
-                          {launchStatus === "upcoming"
+                          {displayState.isUpcoming
                             ? "Expected price"
                             : "Starting price"}
                         </p>

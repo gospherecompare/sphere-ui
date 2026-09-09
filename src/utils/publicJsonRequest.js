@@ -1,3 +1,5 @@
+import { decodeBase64Json } from "./decodePublicResponse";
+
 const DEFAULT_CACHE_TTL_MS = 30_000;
 const responseCache = new Map();
 const inFlightRequests = new Map();
@@ -67,9 +69,10 @@ export const fetchPublicJson = (
       const contentType = String(
         response.headers.get("content-type") || "",
       ).toLowerCase();
-      const data = contentType.includes("application/json")
+      const rawData = contentType.includes("application/json")
         ? await response.json().catch(() => ({}))
         : null;
+      const data = decodeBase64Json(rawData);
 
       if (!response.ok) {
         const error = new Error(
