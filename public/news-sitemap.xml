@@ -2,6 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <url>
+    <loc>https://mobilesx.in/news/openai-launches-gpt-6-astra-bringing-ai-closer-to-autonomous-computer-work</loc>
+    <news:news>
+      <news:publication>
+        <news:name>MobilesX</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-09T15:53:00.000Z</news:publication_date>
+      <news:title>OpenAI Launches GPT-6 Astra, Bringing AI Closer to Autonomous Computer Work</news:title>
+    </news:news>
+  </url>
+  <url>
     <loc>https://mobilesx.in/news/apple-s-iphone-18-event-is-today-foldable-iphone-pro-models-and-more-expected</loc>
     <news:news>
       <news:publication>

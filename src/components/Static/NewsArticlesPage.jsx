@@ -497,12 +497,14 @@ const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
     eyebrow: topic ? pillar.label : pillar.eyebrow,
     description: topic?.description || pillar.description,
     categories: topic?.categories || pillar.categories || [],
-    matchCategories: [topic?.categories?.[0] || topic?.slug || pillar.slug].map(
-      normalizeNewsRouteSlug,
-    ),
+    matchCategories: (topic?.categories || pillar.categories || [pillar.slug])
+      .map(normalizeNewsRouteSlug)
+      .filter(Boolean),
     keywords: topic?.keywords || pillar.keywords || [],
     accent: pillar.accent,
-    path: "/news",
+    path: topic
+      ? `/news/${pillar.slug}/${topic.slug}`
+      : `/news/${pillar.slug}`,
   };
 };
 
@@ -1671,8 +1673,11 @@ const NewsArticlesPage = () => {
   const canonical = taxonomyRoute
     ? `https://mobilesx.in${canonicalPath}`
     : NEWS_LISTING_SEO.canonicalUrl;
+  const feedCategory =
+    activeCategory || taxonomyRoute?.matchCategories?.join(",") || "";
   const { stories, loading, error } = usePublicNewsFeed({
     limit: NEWS_GRID_LIMIT,
+    category: feedCategory,
   });
   const availableCategories = useMemo(
     () => buildNewsCategories(stories),
