@@ -1,5 +1,24 @@
 import { useMemo } from "react";
 
+const decodeHtmlEntities = (value) => {
+  let text = String(value || "");
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    const decoded = text
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&");
+
+    if (decoded === text) break;
+    text = decoded;
+  }
+
+  return text;
+};
+
 /**
  * Hook: Safely process and validate blog HTML content
  *
@@ -9,12 +28,13 @@ export const useBlogHtmlContent = (blog) => {
   return useMemo(() => {
     if (!blog) return { content: "", isValid: false, isEncoded: false };
 
-    const content = String(
+    const content = decodeHtmlEntities(
       blog.content_rendered || blog.content_template || "",
     );
 
-    // Check if content is HTML-encoded (broken)
-    const isEncoded = /&lt;|&gt;|&quot;|&#39;/g.test(content);
+    const isEncoded = /&lt;|&gt;|&quot;|&#39;/g.test(
+      String(blog.content_rendered || blog.content_template || ""),
+    );
 
     // Check if content has proper HTML tags
     const hasHtmlTags = /<[^>]*>/g.test(content);
@@ -42,18 +62,9 @@ export const useArticleHtml = (article) => {
     if (!article) return "";
 
     // Prefer rendered content over template
-    let content = article.content_rendered || article.content_template || "";
-
-    // Ensure it's a string
-    content = String(content);
-
-    // If we detect encoding issue, log it (backend should have fixed this)
-    if (/&lt;|&gt;/g.test(content)) {
-      console.warn(
-        "[BlogContent] Detected HTML-encoded content. Backend decoding may have failed.",
-        { article: article.id, slug: article.slug },
-      );
-    }
+    const content = decodeHtmlEntities(
+      article.content_rendered || article.content_template || "",
+    );
 
     return content;
   }, [article]);
