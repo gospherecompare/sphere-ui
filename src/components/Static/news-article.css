@@ -31,6 +31,10 @@
   min-width: 0;
 }
 
+.hooks-article-header__headline {
+  max-width: 900px;
+}
+
 .hooks-article-lead-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 310px;
@@ -76,7 +80,8 @@
 }
 
 .hooks-article-header h1 {
-  max-width: 1160px;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   color: #111827;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -84,7 +89,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.045em;
-  text-wrap: balance;
+  text-wrap: pretty;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
@@ -397,6 +402,12 @@
 
 .hooks-article-prose p {
   margin: 0 0 22px;
+}
+
+.hooks-article-prose > p:first-child::first-letter {
+  color: var(--article-blue);
+  font-size: 1.65em;
+  font-weight: 900;
 }
 
 
@@ -1328,7 +1339,7 @@
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.02em;
-    text-wrap: pretty;
+    text-wrap: wrap;
   }
 
   .hooks-article-deck {
@@ -1494,7 +1505,8 @@
   }
 
   .hooks-article-byline-separator {
-    margin-inline: 4px;
+    margin-inline: 2px;
+    padding-inline: 4px;
   }
 
   .hooks-article-content-card {

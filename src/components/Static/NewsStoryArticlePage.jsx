@@ -1262,6 +1262,9 @@ const NewsStoryArticlePage = () => {
           authorName: storyAuthor,
           articleSection: story.label,
           keywords: [story.label, story.category, ...storyTags].filter(Boolean),
+          articleBody: articleParagraphs.join("\n\n"),
+          productName: story.productName,
+          brandName: story.brandName,
         }),
       ]
     : [];

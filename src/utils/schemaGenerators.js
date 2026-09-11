@@ -268,6 +268,9 @@ export const createNewsArticleSchema = ({
   publisherName = "MobilesX",
   articleSection = "",
   keywords = [],
+  articleBody = "",
+  productName = "",
+  brandName = "",
 } = {}) => {
   const schema = {
     "@context": "https://schema.org",
@@ -290,6 +293,11 @@ export const createNewsArticleSchema = ({
       },
     },
     mainEntityOfPage: toAbsolutePageUrl(url || "/"),
+    isPartOf: {
+      "@type": "WebSite",
+      name: "MobilesX",
+      url: toAbsolutePageUrl("/"),
+    },
   };
 
   if (image) {
@@ -314,6 +322,33 @@ export const createNewsArticleSchema = ({
 
   if (normalizedKeywords.length) {
     schema.keywords = normalizedKeywords.join(", ");
+  }
+
+  if (articleBody) {
+    schema.articleBody = articleBody;
+  }
+
+  if (productName) {
+    schema.about = {
+      "@type": "Product",
+      name: productName,
+    };
+
+    if (brandName) {
+      schema.about.brand = {
+        "@type": "Brand",
+        name: brandName,
+      };
+    }
+  }
+
+  if (brandName) {
+    schema.mentions = [
+      {
+        "@type": "Brand",
+        name: brandName,
+      },
+    ];
   }
 
   return schema;

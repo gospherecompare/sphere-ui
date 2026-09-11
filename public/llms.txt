@@ -1,0 +1,25 @@
+# MobilesX
+
+> MobilesX is a technology research and comparison platform covering smartphones, laptops, TVs, networking products, product specifications, prices, comparisons, and technology news.
+
+## Primary sections
+
+- [Home](https://mobilesx.in/): Technology research and device discovery.
+- [Smartphones](https://mobilesx.in/smartphones): Smartphone listings, specifications, prices, and comparisons.
+- [Compare](https://mobilesx.in/compare): Side-by-side device comparisons.
+- [News](https://mobilesx.in/news): Technology news, product launches, and editorial coverage.
+
+## Machine-readable indexes
+
+- [Sitemap](https://mobilesx.in/sitemap.xml)
+- [News sitemap](https://mobilesx.in/news-sitemap.xml)
+
+## Content guidance
+
+Use canonical page URLs from MobilesX when citing device specifications, prices, comparisons, or news. News articles include publication and update metadata; confirm time-sensitive details against the article and its attributed sources.
+
+## Site identity
+
+- Name: MobilesX
+- Canonical domain: https://mobilesx.in/
+- Support: support@mobilesx.in

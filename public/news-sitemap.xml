@@ -2,25 +2,36 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <url>
-    <loc>https://mobilesx.in/news/openai-launches-gpt-6-astra-bringing-ai-closer-to-autonomous-computer-work</loc>
+    <loc>https://mobilesx.in/news/oppo-k14-lite-could-be-the-next-k14-series-phone-to-launch-in-india</loc>
     <news:news>
       <news:publication>
         <news:name>MobilesX</news:name>
         <news:language>en</news:language>
       </news:publication>
-      <news:publication_date>2026-09-09T15:53:00.000Z</news:publication_date>
-      <news:title>OpenAI Launches GPT-6 Astra, Bringing AI Closer to Autonomous Computer Work</news:title>
+      <news:publication_date>2026-09-10T19:45:00.000Z</news:publication_date>
+      <news:title>OPPO K14 Lite Could Be the Next K14 Series Phone to Launch in India</news:title>
     </news:news>
   </url>
   <url>
-    <loc>https://mobilesx.in/news/apple-s-iphone-18-event-is-today-foldable-iphone-pro-models-and-more-expected</loc>
+    <loc>https://mobilesx.in/news/apple-quietly-raises-iphone-prices-in-india-after-iphone-18-launch</loc>
     <news:news>
       <news:publication>
         <news:name>MobilesX</news:name>
         <news:language>en</news:language>
       </news:publication>
-      <news:publication_date>2026-09-09T08:31:00.000Z</news:publication_date>
-      <news:title>Apple’s iPhone 18 Event Is Today Foldable iPhone, Pro Models and More Expected</news:title>
+      <news:publication_date>2026-09-10T02:41:00.000Z</news:publication_date>
+      <news:title>Apple Quietly Raises iPhone Prices in India After iPhone 18 Launch</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://mobilesx.in/news/redmi-note-17-pro-series-india-launch-date-confirmed-10-000mah-battery-teased</loc>
+    <news:news>
+      <news:publication>
+        <news:name>MobilesX</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-09T23:07:00.000Z</news:publication_date>
+      <news:title>Redmi Note 17 Pro Series India Launch Date Confirmed, 10,000mAh Battery Teased</news:title>
     </news:news>
   </url>
 </urlset>
