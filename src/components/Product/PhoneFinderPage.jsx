@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/apiUrl.js";
 import { createSmartphoneDetailPath } from "../../utils/slugGenerator";
+import SEO from "../SEO";
 import {
   FaArrowRight,
   FaBatteryFull,
@@ -268,6 +269,11 @@ export default function PhoneFinderPage() {
 
   return (
     <main className="hooks-smartphone-finder-page min-h-screen bg-[#f3f6fb] text-[#0f172a]">
+      <SEO
+        title="Phone Finder India | Find the Right Smartphone for You | MobilesX"
+        description="Find the best smartphone for your needs in India. Choose your budget, priorities and must-have features to get personalized smartphone matches from MobilesX."
+        url="https://mobilesx.in/phone-finder"
+      />
       <section className="relative isolate overflow-hidden border-b border-blue-100/80 bg-transparent">
         <div className="pointer-events-none absolute -left-24 top-6 h-64 w-64 rounded-full bg-blue-100/60 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-cyan-100/60 blur-3xl" />
