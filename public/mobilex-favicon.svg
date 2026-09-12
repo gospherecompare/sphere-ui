@@ -3,13 +3,12 @@
   viewBox="0 0 512 512"
   fill="none"
 >
-  <rect width="649" height="649" />
-
+<rect width="512" height="512" fill="#FFFFFF"/>
   <!-- MobileX mark -->
 <g transform="translate(37 109) scale(0.50)">
     <!-- White M -->
     <path
-      fill="#FFFFFF"
+      fill="#000000"
       d="
         M0 419
         H99
@@ -26,7 +25,7 @@
 
     <!-- White central chevron -->
     <path
-      fill="#FFFFFF"
+      fill="#000000"
       d="
         M365 0
         L568 202
