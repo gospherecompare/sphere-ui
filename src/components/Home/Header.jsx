@@ -1252,6 +1252,7 @@ const Header = () => {
   // Desktop navigation follows a white editorial mega-header pattern.
   const desktopNavLinks = [
     { name: "Compare", link: toCanonicalPagePath("/compare") },
+    { name: "Phone Finder", link: toCanonicalPagePath("/phone-finder") },
     { name: "TVs", link: toCanonicalPagePath("/tvs") },
     {
       name: "Latest Mobiles",
@@ -2599,7 +2600,7 @@ const Header = () => {
         title: "Phone Finder",
         icon: FaSearch,
         kind: "link",
-        href: "/",
+        href: "/phone-finder",
       },
       {
         id: "news",
@@ -2665,7 +2666,7 @@ const Header = () => {
                   <span>Search phones, brands or specifications</span>
                 </button>
                 <div className="relative z-[2] mt-[0.7rem] flex gap-[0.55rem] overflow-x-auto pb-[0.15rem] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden [&_a]:grid [&_a]:min-h-[62px] [&_a]:shrink-0 [&_a]:grow-0 [&_a]:basis-[165px] [&_a]:grid-cols-[34px_minmax(0,1fr)_10px] [&_a]:items-center [&_a]:gap-[0.55rem] [&_a] [&_a]:p-[0.62rem] [&_a]:text-[var(--hooks-text)] [&_a]:no-underline [&_a]:snap-start [&_a>span]:grid [&_a>span]:h-[34px] [&_a>span]:w-[34px] [&_a>span]:place-items-center [&_a>span]:rounded-[10px] [&_a>span]:bg-[var(--hooks-brand-soft)] [&_a>span]:text-[var(--hooks-brand)] [&_a_b]:text-[0.66rem] [&_a_b]:font-[900] [&_a_b]:text-[var(--hooks-text)] [&_a_small]:overflow-hidden [&_a_small]:text-ellipsis [&_a_small]:whitespace-nowrap [&_a_small]:text-[0.53rem] [&_a_small]:text-[var(--hooks-muted)] [&_a>svg]:h-[9px] [&_a>svg]:w-[9px] [&_a>svg]:text-[var(--hooks-muted)]">
-                  <Link to="/smartphones" onClick={() => setIsMenuOpen(false)}>
+                  <Link to="/phone-finder" onClick={() => setIsMenuOpen(false)}>
                     <span>
                       <FaMobileAlt aria-hidden="true" />
                     </span>

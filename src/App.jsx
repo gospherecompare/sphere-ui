@@ -52,6 +52,9 @@ const UpcomingSmartphonesList = React.lazy(
 );
 const Networking = React.lazy(() => import("./components/Product/Networking"));
 const TVs = React.lazy(() => import("./components/Product/TVs"));
+const PhoneFinderPage = React.lazy(
+  () => import("./components/Product/PhoneFinderPage"),
+);
 const TrendingProductsHub = React.lazy(
   () => import("./components/Product/TrendingProductsHub"),
 );
@@ -266,6 +269,7 @@ function App() {
             <Route path="/search" element={<LegacySearchRedirect />} />
             <Route path="/brands" element={<BrandsRedirect />} />
             <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
+            <Route path="/phone-finder" element={<PhoneFinderPage />} />
             <Route path="/smartphones" element={<Smartphones />} />
             <Route
               path="/smartphones/feature/:featureSlug/brand/:brandSlug"
