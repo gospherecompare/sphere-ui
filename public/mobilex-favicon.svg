@@ -3,11 +3,10 @@
   viewBox="0 0 512 512"
   fill="none"
 >
-  <rect width="512" height="512" fill="#111318" />
+  <rect width="649" height="649" />
 
   <!-- MobileX mark -->
-  <g transform="translate(37 109) scale(0.50)">
-
+<g transform="translate(37 109) scale(0.50)">
     <!-- White M -->
     <path
       fill="#FFFFFF"
