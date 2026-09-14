@@ -145,14 +145,6 @@ const toNumericPrice = (value) => {
 };
 
 const getVariantBestPrice = (variant) => {
-  const stores = Array.isArray(variant?.store_prices)
-    ? variant.store_prices
-    : [];
-  const storePrices = stores
-    .map((store) => toNumericPrice(store?.price))
-    .filter((price) => price !== null && price > 0);
-  if (storePrices.length) return Math.min(...storePrices);
-
   const base = toNumericPrice(variant?.base_price);
   return base !== null && base > 0 ? base : null;
 };

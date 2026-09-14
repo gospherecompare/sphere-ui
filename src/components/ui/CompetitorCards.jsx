@@ -61,50 +61,29 @@ const toPriceNumber = (value) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-const resolveLowestPrice = (device) => {
+const resolveBasePrice = (device) => {
   if (!device || typeof device !== "object") return null;
-  const candidates = [
+  const baseCandidates = [
     toPriceNumber(
-      device.price ??
-        device.base_price ??
+      device.base_price ??
         device.basePrice ??
+        device.numericBasePrice ??
+        device.numeric_base_price ??
         device.numericPrice ??
         null,
     ),
   ];
 
-  const topLevelStores = Array.isArray(device.store_prices)
-    ? device.store_prices
-    : Array.isArray(device.storePrices)
-      ? device.storePrices
-      : [];
-  for (const store of topLevelStores) {
-    candidates.push(toPriceNumber(store?.price));
-  }
-
   const variants = Array.isArray(device.variants) ? device.variants : [];
   for (const variant of variants) {
-    candidates.push(
+    baseCandidates.push(
       toPriceNumber(
-        variant?.base_price ??
-          variant?.price ??
-          variant?.basePrice ??
-          variant?.numericPrice ??
-          null,
+        variant?.base_price ?? variant?.basePrice ?? null,
       ),
     );
-
-    const stores = Array.isArray(variant?.store_prices)
-      ? variant.store_prices
-      : Array.isArray(variant?.storePrices)
-        ? variant.storePrices
-        : [];
-    for (const store of stores) {
-      candidates.push(toPriceNumber(store?.price));
-    }
   }
 
-  const validCandidates = candidates.filter((candidate) => candidate != null);
+  const validCandidates = baseCandidates.filter((candidate) => candidate != null);
   return validCandidates.length > 0 ? Math.min(...validCandidates) : null;
 };
 
@@ -376,7 +355,7 @@ const buildDeviceSignals = (device, overrides = {}) => {
     price:
       overrides.price && overrides.price > 0
         ? overrides.price
-        : resolveLowestPrice(device),
+        : resolveBasePrice(device),
     score: resolveCandidateScore(device),
     ratingScore: resolveRatingScore(device),
     recencyScore: resolveRecencyScore(device),
@@ -679,7 +658,7 @@ const buildFallbackCompetitorRows = ({
         return null;
 
       const brand = String(item?.brand || item?.brand_name || "").trim();
-      const price = resolveLowestPrice(item);
+      const price = resolveBasePrice(item);
       const bestStoreName = resolveBestStoreName(item);
       const sameBrand =
         currentSignals.brand && brand
@@ -1290,7 +1269,12 @@ const CompetitorCards = ({
 
   const competitors = useMemo(() => {
     const raw = Array.isArray(payload?.competitors) ? payload.competitors : [];
-    const fromApi = raw.filter((row) => Number(row?.id) > 0);
+    const fromApi = raw
+      .filter((row) => Number(row?.id) > 0)
+      .map((row) => ({
+        ...row,
+        price: resolveBasePrice(row) ?? row.price ?? null,
+      }));
     const fallbackRows = buildFallbackCompetitorRows({
       productId,
       fallbackCompetitors,
