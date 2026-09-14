@@ -402,13 +402,7 @@ const TVs = () => {
     let numericPrice = 0;
     if (variants.length > 0) {
       const allPrices = variants
-        .flatMap((v) => {
-          const base = v.base_price || 0;
-          const storePrices = Array.isArray(v.store_prices)
-            ? v.store_prices.map((sp) => sp.price).filter(Boolean)
-            : [];
-          return [base, ...storePrices];
-        })
+        .map((v) => v.base_price || 0)
         .map((p) => extractNumericPrice(p))
         .filter((p) => p > 0);
 
@@ -884,19 +878,9 @@ const TVs = () => {
           delivery_info: store.delivery_info || null,
         }));
 
-    const numericCandidates = [];
-    storePrices.forEach((sp) => {
-      const p = toNumericPrice(sp.price);
-      if (p !== null && p > 0) numericCandidates.push(p);
-    });
-    variants.forEach((v) => {
-      const base = extractNumericPrice(v.base_price);
-      if (base > 0) numericCandidates.push(base);
-      (v.store_prices || []).forEach((sp) => {
-        const p = extractNumericPrice(sp.price);
-        if (p > 0) numericCandidates.push(p);
-      });
-    });
+    const numericCandidates = variants
+      .map((v) => extractNumericPrice(v.base_price))
+      .filter((p) => p > 0);
     const numericPrice = numericCandidates.length
       ? Math.min(...numericCandidates)
       : 0;
@@ -1212,12 +1196,7 @@ const TVs = () => {
               ]
             : device.storePrices || [];
 
-      const candidatePrices = storePrices
-        .map((p) => extractNumericPrice(p.price))
-        .filter((n) => n > 0);
-      const numericPrice = candidatePrices.length
-        ? Math.min(...candidatePrices)
-        : device.numericPrice || 0;
+      const numericPrice = base > 0 ? base : device.numericPrice || 0;
 
       const price = formatPriceDisplay(numericPrice);
 
@@ -1342,15 +1321,9 @@ const TVs = () => {
     if (!variant) return device;
 
     const storePrices = mapVariantStorePrices(device, variant);
-    const candidatePrices = storePrices
-      .map((p) => extractNumericPrice(p.price))
-      .filter((n) => n > 0);
     const variantBasePrice = extractNumericPrice(variant?.base_price);
-    const numericPrice = candidatePrices.length
-      ? Math.min(...candidatePrices)
-      : variantBasePrice > 0
-        ? variantBasePrice
-        : device.numericPrice || 0;
+    const numericPrice =
+      variantBasePrice > 0 ? variantBasePrice : device.numericPrice || 0;
 
     const price = formatPriceDisplay(numericPrice);
 

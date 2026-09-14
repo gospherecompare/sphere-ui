@@ -6,7 +6,7 @@ import {
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
 
-const NewsImage = ({ story, className = "" }) => {
+const NewsImage = ({ story, className = "", fit = "cover" }) => {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const NewsImage = ({ story, className = "" }) => {
         src={story.image}
         alt={story.heroImageAlt || story.title}
         loading="lazy"
-        className={`h-full w-full object-cover ${className}`}
+        className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"} ${className}`}
         onError={() => setFailed(true)}
       />
     );
@@ -121,6 +121,7 @@ const CompactStoryCard = ({ story }) => (
     <div className="overflow-hidden rounded-lg bg-white">
       <NewsImage
         story={story}
+        fit="contain"
         className="transition-transform duration-300 group-hover:scale-[1.04]"
       />
     </div>

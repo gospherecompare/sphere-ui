@@ -249,13 +249,6 @@ const getStorePriceList = (variant) =>
 
 const resolveVariantNumericPrice = (variant) => {
   if (!variant) return 0;
-  const storeCandidates = getStorePriceList(variant)
-    .map((store) => extractNumericPrice(store?.price))
-    .filter((n) => n > 0);
-  if (storeCandidates.length > 0) {
-    return Math.min(...storeCandidates);
-  }
-
   return extractNumericPrice(
     variant.base_price ??
       variant.basePrice ??
@@ -276,18 +269,6 @@ const resolveDeviceNumericPrice = (device) => {
     : [];
   if (variantCandidates.length > 0) {
     return Math.min(...variantCandidates);
-  }
-
-  const topLevelStores = Array.isArray(device.store_prices)
-    ? device.store_prices
-    : Array.isArray(device.storePrices)
-      ? device.storePrices
-      : [];
-  const storeCandidates = topLevelStores
-    .map((store) => extractNumericPrice(store?.price))
-    .filter((n) => n > 0);
-  if (storeCandidates.length > 0) {
-    return Math.min(...storeCandidates);
   }
 
   return extractNumericPrice(
@@ -496,7 +477,7 @@ const LinkedNewsStoryCard = ({ story }) => {
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
   const baseCardClass =
-    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-yellow-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500  ";
+    "group flex h-full w-full flex-col overflow-hidden rounded-2xl  shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500  ";
   const imageWrapClass = "relative aspect-[16/9] overflow-hidden bg-slate-100 ";
   const titleClass =
     "line-clamp-2 text-[0.98rem] leading-6 text-slate-900  sm:text-[1.03rem] sm:leading-7";
@@ -1380,7 +1361,10 @@ const MobileDetailCard = () => {
         : "available";
     }
 
-    if (canonicalLaunchStage === "released" || canonicalLaunchStage === "available") {
+    if (
+      canonicalLaunchStage === "released" ||
+      canonicalLaunchStage === "available"
+    ) {
       return "available";
     }
 
@@ -3864,12 +3848,17 @@ Price: ${price}
       );
 
     const entries = dedupeSpecEntries(
-      Object.entries(data).filter(
-        ([k]) =>
-          k !== "sphere_rating" &&
-          !/ai[_-]?features?/i.test(k) &&
-          !isScoreKey(k),
-      ),
+      Object.entries(data).filter(([k, value]) => {
+        if (
+          k === "sphere_rating" ||
+          /ai[_-]?features?/i.test(k) ||
+          isScoreKey(k)
+        ) {
+          return false;
+        }
+
+        return hasContent(formatSpecValue(value, k));
+      }),
     );
 
     const isExpanded = Boolean(expandedSpecSections[sectionId]);
@@ -4059,7 +4048,7 @@ Price: ${price}
         const renderSectionCard = (sectionId, title, content) => (
           <section
             id={sectionId}
-            className={`${sectionCardClass} lg:min-h-[22rem]`}
+            className={sectionCardClass}
           >
             <div className="flex items-center gap-3  bg-blue-50/60 px-4 py-4   sm:px-5 sm:py-3.5">
               <span
@@ -5262,7 +5251,8 @@ Price: ${price}
     : "Date not announced";
 
   const heroMarketLabel = displayState.primaryLabel;
-  const heroDateLabel = displayState.dateLabel ||
+  const heroDateLabel =
+    displayState.dateLabel ||
     (displayState.isUpcoming ? "Expected" : "Launched");
   const heroDateText = displayState.date
     ? new Date(`${displayState.date}T00:00:00`).toLocaleDateString("en-IN", {
@@ -5791,13 +5781,7 @@ Price: ${price}
                           const listedStorePrice = extractNumericPrice(
                             storePrice.price,
                           );
-                          const fallbackVariantPrice = extractNumericPrice(
-                            currentVariant?.base_price ??
-                              currentVariant?.basePrice ??
-                              resolvedCurrentNumericPrice,
-                          );
-                          const displayedStorePrice =
-                            listedStorePrice || fallbackVariantPrice;
+                          const displayedStorePrice = listedStorePrice;
 
                           return (
                             <div
@@ -5824,12 +5808,6 @@ Price: ${price}
                                     {formatPriceLabel(displayedStorePrice) ||
                                       "Price unavailable"}
                                   </p>
-                                  {listedStorePrice === 0 &&
-                                  displayedStorePrice > 0 ? (
-                                    <p className="mt-0.5 text-[11px] font-medium text-slate-500 ">
-                                      Variant price
-                                    </p>
-                                  ) : null}
                                 </div>
                               </div>
 
@@ -5952,13 +5930,11 @@ Price: ${price}
               </div>
             </div>
           ) : null}
-          {!shouldShowLinkedNews ? (
-            <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-              <div className="mx-auto w-full max-w-7xl">
-                <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
-              </div>
+          <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
+              <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
             </div>
-          ) : null}
+          </div>
         </div>
 
         {smartphoneFaqItems.length > 0 ? (

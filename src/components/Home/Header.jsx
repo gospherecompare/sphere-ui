@@ -2267,6 +2267,7 @@ const Header = () => {
   const mobileQuickLinks = [
     { label: "Latest", href: "/smartphones/filter/new", icon: FaCalendarAlt },
     { label: "Upcoming", href: "/smartphones/upcoming", icon: FaBolt },
+    { label: "Finder", href: "/phone-finder", icon: FaMobileAlt },
     { label: "Trending", href: "/trending/smartphones", icon: FaStar },
     { label: "TVs", href: "/tvs", icon: FaTv },
   ];

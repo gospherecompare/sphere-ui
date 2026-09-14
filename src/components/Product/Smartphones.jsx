@@ -834,8 +834,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (variants.length > 0) {
       storePrices = variants.flatMap((v) => {
         const variantBase = v.base_price || v.basePrice || v.base;
-        const prices = Array.isArray(v.store_prices)
-          ? v.store_prices.map((sp) => {
+        const rawStorePrices = Array.isArray(v.store_prices)
+          ? v.store_prices
+          : Array.isArray(v.storePrices)
+            ? v.storePrices
+            : Array.isArray(v.stores)
+              ? v.stores
+              : [];
+        const prices = rawStorePrices.length
+          ? rawStorePrices.map((sp) => {
               const storeName =
                 sp.store_name || sp.store || sp.storeName || sp.storeName;
               return {
@@ -914,25 +921,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       }
     }
 
-    // Compute numeric price as lowest available store price or variant/base price
-    // Prefer variant base_price over store prices
-    const variantBaseCandidates = variants.length
-      ? variants
-          .map((v) =>
-            extractNumericPrice(v.base_price || v.basePrice || v.base),
-          )
-          .filter((n) => n > 0)
-      : [];
-
-    let numericPrice = 0;
-    if (variantBaseCandidates.length > 0) {
-      numericPrice = Math.min(...variantBaseCandidates);
-    } else {
-      const candidatePrices = storePrices
-        .map((p) => extractNumericPrice(p.price))
-        .filter((n) => n > 0);
-      numericPrice = candidatePrices.length ? Math.min(...candidatePrices) : 0;
-    }
+    // Base price is the catalogue price; store prices are ecommerce-only.
+    const variantBaseCandidates = variants
+      .map((v) => extractNumericPrice(v.base_price || v.basePrice || v.base))
+      .filter((n) => n > 0);
+    const basePrice = variantBaseCandidates.length
+      ? Math.min(...variantBaseCandidates)
+      : extractNumericPrice(
+          apiDevice.base_price ??
+            apiDevice.basePrice ??
+            apiDevice.price ??
+            apiDevice.numericPrice,
+        );
+    const numericPrice = basePrice;
     const serverBestPriceRaw = pick(
       toString(apiDevice.best_price),
       toString(apiDevice.bestPrice),
@@ -941,9 +942,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       "",
     );
     const serverBestPriceNumeric = extractNumericPrice(serverBestPriceRaw);
-    if (serverBestPriceNumeric > 0) {
-      numericPrice = serverBestPriceNumeric;
-    }
     const expectedPriceRaw = pick(
       apiDevice.expected_price,
       apiDevice.expectedPrice,
@@ -1600,6 +1598,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         overallScoreDisplay != null ? overallScoreDisplay : overallScoreRaw,
       price: numericPrice > 0 ? `₹ ${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
+      basePrice: numericPrice,
+      numericBasePrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
       reviews:
         apiDevice.reviews && typeof apiDevice.reviews === "number"
@@ -1767,17 +1767,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const variantBaseNumeric = extractNumericPrice(
       variant?.base_price || variant?.basePrice || variant?.base,
     );
-    const variantStoreNumericPrices = mappedVariantStores
-      .map((p) => extractNumericPrice(p.price))
-      .filter((n) => n > 0);
-    const lowestVariantStorePrice =
-      variantStoreNumericPrices.length > 0
-        ? Math.min(...variantStoreNumericPrices)
-        : 0;
     let resolvedNumericPrice = 0;
-    if (lowestVariantStorePrice > 0)
-      resolvedNumericPrice = lowestVariantStorePrice;
-    else if (variantBaseNumeric > 0) resolvedNumericPrice = variantBaseNumeric;
+    if (variantBaseNumeric > 0) resolvedNumericPrice = variantBaseNumeric;
     else if (device.numericPrice > 0)
       resolvedNumericPrice = device.numericPrice;
 
