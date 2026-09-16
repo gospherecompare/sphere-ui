@@ -341,7 +341,12 @@ const TVs = () => {
 
   const resolveTvSpecScore = (device, fallbackScore = null) => {
     const directScore = normalizeScore100(
-      device?.spec_score ?? device?.specScore,
+      device?.spec_score ??
+        device?.specScore ??
+        device?.raw?.spec_score ??
+        device?.raw?.specScore ??
+        device?.data?.spec_score ??
+        device?.data?.specScore,
     );
     if (directScore != null) return directScore;
 
@@ -909,7 +914,14 @@ const TVs = () => {
       deviceFieldProfiles,
     );
     const profileDisplay = profileResult.display_display || {};
-    const overallScoreRaw = resolveTvSpecScore(apiDevice, profileResult.score);
+    const persistedSpecScore = normalizeScore100(
+      apiDevice?.spec_score ??
+        apiDevice?.specScore ??
+        apiDevice?.raw?.spec_score ??
+        apiDevice?.data?.spec_score,
+    );
+    const overallScoreRaw =
+      persistedSpecScore ?? resolveTvSpecScore(apiDevice, profileResult.score);
 
     const screenSize = firstNonEmpty(
       keySpecs.screen_size,
@@ -1233,6 +1245,7 @@ const TVs = () => {
     );
 
   const mapVariantStorePrices = (device, variant) => {
+    const variantBasePrice = extractNumericPrice(variant?.base_price);
     const rawVariantStorePrices = normalizeTvStoreRows(
       Array.isArray(variant?.store_prices) ? variant.store_prices : [],
       `${device.id}-${getTvVariantIdentity(variant, 0)}`,
@@ -1252,7 +1265,10 @@ const TVs = () => {
         store: storeName,
         storeObj,
         logo,
-        price: sp.price ?? sp.amount ?? null,
+        price:
+          sp.price ??
+          sp.amount ??
+          (variantBasePrice > 0 ? variantBasePrice : null),
         url: sp.url || sp.link || null,
         offer_text: sp.offer_text || sp.offer || null,
         delivery_info: sp.delivery_info || sp.delivery_time || null,
@@ -1302,7 +1318,7 @@ const TVs = () => {
       }));
     }
 
-    const base = variant?.base_price || 0;
+    const base = variantBasePrice;
     if (extractNumericPrice(base) > 0) {
       return [
         {
@@ -3577,6 +3593,14 @@ const TVs = () => {
                       source: variant,
                     }))
                   : [];
+                const productKey = String(
+                  device.productId ?? device.product_id ?? device.id ?? "",
+                );
+                const selectedVariantId =
+                  selectedVariantByProduct[productKey] ||
+                  (primaryVariant
+                    ? getTvVariantIdentity(primaryVariant, 0)
+                    : undefined);
 
                 return (
                   <ProductListingCard
@@ -3643,11 +3667,7 @@ const TVs = () => {
                           <ProductVariantSelector
                             label="Available sizes"
                             variants={variantItems}
-                            selectedId={
-                              primaryVariant
-                                ? getTvVariantIdentity(primaryVariant, 0)
-                                : undefined
-                            }
+                            selectedId={selectedVariantId}
                             onSelect={(variant) =>
                               handleSelectTvSize(device, variant.source, {
                                 stopPropagation: () => {},

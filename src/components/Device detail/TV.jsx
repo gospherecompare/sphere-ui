@@ -159,7 +159,14 @@ const normalizeScore100 = (value) => {
 
 const resolveTvSpecScore = (device, fallbackScore = null) => {
   const directScore = normalizeScore100(
-    device?.spec_score ?? device?.specScore,
+    device?.spec_score ??
+      device?.specScore ??
+      device?.raw?.spec_score ??
+      device?.raw?.specScore ??
+      device?.data?.spec_score ??
+      device?.data?.specScore ??
+      device?.tv?.spec_score ??
+      device?.tv?.specScore,
   );
   if (directScore != null) return directScore;
 
@@ -372,11 +379,6 @@ const TVDetailCard = () => {
     );
     const designJson = toObjectIfNeeded(a.design_json || a.design);
     const gamingJson = toObjectIfNeeded(a.gaming_json || a.gaming);
-    const productDetailsJson = toObjectIfNeeded(
-      a.product_details_json || a.product_details,
-    );
-    const inTheBoxJson = toObjectIfNeeded(a.in_the_box_json || a.in_the_box);
-    const warrantyJson = toObjectIfNeeded(a.warranty_json || a.warranty);
     const legacySpecs = { ...(a.specifications || {}), ...(a.specs || {}) };
 
     const rawVariants = Array.isArray(a.variants_json)
@@ -390,6 +392,9 @@ const TVDetailCard = () => {
           : [];
 
     const variants = rawVariants.map((v, variantIndex) => {
+      const basePrice = toNumericPrice(
+        v.base_price ?? v.price ?? v.attributes?.base_price,
+      );
       const variantScreenSize = firstNonEmpty(
         v.screen_size,
         v.size,
@@ -419,7 +424,7 @@ const TVDetailCard = () => {
             sp?.storeName,
             "Store",
           ),
-          price: toNumericPrice(sp?.price ?? sp?.amount),
+          price: toNumericPrice(sp?.price ?? sp?.amount) ?? basePrice,
           url: sp?.url || sp?.link || "",
           offer_text: sp?.offer_text || sp?.offer || null,
           delivery_time: sp?.delivery_info || sp?.delivery_time || null,
@@ -459,9 +464,7 @@ const TVDetailCard = () => {
         variant_id:
           v.variant_id || v.id || v.variantId || v.variant_key || null,
         variant_key: firstNonEmpty(v.variant_key, variantScreenSize),
-        base_price: toNumericPrice(
-          v.base_price ?? v.price ?? v.attributes?.base_price,
-        ),
+        base_price: basePrice,
         store_prices: storePrices,
         screen_size: variantScreenSize || "",
         screen_size_value:
@@ -624,7 +627,6 @@ const TVDetailCard = () => {
         ...designJson,
         dimensions,
       },
-      warranty: { ...(a.warranty || {}), ...warrantyJson },
       images,
       basic_info_json: basicInfo,
       key_specs_json: keySpecs,
@@ -639,18 +641,12 @@ const TVDetailCard = () => {
       dimensions_json: dimensionsJson,
       design_json: designJson,
       gaming_json: gamingJson,
-      product_details_json: productDetailsJson,
-      in_the_box_json: inTheBoxJson,
-      warranty_json: warrantyJson,
       release_year:
         a.release_year ||
         basicInfo.launch_year ||
-        productDetailsJson.launch_year ||
         a.launch_year ||
         "",
       country: firstNonEmpty(
-        warrantyJson.country_of_origin,
-        productDetailsJson.country_of_origin,
         a.country_of_origin,
       ),
     };
@@ -659,7 +655,18 @@ const TVDetailCard = () => {
       normalizedAppliance,
       deviceFieldProfiles,
     );
-    const resolvedSpecScore = resolveTvSpecScore(a, profileResult.score);
+    const persistedSpecScore = normalizeScore100(
+      a?.spec_score ??
+        a?.specScore ??
+        a?.raw?.spec_score ??
+        a?.raw?.specScore ??
+        a?.data?.spec_score ??
+        a?.data?.specScore ??
+        a?.tv?.spec_score ??
+        a?.tv?.specScore,
+    );
+    const resolvedSpecScore =
+      persistedSpecScore ?? resolveTvSpecScore(a, profileResult.score);
 
     normalizedAppliance.field_profile = profileResult;
     normalizedAppliance.spec_score = resolvedSpecScore;
@@ -1619,9 +1626,6 @@ const TVDetailCard = () => {
         { id: "gaming", label: "Gaming", icon: FaGamepad },
         { id: "power", label: "Power", icon: FaBatteryFull },
         { id: "physical_details", label: "Physical", icon: FaRuler },
-        { id: "product_details", label: "Details", icon: FaInfoCircle },
-        { id: "in_the_box", label: "In Box", icon: FaShoppingCart },
-        { id: "warranty", label: "Warranty", icon: FaShieldAlt },
       ]
     : [
         { id: "specifications", label: "Specs", icon: FaMicrochip },
@@ -2141,7 +2145,29 @@ const TVDetailCard = () => {
       tabId === "specifications" ? "tv-specifications" : `tv-${tabId}`;
     window.requestAnimationFrame(() => {
       const el = document.getElementById(sectionId);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!el) return;
+
+      const rootStyle = window.getComputedStyle(document.documentElement);
+      const readRootOffset = (propertyName) => {
+        const value = Number.parseFloat(
+          rootStyle.getPropertyValue(propertyName),
+        );
+        return Number.isFinite(value) ? value : 0;
+      };
+      const headerOffset = Math.max(
+        readRootOffset("--site-sticky-header-offset"),
+        readRootOffset("--mobile-header-height"),
+        readRootOffset("--desktop-header-height"),
+      );
+      const navigatorHeight = readRootOffset("--detail-page-nav-height");
+      const targetTop =
+        el.getBoundingClientRect().top +
+        window.scrollY -
+        headerOffset -
+        navigatorHeight -
+        10;
+
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
     });
   };
 
@@ -2152,6 +2178,62 @@ const TVDetailCard = () => {
   }));
   const activeDetailSection =
     activeTab === "specifications" ? "tv-specifications" : `tv-${activeTab}`;
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof IntersectionObserver === "undefined" ||
+      !detailPageSections.length
+    ) {
+      return undefined;
+    }
+
+    const observedSections = detailPageSections
+      .map((section) => ({
+        ...section,
+        element: document.getElementById(section.id),
+      }))
+      .filter((section) => section.element);
+    if (!observedSections.length) return undefined;
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const headerOffset = Math.max(
+      Number.parseFloat(
+        rootStyle.getPropertyValue("--site-sticky-header-offset"),
+      ) || 0,
+      Number.parseFloat(rootStyle.getPropertyValue("--mobile-header-height")) ||
+        0,
+      Number.parseFloat(rootStyle.getPropertyValue("--desktop-header-height")) ||
+        0,
+    );
+    const navigatorHeight =
+      Number.parseFloat(
+        rootStyle.getPropertyValue("--detail-page-nav-height"),
+      ) || 58;
+    const visibleIds = new Set(observedSections.map((section) => section.id));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const nextId = visible[0]?.target?.id;
+        if (!nextId || !visibleIds.has(nextId)) return;
+
+        const nextTab = nextId === "tv-specifications"
+          ? "specifications"
+          : nextId.replace(/^tv-/, "");
+        setActiveTab((current) => (current === nextTab ? current : nextTab));
+      },
+      {
+        rootMargin: `-${headerOffset + navigatorHeight + 12}px 0px -55% 0px`,
+        threshold: 0.01,
+      },
+    );
+
+    observedSections.forEach((section) => observer.observe(section.element));
+    return () => observer.disconnect();
+  }, [detailPageSections]);
 
   const renderTabContent = () => {
     if (!applianceData) return null;
@@ -2201,7 +2283,7 @@ const TVDetailCard = () => {
         return (
           <section
             id={sectionId}
-            className="flex scroll-mt-[136px] flex-col overflow-hidden rounded-2xl border border-blue-200 bg-transparent shadow-none sm:scroll-mt-[148px]"
+            className="scroll-mt-[136px] overflow-hidden rounded-2xl border border-blue-200 bg-transparent shadow-none sm:scroll-mt-[148px]"
           >
             <div className="flex items-center gap-3 bg-blue-50/60 px-4 py-4 sm:px-5 sm:py-3.5">
               <span className="h-6 w-1 rounded-full bg-blue-600" aria-hidden="true" />
@@ -2209,7 +2291,7 @@ const TVDetailCard = () => {
                 {title}
               </h4>
             </div>
-            <div className="flex flex-1 flex-col bg-transparent px-4 py-4 sm:px-5 sm:py-4">
+            <div className="bg-transparent px-4 py-4 sm:px-5 sm:py-4">
               {renderSpecTable(data, 5, sectionId)}
             </div>
           </section>
@@ -2232,61 +2314,52 @@ const TVDetailCard = () => {
             </p>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
-            {renderTvSpecSection("tv-core", "General", generalSection)}
-            {renderTvSpecSection(
-              "tv-display",
-              "Display",
-              applianceData.display_json ||
-                applianceData.key_specs_json ||
-                applianceData.specifications,
-            )}
-            {renderTvSpecSection(
-              "tv-video_engine",
-              "Video Engine",
-              applianceData.video_engine_json,
-            )}
-            {renderTvSpecSection("tv-audio", "Audio", applianceData.audio_json)}
-            {renderTvSpecSection(
-              "tv-smart_tv",
-              "Smart TV",
-              applianceData.smart_tv_json,
-            )}
-            {renderTvSpecSection(
-              "tv-connectivity",
-              "Connectivity",
-              applianceData.connectivity_json,
-            )}
-            {renderTvSpecSection("tv-ports", "Ports", applianceData.ports_json)}
-            {renderTvSpecSection(
-              "tv-gaming",
-              "Gaming",
-              applianceData.gaming_json,
-            )}
-            {renderTvSpecSection("tv-power", "Power", applianceData.power_json)}
-            {renderTvSpecSection(
-              "tv-physical_details",
-              "Physical",
-              applianceData.physical_json ||
-                applianceData.dimensions_json ||
-                applianceData.physical_details,
-            )}
-            {renderTvSpecSection(
-              "tv-product_details",
-              "Product Details",
-              applianceData.product_details_json,
-            )}
-            {renderTvSpecSection(
-              "tv-in_the_box",
-              "In The Box",
-              applianceData.in_the_box_json,
-            )}
-            {renderTvSpecSection(
-              "tv-warranty",
-              "Warranty",
-              applianceData.warranty_json || applianceData.warranty,
-            )}
-          </div>
+          {(() => {
+            const specSections = [
+              ["tv-core", "General", generalSection],
+              [
+                "tv-display",
+                "Display",
+                applianceData.display_json ||
+                  applianceData.key_specs_json ||
+                  applianceData.specifications,
+              ],
+              ["tv-video_engine", "Video Engine", applianceData.video_engine_json],
+              ["tv-audio", "Audio", applianceData.audio_json],
+              ["tv-smart_tv", "Smart TV", applianceData.smart_tv_json],
+              ["tv-connectivity", "Connectivity", applianceData.connectivity_json],
+              ["tv-ports", "Ports", applianceData.ports_json],
+              ["tv-gaming", "Gaming", applianceData.gaming_json],
+              ["tv-power", "Power", applianceData.power_json],
+              [
+                "tv-physical_details",
+                "Physical",
+                applianceData.physical_json ||
+                  applianceData.dimensions_json ||
+                  applianceData.physical_details,
+              ],
+            ];
+            const renderSpecSections = (sections) =>
+              sections.map(([sectionId, title, data]) =>
+                renderTvSpecSection(sectionId, title, data),
+              );
+
+            return (
+              <>
+                <div className="mt-5 space-y-5 lg:hidden">
+                  {renderSpecSections(specSections)}
+                </div>
+                <div className="mt-5 hidden gap-5 lg:grid lg:grid-cols-2">
+                  <div className="space-y-5">
+                    {renderSpecSections(specSections.filter((_, index) => index % 2 === 0))}
+                  </div>
+                  <div className="space-y-5">
+                    {renderSpecSections(specSections.filter((_, index) => index % 2 === 1))}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       );
     }
@@ -2342,20 +2415,6 @@ const TVDetailCard = () => {
               </h3>
             </div>
             {renderSpecTable(applianceData.physical_details)}
-          </div>
-        )}
-        {hasContent(applianceData.warranty) && (
-          <div
-            id="tv-warranty"
-            className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6"
-          >
-            <div className="mb-6 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaShieldAlt className={currentColor.text} />
-                Warranty
-              </h3>
-            </div>
-            {renderSpecTable(applianceData.warranty)}
           </div>
         )}
       </div>
