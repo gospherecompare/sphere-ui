@@ -39,7 +39,6 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { useSearchParams } from "react-router-dom";
@@ -92,6 +91,59 @@ import ProductVariantSelector from "../ui/ProductVariantSelector";
 import Breadcrumbs from "../Breadcrumbs";
 
 const SITE_ORIGIN = "https://mobilesx.in";
+const formatTvHighlightValue = (label, value) => {
+  const text = String(value ?? "—").trim() || "—";
+
+  if (label === "Resolution") {
+    const match = text.match(/^(.*?)\s*(\(\s*\d{3,5}\s*[x×]\s*\d{3,5}\s*\))$/i);
+    if (match) {
+      return (
+        <span className="flex flex-col">
+          <span>{match[1].trim()}</span>
+          <span>{match[2].replace(/x/g, "×")}</span>
+        </span>
+      );
+    }
+
+    const normalized = text.replace(/\s*\(\s*/, "\n(");
+    if (normalized.includes("\n")) {
+      return normalized.split("\n").map((part, index) => (
+        <React.Fragment key={`${label}-${index}`}>
+          {index > 0 ? <br /> : null}
+          {part.trim()}
+        </React.Fragment>
+      ));
+    }
+  }
+
+  if (label === "Refresh rate") {
+    const normalized = text.replace(/\s+&\s+/g, " & ");
+    const parts = normalized.split(/\s+&\s+/);
+    if (parts.length === 2) {
+      return (
+        <span className="flex flex-col">
+          <span>{parts[0]}</span>
+          <span>& {parts[1]}</span>
+        </span>
+      );
+    }
+  }
+
+  if (label === "Smart TV") {
+    const match = text.match(/^(.*?)\s+(Built-in|Built In)$/i);
+    if (match) {
+      return (
+        <span className="flex flex-col">
+          <span>{match[1]}</span>
+          <span>{match[2].replace("Built In", "Built-in")}</span>
+        </span>
+      );
+    }
+  }
+
+  return text;
+};
+
 const TV_MOBILE_SORT_OPTIONS = [
   {
     value: "featured",
@@ -3561,22 +3613,34 @@ const TVs = () => {
                 const highlightItems = [
                   {
                     label: "Display",
-                    value: firstNonEmpty(device.specs?.screenSize, "—"),
+                    value: formatTvHighlightValue(
+                      "Display",
+                      firstNonEmpty(device.specs?.screenSize, "—"),
+                    ),
                     icon: FaTv,
                   },
                   {
                     label: "Resolution",
-                    value: firstNonEmpty(device.specs?.resolution, "—"),
+                    value: formatTvHighlightValue(
+                      "Resolution",
+                      firstNonEmpty(device.specs?.resolution, "—"),
+                    ),
                     icon: FaExpand,
                   },
                   {
                     label: "Refresh rate",
-                    value: firstNonEmpty(device.specs?.refreshRate, "—"),
+                    value: formatTvHighlightValue(
+                      "Refresh rate",
+                      firstNonEmpty(device.specs?.refreshRate, "—"),
+                    ),
                     icon: FaSyncAlt,
                   },
                   {
                     label: "Smart TV",
-                    value: firstNonEmpty(device.specs?.operatingSystem, "—"),
+                    value: formatTvHighlightValue(
+                      "Smart TV",
+                      firstNonEmpty(device.specs?.operatingSystem, "—"),
+                    ),
                     icon: FaBolt,
                   },
                 ];
@@ -3840,17 +3904,7 @@ const TVs = () => {
 
         <LatestNewsRouteSection
           className="mt-6"
-          productType="tv"
           subtitle="Fresh TV launches, display technology updates, and buying context from the MobilesX news desk."
-        />
-
-        <ProductDiscoverySections
-          entityType="tvs"
-          catalogItems={devices}
-          brandCatalog={deviceContext?.brands || []}
-          currentBrand={currentBrandObj?.name || filterBrand || ""}
-          className="mt-6"
-          layout="latestPhones"
         />
 
         <MobileSortSheet

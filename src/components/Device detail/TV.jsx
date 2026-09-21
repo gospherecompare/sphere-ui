@@ -60,7 +60,6 @@ import Spinner from "../ui/Spinner";
 import { tvMeta } from "../../constants/meta";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
@@ -85,11 +84,43 @@ const TvOrbitArtwork = () => (
       className="absolute inset-0 h-full w-full text-blue-500/20"
       preserveAspectRatio="xMidYMid slice"
     >
-      <ellipse cx="310" cy="250" rx="198" ry="154" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 12" />
-      <ellipse cx="310" cy="250" rx="148" ry="204" stroke="currentColor" strokeWidth="1" strokeDasharray="3 13" transform="rotate(22 310 250)" />
-      <path d="M74 357C160 314 191 349 244 316C302 281 288 210 360 183C417 161 463 185 550 133" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M102 117H174L197 140H247" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M445 374H512L534 352H574" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <ellipse
+        cx="310"
+        cy="250"
+        rx="198"
+        ry="154"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeDasharray="8 12"
+      />
+      <ellipse
+        cx="310"
+        cy="250"
+        rx="148"
+        ry="204"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeDasharray="3 13"
+        transform="rotate(22 310 250)"
+      />
+      <path
+        d="M74 357C160 314 191 349 244 316C302 281 288 210 360 183C417 161 463 185 550 133"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M102 117H174L197 140H247"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M445 374H512L534 352H574"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
       <circle cx="102" cy="117" r="4" fill="currentColor" />
       <circle cx="247" cy="140" r="4" fill="currentColor" />
       <circle cx="74" cy="357" r="4" fill="currentColor" />
@@ -126,7 +157,10 @@ const TvXScoreLogo = ({ className }) => (
     role="img"
     aria-label="MobilesX"
   >
-    <path fill="#111318" d="M0 419H99L101 142L288 327L471 145L400 75L288 185L101 0H0V419Z" />
+    <path
+      fill="#111318"
+      d="M0 419H99L101 142L288 327L471 145L400 75L288 185L101 0H0V419Z"
+    />
     <path fill="#111318" d="M365 0L568 202L357 419H476L689 202L488 0H365Z" />
     <path fill="#2563EB" d="M868 0H746L639 117L700 179L868 0Z" />
     <path fill="#2563EB" d="M631 298L746 420H874L694 235L631 298Z" />
@@ -642,13 +676,8 @@ const TVDetailCard = () => {
       design_json: designJson,
       gaming_json: gamingJson,
       release_year:
-        a.release_year ||
-        basicInfo.launch_year ||
-        a.launch_year ||
-        "",
-      country: firstNonEmpty(
-        a.country_of_origin,
-      ),
+        a.release_year || basicInfo.launch_year || a.launch_year || "",
+      country: firstNonEmpty(a.country_of_origin),
     };
     const profileResult = resolveDeviceFieldProfile(
       "tv",
@@ -2059,7 +2088,11 @@ const TVDetailCard = () => {
     return formatSpecValueText(value);
   };
 
-  const renderSpecTable = (data, limit = 5, sectionId = "tv-specifications") => {
+  const renderSpecTable = (
+    data,
+    limit = 5,
+    sectionId = "tv-specifications",
+  ) => {
     if (!data || typeof data !== "object") {
       return (
         <div className="rounded-lg border border-dashed border-slate-100 bg-white py-6 text-center text-sm text-slate-500 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
@@ -2203,8 +2236,9 @@ const TVDetailCard = () => {
       ) || 0,
       Number.parseFloat(rootStyle.getPropertyValue("--mobile-header-height")) ||
         0,
-      Number.parseFloat(rootStyle.getPropertyValue("--desktop-header-height")) ||
-        0,
+      Number.parseFloat(
+        rootStyle.getPropertyValue("--desktop-header-height"),
+      ) || 0,
     );
     const navigatorHeight =
       Number.parseFloat(
@@ -2220,9 +2254,10 @@ const TVDetailCard = () => {
         const nextId = visible[0]?.target?.id;
         if (!nextId || !visibleIds.has(nextId)) return;
 
-        const nextTab = nextId === "tv-specifications"
-          ? "specifications"
-          : nextId.replace(/^tv-/, "");
+        const nextTab =
+          nextId === "tv-specifications"
+            ? "specifications"
+            : nextId.replace(/^tv-/, "");
         setActiveTab((current) => (current === nextTab ? current : nextTab));
       },
       {
@@ -2286,7 +2321,10 @@ const TVDetailCard = () => {
             className="scroll-mt-[136px] overflow-hidden rounded-2xl border border-blue-200 bg-transparent shadow-none sm:scroll-mt-[148px]"
           >
             <div className="flex items-center gap-3 bg-blue-50/60 px-4 py-4 sm:px-5 sm:py-3.5">
-              <span className="h-6 w-1 rounded-full bg-blue-600" aria-hidden="true" />
+              <span
+                className="h-6 w-1 rounded-full bg-blue-600"
+                aria-hidden="true"
+              />
               <h4 className="text-[17px] font-bold tracking-tight text-slate-950 sm:text-base">
                 {title}
               </h4>
@@ -2299,7 +2337,10 @@ const TVDetailCard = () => {
       };
 
       return (
-        <div id="tv-specifications" className="mx-auto w-full max-w-6xl px-2 sm:px-0">
+        <div
+          id="tv-specifications"
+          className="mx-auto w-full max-w-6xl px-2 sm:px-0"
+        >
           <div className="text-slate-900">
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
               Full Specifications
@@ -2324,10 +2365,18 @@ const TVDetailCard = () => {
                   applianceData.key_specs_json ||
                   applianceData.specifications,
               ],
-              ["tv-video_engine", "Video Engine", applianceData.video_engine_json],
+              [
+                "tv-video_engine",
+                "Video Engine",
+                applianceData.video_engine_json,
+              ],
               ["tv-audio", "Audio", applianceData.audio_json],
               ["tv-smart_tv", "Smart TV", applianceData.smart_tv_json],
-              ["tv-connectivity", "Connectivity", applianceData.connectivity_json],
+              [
+                "tv-connectivity",
+                "Connectivity",
+                applianceData.connectivity_json,
+              ],
               ["tv-ports", "Ports", applianceData.ports_json],
               ["tv-gaming", "Gaming", applianceData.gaming_json],
               ["tv-power", "Power", applianceData.power_json],
@@ -2351,10 +2400,14 @@ const TVDetailCard = () => {
                 </div>
                 <div className="mt-5 hidden gap-5 lg:grid lg:grid-cols-2">
                   <div className="space-y-5">
-                    {renderSpecSections(specSections.filter((_, index) => index % 2 === 0))}
+                    {renderSpecSections(
+                      specSections.filter((_, index) => index % 2 === 0),
+                    )}
                   </div>
                   <div className="space-y-5">
-                    {renderSpecSections(specSections.filter((_, index) => index % 2 === 1))}
+                    {renderSpecSections(
+                      specSections.filter((_, index) => index % 2 === 1),
+                    )}
                   </div>
                 </div>
               </>
@@ -2513,7 +2566,7 @@ const TVDetailCard = () => {
           </p>
           <div className="mt-1 flex items-end gap-1">
             <span className="text-3xl font-black leading-none text-slate-950">
-            {Math.round(headerSpecScoreValue)}
+              {Math.round(headerSpecScoreValue)}
             </span>
             <span className="pb-0.5 text-sm font-semibold text-slate-500">
               /100
@@ -3089,9 +3142,7 @@ const TVDetailCard = () => {
                             <FaCheck className="text-[9px]" />
                           </span>
                         ) : null}
-                        <div
-                          className="pr-6 text-sm font-black leading-tight text-slate-900"
-                        >
+                        <div className="pr-6 text-sm font-black leading-tight text-slate-900">
                           {toSafeText(
                             variant.capacity ||
                               variant.screen_size ||
@@ -3100,9 +3151,7 @@ const TVDetailCard = () => {
                               `Variant ${index + 1}`,
                           ) || `Variant ${index + 1}`}
                         </div>
-                        <div
-                          className="mt-2 text-[11px] leading-tight text-slate-500"
-                        >
+                        <div className="mt-2 text-[11px] leading-tight text-slate-500">
                           {toSafeText(
                             variant.resolution ||
                               variant.specification_summary ||
@@ -3279,7 +3328,8 @@ const TVDetailCard = () => {
                       </h3>
                     </div>
                     <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                      {sortedStores.length} offer{sortedStores.length === 1 ? "" : "s"}
+                      {sortedStores.length} offer
+                      {sortedStores.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
@@ -3316,7 +3366,7 @@ const TVDetailCard = () => {
                                   e.target.src = getLogo("");
                                 }}
                               />
-                              </div>
+                            </div>
                             <div className="min-w-0">
                               <h4 className="text-sm font-bold capitalize text-slate-900">
                                 {store.store_name}
@@ -3342,7 +3392,7 @@ const TVDetailCard = () => {
                             <FaExternalLinkAlt className="text-xs" />
                             {hasStoreUrl ? "Buy now" : "Unavailable"}
                           </a>
-                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -3428,26 +3478,11 @@ const TVDetailCard = () => {
           ) : (
             <>
               <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
-
-              {currentProductId ? (
-                <div className="mt-6 px-4 sm:px-0">
-                  <ProductDiscoverySections
-                    productId={currentProductId}
-                    currentBrand={applianceData?.brand || ""}
-                    entityType="tvs"
-                    catalogItems={homeAppliances}
-                    brandCatalog={brands}
-                    className="w-full"
-                    layout="latestPhones"
-                  />
-                </div>
-              ) : null}
             </>
           )}
 
           <LatestNewsRouteSection
             className="mt-6"
-            productType="tv"
             subtitle="Fresh TV launches, display technology updates, and buying context from the MobilesX news desk."
           />
         </div>

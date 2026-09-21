@@ -6,7 +6,7 @@ const ProductHighlightStrip = ({ items = [], className = "" }) => (
   >
     {items.slice(0, 4).map(({ label, value, icon: Icon }) => {
       const labelText = String(label || "");
-      const valueText = String(value || "Not specified");
+      const valueText = typeof value === "string" ? value : "Not specified";
       const labelClass =
         labelText.length > 10
           ? "text-[9px] leading-3"
@@ -31,11 +31,13 @@ const ProductHighlightStrip = ({ items = [], className = "" }) => (
           >
             {labelText}
           </p>
-          <p
-            className={`mt-1 whitespace-normal break-words font-black text-slate-900 ${valueClass}`}
+          <div
+            className={`mt-1 flex min-h-10 items-start font-black text-slate-900 ${valueClass}`}
           >
-            {valueText}
-          </p>
+            <span className="line-clamp-2 break-normal [overflow-wrap:normal]">
+              {typeof value === "string" ? value.trim() : value}
+            </span>
+          </div>
         </div>
       );
     })}
