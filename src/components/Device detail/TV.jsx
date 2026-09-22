@@ -494,6 +494,7 @@ const TVDetailCard = () => {
 
       return {
         ...v,
+        attributes: toObjectIfNeeded(v.attributes),
         id: v.id || v.variant_id || v.variantId || v.variant_key || null,
         variant_id:
           v.variant_id || v.id || v.variantId || v.variant_key || null,
@@ -558,10 +559,10 @@ const TVDetailCard = () => {
         ? `${rawEnergyRating} Star`
         : rawEnergyRating;
     const hdrSupport =
-      (Array.isArray(keySpecs.hdr_support) &&
-        keySpecs.hdr_support.join(", ")) ||
-      (Array.isArray(displayJson.hdr_formats) &&
-        displayJson.hdr_formats.join(", ")) ||
+      (Array.isArray(keySpecs.hdr_support) && keySpecs.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_support) && displayJson.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_formats) && displayJson.hdr_formats.join(", ")) ||
+      (Array.isArray(displayJson.hdr) && displayJson.hdr.join(", ")) ||
       "";
 
     const features = [
@@ -582,9 +583,9 @@ const TVDetailCard = () => {
     ].filter(Boolean);
 
     const dimensions = [
-      dimensionsJson.width || legacySpecs.width,
-      dimensionsJson.height || legacySpecs.height,
-      dimensionsJson.depth || legacySpecs.depth,
+      dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width,
+      dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height,
+      dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth,
     ]
       .filter(Boolean)
       .join(" x ");
@@ -635,10 +636,10 @@ const TVDetailCard = () => {
         ),
         dimensions:
           dimensions || legacySpecs.dimensions || legacySpecs.dimension || "",
-        width: dimensionsJson.width || legacySpecs.width || "",
-        height: dimensionsJson.height || legacySpecs.height || "",
-        depth: dimensionsJson.depth || legacySpecs.depth || "",
-        weight: dimensionsJson.weight || legacySpecs.weight || "",
+        width: dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width || "",
+        height: dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height || "",
+        depth: dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth || "",
+        weight: dimensionsJson.weight || dimensionsJson.weight_without_stand || legacySpecs.weight || "",
         color:
           designJson.body_color ||
           designJson.stand_color ||
@@ -675,6 +676,10 @@ const TVDetailCard = () => {
       dimensions_json: dimensionsJson,
       design_json: designJson,
       gaming_json: gamingJson,
+      product_details_json: toObjectIfNeeded(a.product_details_json),
+      in_the_box_json: toObjectIfNeeded(a.in_the_box_json),
+      warranty_json: toObjectIfNeeded(a.warranty_json),
+      storage_json: toObjectIfNeeded(a.storage_json),
       release_year:
         a.release_year || basicInfo.launch_year || a.launch_year || "",
       country: firstNonEmpty(a.country_of_origin),
@@ -2102,7 +2107,20 @@ const TVDetailCard = () => {
     }
 
     const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
-    const rows = Object.entries(data).filter(
+    const flattenRows = (value, prefix = "") =>
+      Object.entries(value).flatMap(([key, child]) => {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (
+          child &&
+          typeof child === "object" &&
+          !Array.isArray(child) &&
+          !parseVariantRowsFromObject(child)
+        ) {
+          return flattenRows(child, path);
+        }
+        return [[path, child]];
+      });
+    const rows = flattenRows(data).filter(
       ([key, value]) => hasContent(value) && !isScoreKey(key),
     );
 
@@ -2387,6 +2405,10 @@ const TVDetailCard = () => {
                   applianceData.dimensions_json ||
                   applianceData.physical_details,
               ],
+              ["tv-product_details", "Product Details", applianceData.product_details_json],
+              ["tv-in_the_box", "In The Box", applianceData.in_the_box_json],
+              ["tv-warranty", "Warranty", applianceData.warranty_json],
+              ["tv-storage", "Storage", applianceData.storage_json],
             ];
             const renderSpecSections = (sections) =>
               sections.map(([sectionId, title, data]) =>
