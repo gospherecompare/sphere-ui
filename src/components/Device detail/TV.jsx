@@ -559,9 +559,12 @@ const TVDetailCard = () => {
         ? `${rawEnergyRating} Star`
         : rawEnergyRating;
     const hdrSupport =
-      (Array.isArray(keySpecs.hdr_support) && keySpecs.hdr_support.join(", ")) ||
-      (Array.isArray(displayJson.hdr_support) && displayJson.hdr_support.join(", ")) ||
-      (Array.isArray(displayJson.hdr_formats) && displayJson.hdr_formats.join(", ")) ||
+      (Array.isArray(keySpecs.hdr_support) &&
+        keySpecs.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_support) &&
+        displayJson.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_formats) &&
+        displayJson.hdr_formats.join(", ")) ||
       (Array.isArray(displayJson.hdr) && displayJson.hdr.join(", ")) ||
       "";
 
@@ -583,9 +586,15 @@ const TVDetailCard = () => {
     ].filter(Boolean);
 
     const dimensions = [
-      dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width,
-      dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height,
-      dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth,
+      dimensionsJson.width ||
+        dimensionsJson.width_without_stand ||
+        legacySpecs.width,
+      dimensionsJson.height ||
+        dimensionsJson.height_without_stand ||
+        legacySpecs.height,
+      dimensionsJson.depth ||
+        dimensionsJson.depth_without_stand ||
+        legacySpecs.depth,
     ]
       .filter(Boolean)
       .join(" x ");
@@ -636,10 +645,26 @@ const TVDetailCard = () => {
         ),
         dimensions:
           dimensions || legacySpecs.dimensions || legacySpecs.dimension || "",
-        width: dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width || "",
-        height: dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height || "",
-        depth: dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth || "",
-        weight: dimensionsJson.weight || dimensionsJson.weight_without_stand || legacySpecs.weight || "",
+        width:
+          dimensionsJson.width ||
+          dimensionsJson.width_without_stand ||
+          legacySpecs.width ||
+          "",
+        height:
+          dimensionsJson.height ||
+          dimensionsJson.height_without_stand ||
+          legacySpecs.height ||
+          "",
+        depth:
+          dimensionsJson.depth ||
+          dimensionsJson.depth_without_stand ||
+          legacySpecs.depth ||
+          "",
+        weight:
+          dimensionsJson.weight ||
+          dimensionsJson.weight_without_stand ||
+          legacySpecs.weight ||
+          "",
         color:
           designJson.body_color ||
           designJson.stand_color ||
@@ -2405,7 +2430,11 @@ const TVDetailCard = () => {
                   applianceData.dimensions_json ||
                   applianceData.physical_details,
               ],
-              ["tv-product_details", "Product Details", applianceData.product_details_json],
+              [
+                "tv-product_details",
+                "Product Details",
+                applianceData.product_details_json,
+              ],
               ["tv-in_the_box", "In The Box", applianceData.in_the_box_json],
               ["tv-warranty", "Warranty", applianceData.warranty_json],
               ["tv-storage", "Storage", applianceData.storage_json],
