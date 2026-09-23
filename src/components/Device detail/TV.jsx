@@ -559,9 +559,12 @@ const TVDetailCard = () => {
         ? `${rawEnergyRating} Star`
         : rawEnergyRating;
     const hdrSupport =
-      (Array.isArray(keySpecs.hdr_support) && keySpecs.hdr_support.join(", ")) ||
-      (Array.isArray(displayJson.hdr_support) && displayJson.hdr_support.join(", ")) ||
-      (Array.isArray(displayJson.hdr_formats) && displayJson.hdr_formats.join(", ")) ||
+      (Array.isArray(keySpecs.hdr_support) &&
+        keySpecs.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_support) &&
+        displayJson.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_formats) &&
+        displayJson.hdr_formats.join(", ")) ||
       (Array.isArray(displayJson.hdr) && displayJson.hdr.join(", ")) ||
       "";
 
@@ -583,9 +586,15 @@ const TVDetailCard = () => {
     ].filter(Boolean);
 
     const dimensions = [
-      dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width,
-      dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height,
-      dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth,
+      dimensionsJson.width ||
+        dimensionsJson.width_without_stand ||
+        legacySpecs.width,
+      dimensionsJson.height ||
+        dimensionsJson.height_without_stand ||
+        legacySpecs.height,
+      dimensionsJson.depth ||
+        dimensionsJson.depth_without_stand ||
+        legacySpecs.depth,
     ]
       .filter(Boolean)
       .join(" x ");
@@ -636,10 +645,26 @@ const TVDetailCard = () => {
         ),
         dimensions:
           dimensions || legacySpecs.dimensions || legacySpecs.dimension || "",
-        width: dimensionsJson.width || dimensionsJson.width_without_stand || legacySpecs.width || "",
-        height: dimensionsJson.height || dimensionsJson.height_without_stand || legacySpecs.height || "",
-        depth: dimensionsJson.depth || dimensionsJson.depth_without_stand || legacySpecs.depth || "",
-        weight: dimensionsJson.weight || dimensionsJson.weight_without_stand || legacySpecs.weight || "",
+        width:
+          dimensionsJson.width ||
+          dimensionsJson.width_without_stand ||
+          legacySpecs.width ||
+          "",
+        height:
+          dimensionsJson.height ||
+          dimensionsJson.height_without_stand ||
+          legacySpecs.height ||
+          "",
+        depth:
+          dimensionsJson.depth ||
+          dimensionsJson.depth_without_stand ||
+          legacySpecs.depth ||
+          "",
+        weight:
+          dimensionsJson.weight ||
+          dimensionsJson.weight_without_stand ||
+          legacySpecs.weight ||
+          "",
         color:
           designJson.body_color ||
           designJson.stand_color ||
@@ -1685,6 +1710,26 @@ const TVDetailCard = () => {
     return false;
   };
 
+  const isLikelyUrl = (value) => {
+    if (typeof value !== "string") return false;
+    const normalized = value.trim();
+    if (!normalized) return false;
+    return /^(https?:\/\/|www\.)/i.test(normalized);
+  };
+
+  const isHiddenSpecKey = (key) => {
+    const normalized = String(key || "").toLowerCase();
+    return (
+      normalized === "url" ||
+      normalized === "link" ||
+      normalized === "href" ||
+      normalized === "website" ||
+      normalized === "source_url" ||
+      normalized.endsWith("_url") ||
+      normalized.endsWith("_link")
+    );
+  };
+
   const formatSpecValue = (value) => {
     if (value === null || value === undefined || value === "") {
       return "Not specified";
@@ -2107,21 +2152,110 @@ const TVDetailCard = () => {
     }
 
     const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
+    const stripJsonContainerPath = (path) =>
+      String(path || "")
+        .split(".")
+        .filter((segment) => segment && !/_json$/i.test(segment))
+        .join(".");
+
     const flattenRows = (value, prefix = "") =>
       Object.entries(value).flatMap(([key, child]) => {
         const path = prefix ? `${prefix}.${key}` : key;
-        if (
+        const shouldRecurse =
           child &&
           typeof child === "object" &&
           !Array.isArray(child) &&
-          !parseVariantRowsFromObject(child)
-        ) {
+          !parseVariantRowsFromObject(child);
+
+        if (shouldRecurse) {
+          if (/_json$/i.test(key)) return flattenRows(child, prefix || "");
           return flattenRows(child, path);
         }
-        return [[path, child]];
+
+        if (/_json$/i.test(key) && child && typeof child === "object") {
+          return [];
+        }
+
+        return [[stripJsonContainerPath(path), child]];
       });
-    const rows = flattenRows(data).filter(
-      ([key, value]) => hasContent(value) && !isScoreKey(key),
+    const flattenGroupedPortRows = (entries) => {
+      const grouped = new Map();
+      const nonGrouped = [];
+
+      entries.forEach(([key, value]) => {
+        const match = String(key || "").match(/^([a-zA-Z]+)\.(.+)$/);
+        if (!match) {
+          nonGrouped.push([key, value]);
+          return;
+        }
+
+        const [, groupName, subKey] = match;
+        const normalizedGroup = String(groupName || "").toLowerCase();
+        const supportedGroups = new Set([
+          "usb",
+          "hdmi",
+          "ethernet",
+          "rf",
+          "optical",
+          "audio",
+        ]);
+
+        if (!supportedGroups.has(normalizedGroup)) {
+          nonGrouped.push([key, value]);
+          return;
+        }
+
+        const bucket = grouped.get(normalizedGroup) || [];
+        bucket.push([subKey, value]);
+        grouped.set(normalizedGroup, bucket);
+      });
+
+      const bucketLabelMap = {
+        usb: "USB",
+        hdmi: "HDMI",
+        ethernet: "Ethernet",
+        rf: "RF",
+        optical: "Optical Audio",
+        audio: "Audio",
+      };
+
+      const mergedGroupedRows = [...grouped.entries()]
+        .map(([groupName, values]) => {
+          const mergedParts = values
+            .map(([subKey, subValue]) => {
+              const parts = String(subKey || "")
+                .replace(/[_-]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+              if (!parts || !hasContent(subValue)) return "";
+              return `${toNormalCase(parts)}: ${formatSpecValueText(subValue)}`;
+            })
+            .filter(Boolean);
+
+          if (!mergedParts.length) return null;
+
+          return [
+            bucketLabelMap[groupName] || toNormalCase(groupName),
+            mergedParts.join(" • "),
+          ];
+        })
+        .filter(Boolean);
+
+      return [...nonGrouped, ...mergedGroupedRows];
+    };
+
+    const rows = flattenGroupedPortRows(
+      flattenRows(data).filter(([key, value]) => {
+        if (isHiddenSpecKey(key)) return false;
+        if (isLikelyUrl(value)) return false;
+        if (Array.isArray(value) && value.some((item) => isLikelyUrl(item))) {
+          return false;
+        }
+        if (String(key).toLowerCase() === "digital_and_analog_tuner") {
+          return false;
+        }
+        return hasContent(value) && !isScoreKey(key);
+      }),
     );
 
     if (!rows.length) {
@@ -2405,15 +2539,20 @@ const TVDetailCard = () => {
                   applianceData.dimensions_json ||
                   applianceData.physical_details,
               ],
-              ["tv-product_details", "Product Details", applianceData.product_details_json],
+              [
+                "tv-product_details",
+                "Product Details",
+                applianceData.product_details_json,
+              ],
               ["tv-in_the_box", "In The Box", applianceData.in_the_box_json],
               ["tv-warranty", "Warranty", applianceData.warranty_json],
-              ["tv-storage", "Storage", applianceData.storage_json],
             ];
             const renderSpecSections = (sections) =>
-              sections.map(([sectionId, title, data]) =>
-                renderTvSpecSection(sectionId, title, data),
-              );
+              sections
+                .filter(([sectionId]) => sectionId !== "tv-storage")
+                .map(([sectionId, title, data]) =>
+                  renderTvSpecSection(sectionId, title, data),
+                );
 
             return (
               <>
