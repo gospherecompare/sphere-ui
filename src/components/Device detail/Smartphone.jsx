@@ -53,6 +53,7 @@ import Spinner from "../ui/Spinner";
 import NotFound from "../Static/NotFound";
 import Breadcrumbs from "../Breadcrumbs";
 import ProductAiSummary from "../Product/ProductAiSummary";
+import TrackPriceButton from "./TrackPriceButton";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
@@ -265,11 +266,9 @@ const resolveDeviceNumericPrice = (device) => {
   const variantCandidates = Array.isArray(device.variants)
     ? device.variants
         .map((variant) => resolveVariantNumericPrice(variant))
-        .filter((n) => n > 0)
+        .filter((price) => price > 0)
     : [];
-  if (variantCandidates.length > 0) {
-    return Math.min(...variantCandidates);
-  }
+  if (variantCandidates.length > 0) return Math.min(...variantCandidates);
 
   return extractNumericPrice(
     device.base_price ??
@@ -350,7 +349,6 @@ const getRenderableStorePriceRows = (source) => {
   });
 
   if (rows.length > 0) return rows;
-
   const fallbackPrice = extractNumericPrice(
     source.base_price ??
       source.basePrice ??
@@ -2317,7 +2315,6 @@ const MobileDetailCard = () => {
 
     return [];
   }, [currentVariant, mobileData]);
-
   useEffect(() => {
     const pid = Number(currentProductId);
     if (!Number.isInteger(pid) || pid <= 0) return;
@@ -5609,6 +5606,33 @@ Price: ${price}
                         <p className="mt-1 text-2xl font-black tracking-tight text-slate-950 ">
                           {currentPriceDisplay || "Price not announced"}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const historyParams = new URLSearchParams({
+                              productId: String(currentProductId || ""),
+                              variantId: String(
+                                currentVariant?.variant_id ??
+                                  currentVariant?.id ??
+                                  "",
+                              ),
+                              variantLabel: `${currentVariant?.ram || ""} / ${currentVariant?.storage || ""}`.trim(),
+                            });
+                            navigate(
+                              `/smartphones/${params.slug}/price-history?${historyParams.toString()}`,
+                            );
+                          }}
+                          className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-blue-700 transition hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        >
+                          View price history
+                          <span aria-hidden="true">›</span>
+                        </button>
+                        <TrackPriceButton
+                          productId={currentProductId}
+                          variant={currentVariant}
+                          variantLabel={currentVariantLabel}
+                          stores={getStorePriceList(currentVariant)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -5838,6 +5862,7 @@ Price: ${price}
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </section>

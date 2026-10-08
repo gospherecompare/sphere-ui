@@ -1,7 +1,8 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
 import { getMessaging, isSupported } from "firebase/messaging";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: String(import.meta.env.VITE_FIREBASE_API_KEY || "").trim(),
   authDomain: String(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "").trim(),
   projectId: String(import.meta.env.VITE_FIREBASE_PROJECT_ID || "").trim(),
@@ -26,13 +27,28 @@ export const firebaseVapidKey = String(
   import.meta.env.VITE_FIREBASE_VAPID_KEY || "",
 ).trim();
 
-export const isFirebaseMessagingConfigured = REQUIRED_FIREBASE_FIELDS.every(
+export const isFirebaseConfigured = REQUIRED_FIREBASE_FIELDS.every(
   (key) => firebaseConfig[key],
-) && Boolean(firebaseVapidKey);
+);
 
-export const firebaseApp = isFirebaseMessagingConfigured
+export const isFirebaseMessagingConfigured =
+  isFirebaseConfigured && Boolean(firebaseVapidKey);
+
+export const firebaseApp = isFirebaseConfigured
   ? getApps()[0] || initializeApp(firebaseConfig)
   : null;
+
+export const firebaseAuth = firebaseApp ? getAuth(firebaseApp) : null;
+
+export const ensureAnonymousFirebaseUser = async () => {
+  if (!firebaseAuth) {
+    throw new Error("Firebase Authentication is not configured.");
+  }
+  await firebaseAuth.authStateReady();
+  if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
+  const credential = await signInAnonymously(firebaseAuth);
+  return credential.user;
+};
 
 export const isFirebaseMessagingSupported = async () => {
   if (!isFirebaseMessagingConfigured || typeof window === "undefined") {

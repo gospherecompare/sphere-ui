@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildApiUrl,
   resolveApiBaseUrl,
   DEFAULT_LOCAL_API_BASE_URL,
   DEFAULT_REMOTE_API_BASE_URL,
@@ -31,6 +32,19 @@ describe("resolveApiBaseUrl", () => {
   it("uses MobilesX as the canonical brand label in SEO titles", () => {
     expect(normalizeSeoTitle("Xiaomi 14 | MobilesX")).toBe(
       "Xiaomi 14 | MobilesX",
+    );
+  });
+});
+
+describe("buildApiUrl", () => {
+  it("builds the public price history URL on the configured API base", () => {
+    expect(
+      buildApiUrl(
+        "/public/smartphone/123/price-history?variant_id=7&store=mobilesx",
+        "https://api.example.com/api",
+      ),
+    ).toBe(
+      "https://api.example.com/api/public/smartphone/123/price-history?variant_id=7&store=mobilesx",
     );
   });
 });
