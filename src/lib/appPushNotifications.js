@@ -1,5 +1,8 @@
 import { deleteToken, getToken } from "firebase/messaging";
 import {
+  ensureAnonymousFirebaseUser,
+  firebaseAuth,
+  firebaseConfig,
   firebaseVapidKey,
   getFirebaseMessagingClient,
   isFirebaseMessagingConfigured,
@@ -8,8 +11,7 @@ import {
 
 const DEFAULT_REMOTE_API_BASE = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE = "http://localhost:5000/api";
-const DEFAULT_PUSH_TOPIC =
-  String(import.meta.env.VITE_PUSH_TOPIC || "").trim() || "news-all";
+const DEFAULT_PUSH_TOPIC = "news-all";
 
 const TOKEN_STORAGE_KEYS = ["hooks.push.token", "hooks.news_push.token"];
 const ENABLED_STORAGE_KEYS = ["hooks.push.enabled", "hooks.news_push.enabled"];
@@ -154,7 +156,7 @@ const getJson = async (routePath) => {
   throw lastError || new Error("Push notification status request failed");
 };
 
-const postJson = async (routePath, body) => {
+const postJson = async (routePath, body, idToken = "") => {
   const urls = [
     ...new Set(getApiBaseCandidates().map((base) => buildApiUrl(base, routePath))),
   ];
@@ -170,6 +172,7 @@ const postJson = async (routePath, body) => {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
         body: JSON.stringify(body),
       });
@@ -264,7 +267,7 @@ const readStoredServerStatus = () => {
       configured: parsed.configured === true,
       reason: String(parsed.reason || ""),
     };
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -281,7 +284,7 @@ const writeStoredServerStatus = (status) => {
         checkedAt: Date.now(),
       }),
     );
-  } catch (_error) {
+  } catch {
     // Local storage can be unavailable in private browsing modes.
   }
 };
@@ -447,7 +450,10 @@ export const registerForAppPush = async () => {
     throw new Error("Firebase messaging is not available in this browser.");
   }
 
-  const registration = await navigator.serviceWorker.register(SW_PATH, {
+  const firebaseUser = await ensureAnonymousFirebaseUser();
+  const idToken = await firebaseUser.getIdToken();
+  const serviceWorkerUrl = `${SW_PATH}?${new URLSearchParams(firebaseConfig).toString()}`;
+  const registration = await navigator.serviceWorker.register(serviceWorkerUrl, {
     scope: "/",
   });
   const readyRegistration = registration.active
@@ -464,11 +470,11 @@ export const registerForAppPush = async () => {
   }
 
   try {
-    await postJson("/api/public/push/fcm/register", {
+    await postJson("/api/customer/push/devices", {
       token,
       topic: DEFAULT_PUSH_TOPIC,
-      permission,
-    });
+      platform: "web",
+    }, idToken);
   } catch (error) {
     if ([502, 503, 504].includes(Number(error?.status))) {
       writeStoredServerStatus({
@@ -497,14 +503,27 @@ export const unregisterFromAppPush = async () => {
     : null;
 
   if (token) {
-    await postJson("/api/public/push/fcm/unregister", {
-      token,
-      topic: DEFAULT_PUSH_TOPIC,
-    }).catch(() => undefined);
+    const user = firebaseAuth?.currentUser;
+    if (user) {
+      try {
+        const idToken = await user.getIdToken();
+        await postJson(
+          "/api/customer/push/devices/unregister",
+          { token, topic: DEFAULT_PUSH_TOPIC },
+          idToken,
+        );
+      } catch (error) {
+        console.error("Could not unregister the FCM device on the server:", error);
+      }
+    }
   }
 
   if (messaging) {
-    await deleteToken(messaging).catch(() => undefined);
+    try {
+      await deleteToken(messaging);
+    } catch (error) {
+      console.error("Could not delete the local FCM token:", error);
+    }
   }
 
   setStoredToken("");

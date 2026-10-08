@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect } from "react";
+import React from "react";
 import Header from "./components/Home/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Home/Footer";
@@ -14,8 +14,9 @@ import {
   useParams,
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
+import PriceNotificationCenter from "./components/ui/PriceNotificationCenter";
+import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import RouteExperience from "./components/ui/RouteExperience";
-import { registerForAppPush } from "./lib/appPushNotifications";
 import { useDevice } from "./hooks/useDevice";
 import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
@@ -27,12 +28,15 @@ const RouteBreadcrumbs = () => {
   const { pathname } = useLocation();
   const isSmartphoneDetailRoute =
     /^\/smartphones\/[^/]+-price-in-indi(?:a)?\/?$/i.test(pathname);
+  const isSmartphonePriceHistoryRoute =
+    /^\/smartphones\/[^/]+\/price-history\/?$/i.test(pathname);
   const isTvDetailRoute = /^\/tvs\/[^/]+\/?$/i.test(pathname);
   const isSmartphonesCatalogRoute = /^\/smartphones\/?$/i.test(pathname);
   const isNewsRoute = /^\/news(?:\/|$)/i.test(pathname);
 
   if (
     isSmartphoneDetailRoute ||
+    isSmartphonePriceHistoryRoute ||
     isTvDetailRoute ||
     isSmartphonesCatalogRoute ||
     isNewsRoute
@@ -75,6 +79,9 @@ const Terms = React.lazy(() => import("./components/Static/Terms.jsx"));
 const NotFound = React.lazy(() => import("./components/Static/NotFound"));
 const MobileDetailCard = React.lazy(
   () => import("./components/Device detail/Smartphone"),
+);
+const SmartphonePriceHistory = React.lazy(
+  () => import("./components/Device detail/SmartphonePriceHistory"),
 );
 const TVDetailCard = React.lazy(() => import("./components/Device detail/TV"));
 const NetworkingDetailCard = React.lazy(
@@ -123,24 +130,6 @@ const toReadableTitleFromSlug = (slug = "") => {
 };
 
 function App() {
-  useEffect(() => {
-    const enableNotifications = async () => {
-      if (!("Notification" in window)) return;
-      if (Notification.permission !== "default") return;
-
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          await registerForAppPush();
-        }
-      } catch {
-        // Let the browser decide whether to show the permission prompt.
-      }
-    };
-
-    void enableNotifications();
-  }, []);
-
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -254,6 +243,8 @@ function App() {
       <RouteExperience />
       <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
+        <PriceNotificationCenter />
+        <AppPushOptInPrompt />
 
         <ScrollToTop />
         <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
@@ -332,6 +323,10 @@ function App() {
             <Route path="/devices/networking" element={<Networking />} />
 
             {/* Product Detail Pages - SEO-friendly slug-based routes */}
+            <Route
+              path="/smartphones/:slug/price-history"
+              element={<SmartphonePriceHistory />}
+            />
             <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
             <Route
               path="/smartphone/:slug"

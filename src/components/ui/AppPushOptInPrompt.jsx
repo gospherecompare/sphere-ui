@@ -138,7 +138,7 @@ const AppPushOptInPrompt = () => {
             </span>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Hooks Updates
+                MobilesX Updates
               </p>
               <h2 className="text-lg font-semibold text-slate-900">
                 Turn on notifications
@@ -158,8 +158,8 @@ const AppPushOptInPrompt = () => {
 
         <div className="px-5 py-5 sm:px-6">
           <p className="text-sm leading-6 text-slate-600">
-            Get browser alerts for major launches, price moves, trending
-            comparisons, and important Hooks updates.
+            Get browser alerts when new smartphones and news articles are
+            published. Price alerts can be set up separately for a product.
           </p>
 
           {feedback ? (

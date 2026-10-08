@@ -86,6 +86,17 @@ body {
   mask-image: linear-gradient(to bottom, black, transparent 70%);
 }
 
+html:has(.smartphone-price-history-page),
+html:has(.smartphone-price-history-page) body,
+#root:has(.smartphone-price-history-page),
+.hooks-app-shell:has(.smartphone-price-history-page) {
+  background: #ffffff;
+}
+
+.hooks-app-shell:has(.smartphone-price-history-page)::before {
+  display: none;
+}
+
 .hooks-container {
   width: min(100% - 2rem, 82rem);
   margin-inline: auto;
@@ -1814,4 +1825,3 @@ html[data-route-group="company"] h1 {
   line-height: 1.25;
   white-space: nowrap;
 }
-

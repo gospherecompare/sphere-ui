@@ -17,7 +17,7 @@ const SITE_ORIGIN = "https://mobilesx.in";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 
-const EFFECTIVE_DATE = "August 1, 2026";
+const EFFECTIVE_DATE = "October 5, 2026";
 
 const highlights = [
   {
@@ -57,6 +57,7 @@ const sections = [
       "Technical information such as browser type, device type, operating system, approximate region, referring page and IP-related security signals",
       "Usage information such as pages viewed, searches, comparison interactions, clicks and session timing",
       "Notification preferences and permission status when you choose to enable browser or app notifications",
+      "A pseudonymous Firebase user identifier and browser push token when you choose to track prices or enable push notifications; the price-alert feature does not ask for an email address or password",
       "Diagnostic information used to detect errors, abuse, performance issues and security incidents",
     ],
   },
@@ -88,7 +89,7 @@ const sections = [
     title: "When information may be shared",
     paragraphs: [
       "MobilesX does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
-      "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets.",
+      "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets. If you enable price alerts, Firebase may process the pseudonymous account identifier and push token to authenticate your subscription and deliver notifications under Google's applicable terms and privacy policy.",
     ],
   },
 

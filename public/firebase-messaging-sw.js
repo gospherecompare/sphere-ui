@@ -1,3 +1,5 @@
+/* global importScripts, firebase */
+
 const isRecord = (value) => value && typeof value === "object";
 
 const toAbsoluteUrl = (value) => {
@@ -124,6 +126,44 @@ const urlsMatch = (left, right) => {
     return left === right;
   }
 };
+
+const initializeFirebaseMessaging = () => {
+  const params = new URLSearchParams(self.location.search);
+  const config = Object.fromEntries(params.entries());
+  const requiredFields = [
+    "apiKey",
+    "authDomain",
+    "projectId",
+    "storageBucket",
+    "messagingSenderId",
+    "appId",
+  ];
+  if (!requiredFields.every((field) => config[field])) return;
+
+  try {
+    importScripts(
+      "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js",
+      "https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-compat.js",
+    );
+    firebase.initializeApp(config);
+    const messaging = firebase.messaging();
+    messaging.onBackgroundMessage((payload) => {
+      const notification = payload.notification || {};
+      const data = payload.data || {};
+      const title = notification.title || "MobilesX price alert";
+      const options = {
+        body: notification.body || "A tracked smartphone price has dropped.",
+        data: { ...data, url: resolveNotificationTargetUrl(payload) },
+        icon: "/favicon.ico",
+      };
+      self.registration.showNotification(title, options);
+    });
+  } catch (error) {
+    console.error("Firebase messaging service worker setup failed:", error);
+  }
+};
+
+initializeFirebaseMessaging();
 
 self.addEventListener("notificationclick", (event) => {
   const targetUrl = resolveNotificationTargetUrl(event.notification);
