@@ -35,6 +35,7 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { NEWS_LISTING_SEO } from "../../utils/newsSeo";
 import "./news-listing.css";
 
@@ -1862,6 +1863,15 @@ const NewsArticlesPage = () => {
             </div>
           )}
         </div>
+        <section className="w-full bg-white pb-8">
+          <ProductDiscoverySections
+            entityType="smartphones"
+            brandCatalog={deviceContext?.brands || []}
+            layout="latestPhones"
+            showComparisonBanner={false}
+            fullWidthBackground
+          />
+        </section>
       </main>
     </>
   );

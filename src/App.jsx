@@ -262,6 +262,7 @@ function App() {
             <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
             <Route path="/phone-finder" element={<PhoneFinderPage />} />
             <Route path="/smartphones" element={<Smartphones />} />
+            <Route path="/smartphone" element={<Smartphones />} />
             <Route
               path="/smartphones/feature/:featureSlug/brand/:brandSlug"
               element={<SmartphoneListingOrderRedirect />}

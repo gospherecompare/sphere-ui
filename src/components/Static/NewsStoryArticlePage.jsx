@@ -31,6 +31,9 @@ import {
 import GoogleSwgBasic from "../News/GoogleSwgBasic";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
 import MobilesXLogo from "../ui/MobileX";
+import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import { useDevice } from "../../hooks/useDevice";
 
 import "./news-article.css";
 
@@ -43,33 +46,6 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   year: "numeric",
 });
-
-const POPULAR_MOBILE_LIST = [
-  {
-    label: "Best Phones Under ₹30,000",
-    href: "/smartphones/filter/under-30000",
-  },
-  {
-    label: "Best Phones Under ₹20,000",
-    href: "/smartphones/filter/under-20000",
-  },
-  {
-    label: "Best Phones Under ₹15,000",
-    href: "/smartphones/filter/under-15000",
-  },
-  {
-    label: "Samsung Galaxy S Series",
-    href: "/smartphones/samsung",
-  },
-  {
-    label: "Best 6000mAh Battery Phones",
-    href: "/smartphones",
-  },
-  {
-    label: "Best Fast Charging Phones",
-    href: "/smartphones",
-  },
-];
 
 const MOBILE_RELATED_STORIES_PER_PAGE = 2;
 const DESKTOP_RELATED_STORIES_PER_PAGE = 4;
@@ -544,10 +520,11 @@ const StoryImageFallback = ({ story }) => (
   </div>
 );
 
-const StoryImage = ({ story, className = "", eager = false }) => {
+const StoryImage = ({ story, className = "", eager = false, fit = "cover" }) => {
   const [imageError, setImageError] = useStoryImageState(story);
 
   const hasImage = Boolean(story?.image) && !imageError;
+  const imageFitClass = fit === "contain" ? "object-contain" : "object-cover";
 
   return (
     <div className={`relative overflow-hidden bg-[#eef2f7] ${className}`}>
@@ -555,7 +532,7 @@ const StoryImage = ({ story, className = "", eager = false }) => {
         <img
           src={story.image}
           alt={story?.heroImageAlt || story?.title}
-          className="h-full w-full object-cover object-center"
+          className={`h-full w-full ${imageFitClass} object-center`}
           loading={eager ? "eager" : "lazy"}
           onError={() => setImageError(true)}
         />
@@ -870,7 +847,11 @@ const RelatedStoryTile = ({ story, featured = false }) => (
     className={`hooks-related-story${featured ? " is-featured" : ""}`}
   >
     <div className="hooks-related-story__media">
-      <StoryImage story={story} className="hooks-related-story__image" />
+      <StoryImage
+        story={story}
+        className="hooks-related-story__image"
+        fit="contain"
+      />
 
       <span className="hooks-related-story__category">
         {getRelatedStoryMetaLabel(story)}
@@ -978,6 +959,7 @@ const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
 
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
+  const deviceContext = useDevice({ resources: ["brands"] });
 
   const { stories: feedStories = [] } = usePublicNewsFeed({
     limit: 18,
@@ -1625,6 +1607,7 @@ const NewsStoryArticlePage = () => {
                   ) : null}
                 </section>
               ) : null}
+
             </div>
 
             <aside className="hooks-article-right-rail">
@@ -1844,128 +1827,21 @@ const NewsStoryArticlePage = () => {
                   </section>
                 ) : null}
 
-                {/* Popular Mobile Lists */}
-                <section className="border-t border-slate-200 pt-6">
-                  <div>
-                    <p
-                      className="
-                        text-[10px]
-                        font-extrabold
-                        uppercase
-                        tracking-[0.18em]
-                        text-[#2563EB]
-                      "
-                    >
-                      Explore
-                    </p>
-
-                    <h2
-                      className="
-                        mt-1
-                        text-lg
-                        font-black
-                        tracking-[-0.025em]
-                        text-slate-900
-                      "
-                    >
-                      Popular Mobile Lists
-                    </h2>
-
-                    <p
-                      className="
-                        mt-1
-                        text-xs
-                        leading-5
-                        text-slate-500
-                      "
-                    >
-                      Useful smartphone research paths for faster buying
-                      decisions.
-                    </p>
-                  </div>
-
-                  <div
-                    className="
-                      mt-4
-                      overflow-hidden
-                      rounded-xl
-                      border
-                      border-slate-200
-                      bg-white
-                    "
-                  >
-                    {POPULAR_MOBILE_LIST.map((item, index) => (
-                      <Link
-                        key={item.label}
-                        to={item.href}
-                        className="
-                            group
-                            flex
-                            items-center
-                            gap-3
-                            border-b
-                            border-slate-100
-                            px-4
-                            py-3.5
-                            no-underline
-                            last:border-b-0
-                            transition
-                            hover:bg-slate-50
-                          "
-                      >
-                        <span
-                          className="
-                              flex
-                              h-7
-                              w-7
-                              shrink-0
-                              items-center
-                              justify-center
-                              rounded-md
-                              bg-[#2563EB]/[0.08]
-                              text-[10px]
-                              font-black
-                              text-[#2563EB]
-                            "
-                        >
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        <span
-                          className="
-                              min-w-0
-                              flex-1
-                              text-sm
-                              font-semibold
-                              leading-5
-                              text-slate-700
-                              transition
-                              group-hover:text-slate-900
-                            "
-                        >
-                          {item.label}
-                        </span>
-
-                        <FaArrowRight
-                          className="
-                              h-3
-                              w-3
-                              shrink-0
-                              text-slate-300
-                              transition
-                              group-hover:translate-x-0.5
-                              group-hover:text-[#2563EB]
-                            "
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    ))}
-                  </div>
-                </section>
               </div>
             </aside>
           </div>
         </section>
+
+        <section className="w-full bg-white pb-6">
+          <ProductDiscoverySections
+            entityType="smartphones"
+            brandCatalog={deviceContext?.brands || []}
+            layout="latestPhones"
+            showComparisonBanner={false}
+            fullWidthBackground
+          />
+        </section>
+        <ContinueBrowsingSmartphones />
       </main>
     </>
   );
