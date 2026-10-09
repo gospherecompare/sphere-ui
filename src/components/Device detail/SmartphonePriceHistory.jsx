@@ -10,6 +10,9 @@ import {
   YAxis,
 } from "recharts";
 import SEO from "../SEO";
+import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { buildApiUrl } from "../../utils/apiUrl";
 import { useDevice } from "../../hooks/useDevice";
 
@@ -32,6 +35,36 @@ const EMPTY_SUMMARY = {
   change_percent: null,
 };
 
+const formatSpecValue = (value) => {
+  if (typeof value === "string" || typeof value === "number") {
+    const text = String(value).trim();
+    return text || null;
+  }
+  if (Array.isArray(value)) {
+    const items = value.map(formatSpecValue).filter(Boolean);
+    return items.length ? items.join(", ") : null;
+  }
+  if (value && typeof value === "object") {
+    for (const key of [
+      "size",
+      "processor",
+      "chipset",
+      "model",
+      "capacity",
+      "battery_capacity_mah",
+      "resolution",
+      "main_camera_megapixels",
+      "megapixels",
+      "sensor",
+      "name",
+    ]) {
+      const formatted = formatSpecValue(value[key]);
+      if (formatted) return formatted;
+    }
+  }
+  return null;
+};
+
 const formatPrice = (price) => {
   const value = Number(price);
   return Number.isFinite(value)
@@ -50,6 +83,7 @@ const SmartphonePriceHistory = () => {
   const [range, setRange] = useState("30d");
   const [store, setStore] = useState("mobilesx");
   const [variants, setVariants] = useState([]);
+  const [product, setProduct] = useState(null);
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsError, setVariantsError] = useState("");
   const [history, setHistory] = useState([]);
@@ -60,12 +94,14 @@ const SmartphonePriceHistory = () => {
 
   useEffect(() => {
     if (!Number.isInteger(productId) || productId <= 0) {
+      setProduct(null);
       setVariants([]);
       return undefined;
     }
 
     let active = true;
     const request = fetchDevice(productId);
+    setProduct(null);
     setVariantsLoading(true);
     setVariantsError("");
 
@@ -73,6 +109,7 @@ const SmartphonePriceHistory = () => {
       .unwrap()
       .then((product) => {
         if (active) {
+          setProduct(product);
           const availableVariants = Array.isArray(product?.variants)
             ? product.variants
             : [];
@@ -109,6 +146,55 @@ const SmartphonePriceHistory = () => {
   const variantLabel = selectedVariant
     ? variantLabelFor(selectedVariant, variants.indexOf(selectedVariant))
     : requestedVariantLabel || "Selected variant";
+  const detailValues = [
+    {
+      label: "Display",
+      value: formatSpecValue(
+        product?.display?.size ||
+          product?.display?.screen_size ||
+          product?.screen_size ||
+          product?.screen,
+      ),
+    },
+    {
+      label: "Processor",
+      value: formatSpecValue(
+        product?.performance?.processor ||
+          product?.performance?.chipset ||
+          product?.processor ||
+          product?.chipset,
+      ),
+    },
+    {
+      label: "Battery",
+      value: formatSpecValue(
+        product?.battery?.capacity ||
+          product?.battery?.battery_capacity_mah ||
+          product?.battery_capacity_mah ||
+          product?.battery_capacity ||
+          product?.battery,
+      ),
+    },
+    {
+      label: "Camera",
+      value: formatSpecValue(
+        product?.camera?.main_camera_megapixels ||
+          product?.camera?.main_camera ||
+          product?.camera?.main ||
+          product?.camera?.rear_camera?.main_camera_megapixels ||
+          product?.camera?.rear_camera?.main_camera ||
+          product?.main_camera ||
+          product?.rear_camera,
+      ),
+    },
+    {
+      label: "Selected variant",
+      value: variantLabel,
+    },
+  ].filter((item) => item.value != null && String(item.value).trim());
+  const productName =
+    product?.name || product?.model || "This smartphone";
+  const specificationsHref = `${productPath}#spec-specifications`;
 
   const selectVariant = (variant, index) => {
     const nextVariantId =
@@ -196,13 +282,14 @@ const SmartphonePriceHistory = () => {
   }, [productId, range, store, variantId]);
 
   return (
-    <main className="smartphone-price-history-page min-h-[calc(100vh-4.5rem)] w-full bg-white px-3 py-6 sm:px-6 sm:py-10">
+    <main className="smartphone-price-history-page min-h-[calc(100vh-4.5rem)] w-full bg-white px-0 py-6 sm:py-10">
       <SEO
         title={`Price History | ${variantLabel}`}
         description={`View the price history for ${variantLabel}.`}
         url={location.pathname}
       />
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
         <Link
           to={`${productPath}${variantId ? `?variantId=${encodeURIComponent(variantId)}` : ""}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
@@ -211,7 +298,7 @@ const SmartphonePriceHistory = () => {
           Back to product
         </Link>
 
-        <section className="mt-5 bg-white p-4 sm:p-7">
+        <section className="mt-5 bg-white">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
               Price history
@@ -393,6 +480,83 @@ const SmartphonePriceHistory = () => {
           )}
         </section>
       </div>
+      </div>
+      <div className="mx-auto mt-6 w-full max-w-[1440px] px-3 sm:mt-10 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
+      <section>
+        <div className="mb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 sm:text-[11px]">
+            Full specifications
+          </p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            {productName} specifications
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+            Key device details for the selected price-history variant.
+          </p>
+        </div>
+        {detailValues.length ? (
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {detailValues.map((item) => (
+              <div
+                key={item.label}
+                className="min-w-0 bg-white p-3"
+              >
+                <dt className="text-xs font-medium text-slate-500">
+                  {item.label}
+                </dt>
+                <dd className="mt-1 break-words text-sm font-semibold text-slate-900">
+                  {item.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="bg-white p-4 text-sm text-slate-600">
+            Detailed specifications are available on the product page.
+          </p>
+        )}
+        <Link
+          to={specificationsHref}
+          className="mt-3 inline-flex min-h-10 items-center justify-center bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+        >
+          View full specifications
+        </Link>
+      </section>
+
+      <section className="mt-8">
+        <LatestNewsRouteSection
+          title="Related News"
+          subtitle={`News and updates linked to ${productName}.`}
+          productId={Number.isInteger(productId) && productId > 0 ? productId : null}
+          showWhenEmpty
+          emptyMessage={`There are no news stories linked to ${productName} yet.`}
+          newsLinkLabel="More smartphone news"
+          className="sm:!p-0"
+        />
+      </section>
+
+      <section className="mt-8">
+        <LatestNewsRouteSection
+          title="Latest Updates"
+          subtitle="The latest smartphone launches, product updates, and buying context."
+          productType="smartphone"
+          newsLinkLabel="Latest smartphone news"
+          className="sm:!p-0"
+        />
+      </section>
+
+      <section className="mt-8 w-full">
+        <ProductDiscoverySections
+          productId={productId}
+          entityType="smartphones"
+          layout="latestPhones"
+          showComparisonBanner={false}
+        />
+      </section>
+      </div>
+      </div>
+      <ContinueBrowsingSmartphones />
     </main>
   );
 };

@@ -603,6 +603,7 @@ const MobilePhoneHighlights = ({
   devices = [],
   className = "",
   context = "default",
+  showCompareLink = true,
 }) => {
   const [serverRows, setServerRows] = useState([]);
   const [catalogPhones, setCatalogPhones] = useState([]);
@@ -750,7 +751,7 @@ const MobilePhoneHighlights = ({
   if (!allPhones.length) return null;
 
   return (
-    <div className={` mx-auto w-full max-w-7xl`}>
+    <div className={`mx-auto w-full max-w-7xl ${className}`}>
       <section className="overflow-hidden bg-transparent px-1 py-5 sm:px-6 sm:py-7">
         <header className="max-w-3xl">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-blue-600 sm:text-[11px]">
@@ -882,14 +883,16 @@ const MobilePhoneHighlights = ({
           </MobileTableRow>
         </div>
 
-        <Link
-          to="/compare"
-          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/40 px-4 text-xs font-extrabold text-blue-600 transition-colors hover:bg-blue-50 sm:text-sm    "
-        >
-          <FaMobileAlt className="text-[11px]" />
-          Compare phones side by side
-          <FaArrowRight className="text-[9px]" />
-        </Link>
+        {showCompareLink ? (
+          <Link
+            to="/compare"
+            className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/40 px-4 text-xs font-extrabold text-blue-600 transition-colors hover:bg-blue-50 sm:text-sm    "
+          >
+            <FaMobileAlt className="text-[11px]" />
+            Compare phones side by side
+            <FaArrowRight className="text-[9px]" />
+          </Link>
+        ) : null}
       </section>
     </div>
   );

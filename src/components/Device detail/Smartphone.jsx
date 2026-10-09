@@ -60,7 +60,6 @@ import { smartphoneMeta } from "../../constants/meta";
 import {
   generateSlug,
   extractNameFromSlug,
-  createSmartphoneDetailPath,
 } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import {
@@ -81,6 +80,8 @@ import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
+import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 import { resolveSmartphoneDisplayState } from "../../utils/canonicalLifecycle";
 import {
@@ -110,8 +111,6 @@ const MobilesXScoreLogo = ({ className }) => (
 
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
-const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
-const MAX_RECENT_ITEMS = 12;
 const SITE_ORIGIN = "https://mobilesx.in";
 const LINKED_NEWS_LIMIT = 3;
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
@@ -668,9 +667,7 @@ const MobileDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [activePageSection, setActivePageSection] = useState("detail-overview");
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const variantInitKeyRef = useRef("");
-  const recentStoreKeyRef = useRef("");
   const detailFetchKeyRef = useRef("");
   const {
     selectedDevice,
@@ -2217,6 +2214,28 @@ const MobileDetailCard = () => {
       : "";
   const currentProductId =
     mobileData?.product_id ?? mobileData?.productId ?? mobileData?.id ?? null;
+  const currentBrowsingProduct = useMemo(
+    () => ({
+      id: currentProductId,
+      name:
+        mobileData?.name ||
+        mobileData?.model ||
+        mobileData?.brand ||
+        "Device",
+      brand:
+        mobileData?.brand ||
+        mobileData?.brand_name ||
+        mobileData?.manufacturer ||
+        "",
+      image:
+        mobileData?.images?.[0] ||
+        mobileData?.image ||
+        mobileData?.image_url ||
+        "",
+      price: currentPriceDisplay || null,
+    }),
+    [currentProductId, currentPriceDisplay, mobileData],
+  );
   const isCompleteUpcomingForCompetitors = useMemo(() => {
     if (launchStatus !== "upcoming") return false;
     if (serverPolicy.allowCompetitors === false) return false;
@@ -2351,69 +2370,6 @@ const MobileDetailCard = () => {
     source: "smartphone-detail",
     enabled: Boolean(currentProductId),
   });
-
-  useEffect(() => {
-    if (!currentProductId || !mobileData || typeof window === "undefined") {
-      return;
-    }
-
-    const entry = {
-      id: currentProductId,
-      name:
-        mobileData?.name || mobileData?.model || mobileData?.brand || "Device",
-      brand:
-        mobileData?.brand ||
-        mobileData?.brand_name ||
-        mobileData?.manufacturer ||
-        "",
-      image:
-        mobileData?.images?.[0] ||
-        mobileData?.image ||
-        mobileData?.image_url ||
-        "",
-      price: currentPriceDisplay || null,
-      segment: mobileData?.category || mobileData?.product_type || "smartphone",
-      processor:
-        mobileData?.performance?.processor ||
-        mobileData?.processor ||
-        mobileData?.cpu ||
-        "",
-      cameraMp: getMainCameraMp(mobileData),
-      ram:
-        currentVariant?.ram ||
-        mobileData?.performance?.ram ||
-        mobileData?.ram ||
-        "",
-      storage:
-        currentVariant?.storage ||
-        mobileData?.performance?.storage ||
-        mobileData?.storage ||
-        "",
-      visitedAt: Date.now(),
-    };
-
-    const entryKey = String(entry.id || "");
-    if (recentStoreKeyRef.current === entryKey) return;
-    recentStoreKeyRef.current = entryKey;
-
-    try {
-      const raw = window.localStorage.getItem(RECENT_STORAGE_KEY);
-      const parsed = JSON.parse(raw || "[]");
-      const list = Array.isArray(parsed) ? parsed : [];
-      const next = [
-        entry,
-        ...list.filter((item) => String(item?.id) !== String(entry.id)),
-      ].slice(0, MAX_RECENT_ITEMS);
-      window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next));
-      setRecentlyViewed(
-        next
-          .filter((item) => String(item?.id) !== String(entry.id))
-          .slice(0, 6),
-      );
-    } catch {
-      // ignore storage errors
-    }
-  }, [currentProductId, mobileData, currentVariant]);
 
   const popularComparisonTargets = useMemo(() => {
     const list = Array.isArray(smartphone) ? smartphone : [];
@@ -5639,7 +5595,7 @@ Price: ${price}
 
                   <div
                     id="detail-highlights"
-                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1   p-1  backdrop-blur-md   sm:scroll-mt-[148px] sm:grid-cols-3"
+                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1 p-1 sm:scroll-mt-[148px] sm:grid-cols-3"
                   >
                     {heroQuickSpecs.slice(0, 6).map((item, index) => (
                       <button
@@ -5682,7 +5638,7 @@ Price: ${price}
                       }
                       navigate("/compare");
                     }}
-                    className="relative z-[1] mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 sm:hidden"
+                    className="relative z-10 mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 sm:hidden"
                   >
                     <FaBalanceScale className="text-sm" />
                     Compare with another phone
@@ -5978,77 +5934,19 @@ Price: ${price}
           </div>
         ) : null}
 
-        {recentlyViewed.length > 0 ? (
-          <section className="w-full bg-white ">
-            <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
-              <div className="mx-auto w-full max-w-7xl bg-transparent ">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 ">
-                      Continue browsing
-                    </p>
-                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950 ">
-                      Recently viewed smartphones
-                    </h2>
-                  </div>
-                  <Link
-                    to="/smartphones"
-                    className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700  sm:inline-flex"
-                  >
-                    View all
-                    <FaArrowRight className="text-xs" />
-                  </Link>
-                </div>
+        <section className="w-full bg-white">
+          <ProductDiscoverySections
+            productId={currentProductId}
+            currentBrand={mobileData?.brand || ""}
+            entityType="smartphones"
+            layout="latestPhones"
+            showComparisonBanner={false}
+            fullWidthBackground
+          />
+        </section>
 
-                <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4">
-                  {recentlyViewed.map((item) => {
-                    const itemName = item?.name || "Smartphone";
-                    const href = createSmartphoneDetailPath(
-                      item?.model ||
-                        item?.product_name ||
-                        item?.productName ||
-                        itemName,
-                    );
-                    return (
-                      <Link
-                        key={String(item?.id || itemName)}
-                        to={href}
-                        className="grid w-[230px] shrink-0 snap-start grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-[#ffffff] p-3 transition hover:bg-blue-50  "
-                      >
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-white p-1 ">
-                          {item?.image ? (
-                            <img
-                              src={item.image}
-                              alt={itemName}
-                              loading="lazy"
-                              className="h-full w-full object-contain"
-                            />
-                          ) : (
-                            <FaMobile className="text-xl text-slate-300" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900 ">
-                            {itemName}
-                          </p>
-                          {item?.brand ? (
-                            <p className="mt-0.5 truncate text-[11px] text-slate-500 ">
-                              {item.brand}
-                            </p>
-                          ) : null}
-                          {item?.price ? (
-                            <p className="mt-2 text-sm font-bold text-slate-900 ">
-                              {item.price}
-                            </p>
-                          ) : null}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </section>
+        {currentProductId ? (
+          <ContinueBrowsingSmartphones currentProduct={currentBrowsingProduct} />
         ) : null}
       </main>
     </div>

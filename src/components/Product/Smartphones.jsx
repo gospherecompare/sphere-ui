@@ -39,7 +39,10 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
+import ProductDiscoverySections, {
+  SmartphoneCompareBanner,
+} from "../ui/ProductDiscoverySections";
 import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
 import MobileListingControls, {
@@ -91,6 +94,11 @@ const SMARTPHONE_MOBILE_SORT_OPTIONS = [
     value: "featured",
     label: "Featured Phones",
     description: "Recommended phones first",
+  },
+  {
+    value: "most-searched",
+    label: "Most Searched",
+    description: "Most selected from search first",
   },
   {
     value: "price-low",
@@ -258,7 +266,7 @@ const ImageCarousel = ({
             alt={altText}
             className={imageClass}
             loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : "auto"}
+            fetchpriority={priority ? "high" : "auto"}
           />
         </div>
       </div>
@@ -274,7 +282,7 @@ const ImageCarousel = ({
           alt={`${altText} view ${currentIndex + 1}`}
           className={imageClass}
           loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
+          fetchpriority={priority ? "high" : "auto"}
         />
       </div>
 
@@ -2313,7 +2321,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const [filters, setFilters] = useState(() => createDefaultFilters());
 
-  const [sortBy, setSortBy] = useState("featured");
+  const [sortBy, setSortBy] = useState(() =>
+    params.get("sort") === "most-searched" ? "most-searched" : "featured",
+  );
+  const [searchPopularityOrder, setSearchPopularityOrder] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [ramFilterQuery, setRamFilterQuery] = useState("");
@@ -2337,6 +2348,39 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [pendingPopularFeature, setPendingPopularFeature] = useState("");
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+
+  useEffect(() => {
+    if (sortBy !== "most-searched") {
+      setSearchPopularityOrder({});
+      return undefined;
+    }
+
+    let canceled = false;
+    fetchPublicJson(
+      `${API_ASSET_ORIGIN}/api/public/most-searched/smartphones?limit=50&days=30`,
+    )
+      .then((payload) => {
+        if (canceled) return;
+        const rows = payload?.smartphones || [];
+        setSearchPopularityOrder(
+          Object.fromEntries(
+            rows.map((row, index) => [
+              String(row.product_id ?? row.id),
+              index,
+            ]),
+          ),
+        );
+      })
+      .catch((fetchError) => {
+        if (!canceled) {
+          console.error("Could not load most searched smartphone order:", fetchError);
+        }
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [sortBy]);
 
   useEffect(() => {
     if (
@@ -4041,6 +4085,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   const sortedVariants = useMemo(() => [...filteredVariants].sort((a, b) => {
+    if (sortBy === "most-searched") {
+      const aRank =
+        searchPopularityOrder[
+          String(a.product_id ?? a.productId ?? a.id ?? "")
+        ];
+      const bRank =
+        searchPopularityOrder[
+          String(b.product_id ?? b.productId ?? b.id ?? "")
+        ];
+      if (aRank == null && bRank != null) return 1;
+      if (aRank != null && bRank == null) return -1;
+      if (aRank != null && bRank != null && aRank !== bRank) {
+        return aRank - bRank;
+      }
+    }
+
     // If user is browsing by a popular feature and hasn't chosen an explicit sort,
     // auto-rank by the feature value (high -> low) so higher-capability devices come first.
     if (sortBy === "featured" && normalizedFeature) {
@@ -4067,7 +4127,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       default:
         return 0;
     }
-  }), [filteredVariants, normalizedFeature, sortBy]);
+  }), [filteredVariants, normalizedFeature, searchPopularityOrder, sortBy]);
   const totalPages = shouldUseServerPagination
     ? Math.max(
         1,
@@ -4102,13 +4162,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       : visibleResultsStart + paginatedVariants.length - 1
     : 0;
   const featuredDiscoveryProduct = useMemo(
-    () =>
-      visibleVariants.find((device) => {
+    () => {
+      const device = visibleVariants.find((item) => {
         const productId = Number(
-          device?.productId ?? device?.product_id ?? device?.baseId ?? NaN,
+          item?.productId ?? item?.product_id ?? item?.baseId ?? NaN,
         );
         return Number.isInteger(productId) && productId > 0;
-      }) || null,
+      });
+      if (!device) return null;
+
+      return {
+        ...device,
+        productId: Number(
+          device.productId ?? device.product_id ?? device.baseId,
+        ),
+      };
+    },
     [visibleVariants],
   );
   useEffect(() => {
@@ -5383,7 +5452,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         schema={listSchema}
       />
       {/* Main Content */}
-      <div className="relative mx-auto max-w-[1440px] px-3 pb-10 sm:px-6 sm:pb-14 lg:px-8 lg:pb-20">
+      <div className="relative mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-8">
         <div className="relative">
           <section className="smartphones-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-b from-white via-blue-50/70 to-[#f3f6fb]   ">
             {normalizedRoutePathname === "/smartphones" ? (
@@ -6783,6 +6852,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               <MobilePhoneHighlights
                 devices={baseDevices}
                 className="mt-6"
+                showCompareLink={false}
                 context={
                   isUpcomingFilterPath
                     ? "upcoming"
@@ -6831,8 +6901,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         </div>
       </div>
 
-      {!isUpcomingFilterPath && featuredDiscoveryProduct ? (
-        <section className="mx-auto mt-8 w-full max-w-[1440px] px-3 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+      {featuredDiscoveryProduct ? (
+        <section className="mx-auto w-full max-w-[1440px] px-3 sm:px-6 lg:px-8">
           <ProductDiscoverySections
             productId={featuredDiscoveryProduct.productId}
             currentBrand={
@@ -6840,9 +6910,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             }
             entityType="smartphones"
             layout="latestPhones"
+            showComparisonBanner={false}
           />
         </section>
       ) : null}
+      <ContinueBrowsingSmartphones transparentBackground />
+      <section className="mx-auto mb-8 w-full max-w-[1440px] px-3 sm:px-6 lg:px-8">
+        <SmartphoneCompareBanner />
+      </section>
     </div>
   );
 };

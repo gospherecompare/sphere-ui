@@ -35,6 +35,8 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
 import { NEWS_LISTING_SEO } from "../../utils/newsSeo";
 import "./news-listing.css";
 
@@ -647,38 +649,6 @@ const uniqueStoriesBySlug = (items = []) => {
     seen.add(story.slug);
     return true;
   });
-};
-
-const getBrandShortLabel = (name = "") =>
-  String(name || "Brand")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("");
-
-const normalizeBrandKey = (brand = {}) =>
-  String(brand?.slug || brand?.name || brand?.id || "")
-    .trim()
-    .toLowerCase();
-
-const buildNewsBrands = (brands = []) => {
-  const seen = new Set();
-
-  return brands
-    .filter((brand) => {
-      const key = normalizeBrandKey(brand);
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return Boolean(brand?.name);
-    })
-    .sort((left, right) => {
-      const leftProducts = Number(left?.published_products || 0);
-      const rightProducts = Number(right?.published_products || 0);
-      if (rightProducts !== leftProducts) return rightProducts - leftProducts;
-      return String(left?.name || "").localeCompare(String(right?.name || ""));
-    })
-    .slice(0, 8);
 };
 
 const useIsNewsMobileLayout = () => {
@@ -1384,125 +1354,6 @@ const StorySection = ({
   );
 };
 
-const BrandRailCard = ({ brand }) => {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showLogo = Boolean(brand?.logo) && !imageFailed;
-  const shortLabel = getBrandShortLabel(brand?.name);
-
-  return (
-    <Link
-      to={`/brand/${encodeURIComponent(brand?.slug || brand?.name || "")}`}
-      className="hooks-news-brand-card group border border-blue-200"
-      title={brand?.name || "Brand"}
-    >
-      <span className="hooks-news-brand-card__logo">
-        {showLogo ? (
-          <img
-            src={brand.logo}
-            alt={brand.name}
-            loading="lazy"
-            onError={() => setImageFailed(true)}
-          />
-        ) : (
-          <span>{shortLabel}</span>
-        )}
-      </span>
-      <strong>{brand?.name || "Brand"}</strong>
-    </Link>
-  );
-};
-
-const BrandRailSection = ({ brands = [] }) => {
-  const railRef = useRef(null);
-  const [isRailDragging, setIsRailDragging] = useState(false);
-  const dragStateRef = useRef({
-    active: false,
-    moved: false,
-    startX: 0,
-    scrollLeft: 0,
-  });
-
-  const stopRailDrag = () => {
-    dragStateRef.current.active = false;
-    setIsRailDragging(false);
-  };
-
-  const handleRailMouseDown = (event) => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    event.preventDefault();
-    dragStateRef.current = {
-      active: true,
-      moved: false,
-      startX: event.pageX,
-      scrollLeft: rail.scrollLeft,
-    };
-    setIsRailDragging(true);
-  };
-
-  const handleRailMouseMove = (event) => {
-    if (!dragStateRef.current.active) return;
-
-    const rail = railRef.current;
-    if (!rail) return;
-
-    const deltaX = event.pageX - dragStateRef.current.startX;
-    if (Math.abs(deltaX) > 6) {
-      dragStateRef.current.moved = true;
-      event.preventDefault();
-    }
-
-    rail.scrollLeft = dragStateRef.current.scrollLeft - deltaX;
-  };
-
-  const handleRailClickCapture = (event) => {
-    if (!dragStateRef.current.moved) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    dragStateRef.current.moved = false;
-  };
-
-  if (!brands.length) return null;
-
-  return (
-    <section id="brands" className="hooks-news-brands">
-      <SectionHeader
-        title="Popular Brands"
-        eyebrow="Browse by maker"
-        actionLabel="Explore brands"
-      />
-
-      <div className="relative">
-        <div
-          ref={railRef}
-          onMouseDown={handleRailMouseDown}
-          onMouseMove={handleRailMouseMove}
-          onMouseUp={stopRailDrag}
-          onMouseLeave={stopRailDrag}
-          onClickCapture={handleRailClickCapture}
-          onDragStart={(event) => event.preventDefault()}
-          className={`-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:snap-none sm:gap-4 sm:px-0 sm:pb-2 sm:select-none ${
-            isRailDragging ? "sm:cursor-grabbing" : "sm:cursor-grab"
-          }`}
-        >
-          {brands.map((brand) => (
-            <BrandRailCard
-              key={brand?.id || brand?.slug || brand?.name}
-              brand={brand}
-            />
-          ))}
-        </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-4 right-0 top-0 w-10 bg-gradient-to-l from-[#f7f8fb] to-transparent sm:hidden"
-        />
-      </div>
-    </section>
-  );
-};
-
 const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
@@ -1697,10 +1548,6 @@ const NewsArticlesPage = () => {
   const deviceContext = useDevice({ resources: ["brands"] });
   const storySchemaItems = useStoryListSchemaItems(routedStories);
   const layout = useMemo(() => buildNewsLayout(routedStories), [routedStories]);
-  const featuredBrands = useMemo(
-    () => buildNewsBrands(deviceContext?.brands || []),
-    [deviceContext?.brands],
-  );
   const isMobileLayout = useIsNewsMobileLayout();
   const display = useMemo(
     () => ({
@@ -1846,8 +1693,6 @@ const NewsArticlesPage = () => {
                     stories={display.guides}
                   />
 
-                  <BrandRailSection brands={featuredBrands} />
-
                   <LatestNewsTimeline stories={display.latest} />
                 </div>
 
@@ -1862,6 +1707,16 @@ const NewsArticlesPage = () => {
             </div>
           )}
         </div>
+        <section className="w-full bg-white pb-8">
+          <ProductDiscoverySections
+            entityType="smartphones"
+            brandCatalog={deviceContext?.brands || []}
+            layout="latestPhones"
+            showComparisonBanner={false}
+            fullWidthBackground
+          />
+        </section>
+        <ContinueBrowsingSmartphones />
       </main>
     </>
   );

@@ -93,6 +93,10 @@ html:has(.smartphone-price-history-page) body,
   background: #ffffff;
 }
 
+html:has(.smartphone-price-history-page) main.smartphone-price-history-page {
+  background: #ffffff;
+}
+
 .hooks-app-shell:has(.smartphone-price-history-page)::before {
   display: none;
 }

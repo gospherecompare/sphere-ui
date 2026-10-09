@@ -181,10 +181,17 @@ const LatestNewsRouteSection = ({
   limit = 4,
   title = "Latest News",
   subtitle = "Fresh mobile launches, product updates, and buying context from the MobilesX news desk.",
+  productId = null,
   productType = "",
   newsLinkLabel = "",
+  showWhenEmpty = false,
+  emptyMessage = "No related news is available yet.",
 }) => {
-  const { stories, loading, error } = usePublicNewsFeed({ limit, productType });
+  const { stories, loading, error } = usePublicNewsFeed({
+    limit,
+    productId,
+    productType,
+  });
   const visibleStories = stories.slice(0, limit);
   const leadingStory = visibleStories[0] || null;
   const compactStories = visibleStories.slice(1);
@@ -261,7 +268,7 @@ const LatestNewsRouteSection = ({
     return () => window.clearInterval(intervalId);
   }, [activeMobileIndex, mobileStorySignature, visibleStories.length]);
 
-  if (!loading && (!visibleStories.length || error)) return null;
+  if (!loading && (error || !visibleStories.length) && !showWhenEmpty) return null;
 
   return (
     <section
@@ -306,9 +313,21 @@ const LatestNewsRouteSection = ({
         </div>
       ) : null}
 
+      {!loading && !error && !visibleStories.length && showWhenEmpty ? (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-600">
+          {emptyMessage}
+        </div>
+      ) : null}
+
       {visibleStories.length ? (
         <>
-          <div className="hidden gap-3 sm:grid lg:grid-cols-[1.45fr_0.85fr]">
+          <div
+            className={`hidden gap-3 sm:grid ${
+              compactStories.length
+                ? "lg:grid-cols-[1.45fr_0.85fr]"
+                : "grid-cols-1"
+            }`}
+          >
             {leadingStory ? <LeadingStoryCard story={leadingStory} /> : null}
             <div className="grid content-start gap-3">
               {compactStories.map((story) => (

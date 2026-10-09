@@ -8,6 +8,7 @@
   --article-line: #e3e8ef;
   --article-surface: #ffffff;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--article-surface);
   color: var(--article-ink);
 }
@@ -512,6 +513,7 @@
 
 .hooks-article-prose pre {
   overflow-x: auto;
+  scrollbar-width: none;
   padding: 18px;
   border-radius: 8px;
   background: #101828;
@@ -520,8 +522,14 @@
   line-height: 1.65;
 }
 
+.hooks-article-prose pre::-webkit-scrollbar,
+.article-table-wrap::-webkit-scrollbar {
+  display: none;
+}
+
 .article-table-wrap {
   overflow-x: auto;
+  scrollbar-width: none;
   margin: 26px 0;
   border: 1px solid #dfe6ef;
   border-radius: 8px;
@@ -1061,6 +1069,7 @@
 .hooks-related-story__image {
   width: 100%;
   aspect-ratio: 4 / 3;
+  background: #fff;
   transition: transform 260ms ease;
 }
 
@@ -1104,15 +1113,24 @@
 
 .hooks-related-story__meta {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   color: #8a96a7;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hooks-related-story__meta span {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .hooks-related-story__meta i {
+  flex: 0 0 3px;
   width: 3px;
   height: 3px;
   border-radius: 50%;
@@ -1573,9 +1591,11 @@
     -webkit-line-clamp: 3;
   }
 
-  .hooks-related-story__meta span:last-child,
-  .hooks-related-story__meta i {
-    display: none;
+  .hooks-related-story__meta {
+    flex-wrap: nowrap;
+    gap: 5px;
+    font-size: 8px;
+    white-space: nowrap;
   }
 
   .hide-on-mobile {

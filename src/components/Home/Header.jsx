@@ -1034,7 +1034,7 @@ const Header = () => {
       if (!isLocalDevHost) {
         Promise.resolve().then(() =>
           trackSearchInterest({
-            query: String(item.name || item.model || searchQuery || "").trim(),
+            query: String(searchQuery || item.name || item.model || "").trim(),
             product_id: item.id,
             source: "suggestion",
           }),

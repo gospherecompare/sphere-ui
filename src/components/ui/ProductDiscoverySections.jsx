@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaArrowRight,
@@ -6,9 +6,6 @@ import {
   FaChevronRight,
   FaFire,
   FaSearch,
-  FaStar,
-  FaThLarge,
-  FaWallet,
 } from "react-icons/fa";
 import { createProductPath } from "../../utils/slugGenerator";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
@@ -775,34 +772,34 @@ const SmartphoneDiscoveryPanelHeader = ({
 }) => {
   const tones = {
     blue: {
-      line: "bg-blue-600 ",
-      icon: "bg-blue-50 text-blue-600  ",
+      line: "bg-blue-600",
+      icon: "bg-blue-50 text-blue-600",
     },
     green: {
-      line: "bg-emerald-500 ",
-      icon: "bg-emerald-50 text-emerald-600  ",
+      line: "bg-emerald-500",
+      icon: "bg-emerald-50 text-emerald-600",
     },
     violet: {
-      line: "bg-violet-600 ",
-      icon: "bg-violet-50 text-violet-600  ",
+      line: "bg-violet-600",
+      icon: "bg-violet-50 text-violet-600",
     },
   };
   const palette = tones[tone] || tones.blue;
 
   return (
-    <div className="relative flex min-h-[92px] items-start gap-3 border-b border-slate-200 px-4 py-4  sm:px-5">
+    <div className="relative flex min-h-[88px] items-center gap-3 border-b border-slate-200 px-4 py-4 sm:min-h-[104px] sm:gap-4 sm:px-6 sm:py-5">
       <span className={`absolute inset-y-0 left-0 w-1 ${palette.line}`} />
       <span
-        className={`grid h-11 w-11 shrink-0 place-items-center rounded-md text-lg ${palette.icon}`}
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-lg sm:h-14 sm:w-14 sm:text-xl ${palette.icon}`}
         aria-hidden="true"
       >
-        <Icon />
+        {Icon ? <Icon /> : null}
       </span>
-      <span className="min-w-0 pt-0.5">
-        <strong className="block text-base font-black tracking-tight text-slate-950  sm:text-lg">
+      <span className="min-w-0 flex-1 pt-0.5">
+        <strong className="block text-base font-black tracking-tight text-slate-950 sm:text-xl">
           {title}
         </strong>
-        <span className="mt-1 block text-xs leading-5 text-slate-500  sm:text-sm">
+        <span className="mt-1 block text-xs leading-5 text-slate-500 sm:text-sm">
           {subtitle}
         </span>
       </span>
@@ -810,98 +807,153 @@ const SmartphoneDiscoveryPanelHeader = ({
   );
 };
 
-const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
-    <SmartphoneDiscoveryPanelHeader
-      icon={FaWallet}
-      title="Discover by Price"
-      subtitle="Find phones that fit your budget"
-      tone="blue"
-    />
+const PRICE_TILE_THEMES = [
+  "border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/80",
+  "border-blue-100 bg-gradient-to-br from-blue-50 via-white to-blue-100/80",
+  "border-amber-100 bg-gradient-to-br from-amber-50 via-white to-amber-100/80",
+  "border-rose-100 bg-gradient-to-br from-rose-50 via-white to-rose-100/80",
+  "border-violet-100 bg-gradient-to-br from-violet-50 via-white to-violet-100/80",
+  "border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100/90",
+];
 
-    <div className="grid flex-1 grid-cols-2 gap-px bg-slate-200  sm:grid-cols-3 lg:grid-cols-1">
-      {items.slice(0, 6).map((item, index) => (
-        <Link
-          key={`${item.path || item.label || "price"}-${index}`}
-          to={normalizeDiscoveryPath(item.path || "", entityType)}
-          className="group flex min-h-14 items-center gap-3 bg-white px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-blue-50/70 hover:no-underline    sm:px-4 lg:min-h-[58px]"
-        >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-600  ">
-            ₹
-          </span>
-          <span className="min-w-0 flex-1 truncate text-[11px] font-bold sm:text-xs lg:text-sm">
-            {toCompactPriceLabel(item.label)}
-          </span>
-          <FaChevronRight className="hidden shrink-0 text-[10px] text-blue-500  sm:block" />
-        </Link>
-      ))}
-    </div>
+const PRICE_TILE_SUBTITLES = [
+  "Budget-friendly picks",
+  "Everyday value",
+  "Value for money",
+  "Popular mid-range",
+  "Premium performance",
+  "Explore all phones",
+];
 
-    <Link
-      to="/compare"
-      className="group flex min-h-12 items-center justify-center gap-2 border-t border-blue-100 bg-blue-50/70 px-4 text-xs font-extrabold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:no-underline     sm:text-sm"
+const PHONE_COLOR_PAIRS = [
+  ["#a7f3d0", "#dbeafe"],
+  ["#fdba74", "#d9f99d"],
+  ["#93c5fd", "#c4b5fd"],
+  ["#fed7aa", "#cbd5e1"],
+  ["#334155", "#f5d0a9"],
+  ["#c4b5fd", "#a7f3d0"],
+];
+
+const AnimatedPhones = ({ variant = 0, className = "" }) => {
+  const [backColor, frontColor] =
+    PHONE_COLOR_PAIRS[variant % PHONE_COLOR_PAIRS.length];
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 150 160"
+      className={className}
+      fill="none"
     >
-      <FaBalanceScale />
-      Compare phones side by side
-      <FaArrowRight className="text-[10px] transition-transform group-hover:translate-x-0.5" />
-    </Link>
-  </article>
-);
+      <g>
+        <animateTransform
+          attributeName="transform"
+          type="translate"
+          values="0 0; 0 -3; 0 0"
+          dur="3.8s"
+          repeatCount="indefinite"
+        />
+        <g transform="rotate(-9 54 88)">
+          <rect x="24" y="23" width="58" height="116" rx="12" fill="#111827" />
+          <rect x="27" y="26" width="52" height="110" rx="10" fill={backColor} />
+          <path d="M29 99 76 49v84H29V99Z" fill="#fff" fillOpacity=".22" />
+          <rect x="31" y="31" width="21" height="21" rx="7" fill="#111827" />
+          <circle cx="38" cy="38" r="3.4" fill="#dbeafe" />
+          <circle cx="46" cy="38" r="3.4" fill="#dbeafe" />
+          <circle cx="38" cy="46" r="3.4" fill="#dbeafe" />
+          <rect x="45" y="131" width="16" height="2" rx="1" fill="#fff" fillOpacity=".75" />
+        </g>
+        <g transform="rotate(8 96 87)">
+          <rect x="70" y="20" width="58" height="120" rx="13" fill="#111827" />
+          <rect x="73" y="23" width="52" height="114" rx="10" fill={frontColor} />
+          <path d="M75 100 122 43v90H75v-33Z" fill="#fff" fillOpacity=".28" />
+          <path d="M77 82 124 32v11L77 100V82Z" fill="#fff" fillOpacity=".42" />
+          <rect x="92" y="27" width="14" height="3" rx="1.5" fill="#111827" fillOpacity=".65" />
+          <circle cx="112" cy="28.5" r="1.5" fill="#111827" fillOpacity=".55" />
+          <rect x="91" y="132" width="16" height="2" rx="1" fill="#111827" fillOpacity=".4" />
+        </g>
+      </g>
+    </svg>
+  );
+};
 
-const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
-    <SmartphoneDiscoveryPanelHeader
-      icon={FaStar}
-      title="Discover by Brand"
-      subtitle="Explore phones by top brands"
-      tone="green"
-    />
+const SmartphoneDiscoveryPricePanel = ({
+  items = [],
+  entityType,
+}) => {
+  const priceItems = items.slice(0, 6);
 
-    <div className="grid flex-1 grid-cols-3 gap-px bg-slate-200 p-px  sm:grid-cols-5 lg:grid-cols-3">
-      {items.slice(0, 5).map((item, index) => {
-        const rawBrandName = normalizeText(item?.name || item?.label);
-        const brandName = rawBrandName.replace(/\s+Mobiles$/i, "");
-        return (
-          <Link
-            key={`${item.path || brandName || "brand"}-${index}`}
-            to={normalizeDiscoveryPath(item.path || "", entityType)}
-            className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline   sm:min-h-[112px] lg:min-h-[142px]"
-          >
-            <BrandLogo
-              src={item.logo_url || item.image_url || ""}
-              label={brandName || "Brand"}
-              flat
-            />
-            <span className="mt-2 w-full truncate text-[10px] font-bold text-slate-700 group-hover:text-emerald-700   sm:text-[11px] lg:text-xs">
-              {brandName || "Brand"}
-            </span>
-          </Link>
-        );
-      })}
+  return (
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-[24px] bg-transparent">
+      <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 sm:p-5 lg:grid-cols-6 lg:gap-4">
+        {priceItems.map((item, index) => {
+          const label = toCompactPriceLabel(item.label);
 
-      <Link
-        to="/smartphones"
-        className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline   sm:min-h-[112px] lg:min-h-[142px]"
-      >
-        <span className="grid h-11 w-11 place-items-center rounded-md bg-emerald-50 text-emerald-600  ">
-          <FaThLarge />
-        </span>
-        <span className="mt-2 text-[10px] font-bold text-slate-700 group-hover:text-emerald-700   sm:text-[11px] lg:text-xs">
-          More Brands
-        </span>
-      </Link>
-    </div>
+          return (
+            <Link
+              key={`${item.path || item.label || "price"}-${index}`}
+              to={normalizeDiscoveryPath(item.path || "", entityType)}
+              aria-label={`Explore smartphones: ${label}`}
+              className={`group relative isolate flex min-h-[150px] min-w-0 overflow-hidden rounded-[18px] border p-3.5 text-slate-900 no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:min-h-[176px] sm:p-4 ${PRICE_TILE_THEMES[index % PRICE_TILE_THEMES.length]}`}
+            >
+              <span className="relative z-10 block max-w-[72%] text-sm font-black leading-snug tracking-tight sm:text-base">
+                {label}
+              </span>
+              <span className="relative z-10 mt-2 block max-w-[70%] text-[11px] leading-4 text-slate-500 sm:text-xs">
+                {PRICE_TILE_SUBTITLES[index] || "Explore smartphones"}
+              </span>
+              <span className="absolute bottom-3 left-3.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-sm transition-transform group-hover:translate-x-0.5 sm:bottom-4 sm:left-4 sm:h-9 sm:w-9">
+                <FaArrowRight className="text-xs" />
+              </span>
+              <AnimatedPhones
+                variant={index}
+                className="pointer-events-none absolute -bottom-1 -right-1 z-0 h-[88px] w-[48%] max-w-[112px] drop-shadow-[0_7px_7px_rgba(15,23,42,0.12)] transition-transform duration-200 group-hover:scale-105 sm:h-[116px] sm:w-[52%] sm:max-w-[145px]"
+              />
+            </Link>
+          );
+        })}
+      </div>
+    </article>
+  );
+};
 
-    <Link
-      to="/smartphones"
-      className="group flex min-h-12 items-center justify-center gap-2 border-t border-emerald-100 bg-emerald-50/70 px-4 text-xs font-extrabold text-emerald-700 no-underline transition-colors hover:bg-emerald-100 hover:no-underline     sm:text-sm"
-    >
-      <FaThLarge />
-      View all brands
-      <FaArrowRight className="text-[10px] transition-transform group-hover:translate-x-0.5" />
-    </Link>
-  </article>
-);
+const SmartphoneDiscoveryBrandPanel = ({
+  items = [],
+  entityType,
+}) => {
+  const brandItems = items.slice(0, 9);
+
+  return (
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-[24px] bg-transparent">
+      <div className="grid grid-flow-col auto-cols-[132px] items-stretch gap-2 overflow-x-auto p-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[148px] sm:gap-3.5 sm:p-5 xl:grid-flow-row xl:grid-cols-10 xl:auto-cols-auto xl:overflow-visible">
+        {brandItems.map((item, index) => {
+          const rawBrandName = normalizeText(item?.name || item?.label);
+          const brandName = rawBrandName.replace(/\s+Mobiles$/i, "");
+
+          return (
+            <Link
+              key={`${item.path || brandName || "brand"}-${index}`}
+              to={normalizeDiscoveryPath(item.path || "", entityType)}
+              aria-label={`Browse ${brandName} smartphones`}
+              className="group relative flex h-full min-h-[112px] min-w-0 flex-col items-center overflow-hidden rounded-2xl bg-transparent px-3 py-2 text-center text-slate-900 no-underline transition-all duration-200 hover:-translate-y-0.5 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:min-h-[160px] sm:px-3.5 sm:py-3.5"
+            >
+              <span className="relative z-10 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white sm:h-16 sm:w-16">
+                <BrandLogo
+                  src={item.logo_url || item.image_url || ""}
+                  label={brandName || "Brand"}
+                />
+              </span>
+              <span className="relative z-10 mt-2 block w-full truncate text-center text-xs font-extrabold leading-5 text-slate-900 group-hover:text-emerald-700 sm:text-sm">
+                {brandName || "Brand"}
+              </span>
+            </Link>
+          );
+        })}
+
+      </div>
+    </article>
+  );
+};
 
 const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
   <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
@@ -941,68 +993,7 @@ const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
   </article>
 );
 
-const SmartphoneDiscoveryHero = () => (
-  <header className="relative overflow-hidden bg-gradient-to-r from-slate-50/80 via-white/80 to-blue-50/80 px-1 py-1    sm:px-0 sm:py-0">
-    <div className="relative z-10 max-w-2xl pr-24 sm:pr-40 lg:pr-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600 sm:text-xs">
-        Explore smartphones
-      </p>
-      <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950  sm:text-3xl lg:text-4xl">
-        Find your next smartphone
-      </h2>
-      <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500  sm:text-sm lg:text-base">
-        Browse by price, brand, or see what everyone is searching for.
-      </p>
-    </div>
-
-    <div className="pointer-events-none absolute -right-2 bottom-0 top-0 hidden w-[330px] overflow-hidden sm:block lg:w-[380px]">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] " />
-      <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/80 bg-blue-50/30 shadow-[0_0_30px_rgba(96,165,250,0.18)]  " />
-
-      <div className="absolute left-[12%] top-[18%] h-[170px] w-[84px] -rotate-[14deg] rounded-[26px] bg-slate-950 p-1.5 shadow-[0_18px_30px_rgba(15,23,42,0.22)] sm:h-[188px] sm:w-[94px]">
-        <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
-          <div className="absolute left-2.5 top-2.5 grid h-8 w-8 grid-cols-2 gap-1 rounded-xl bg-slate-950/70 p-1.5">
-            <span className="rounded-full bg-blue-200" />
-            <span className="rounded-full bg-slate-400" />
-            <span className="rounded-full bg-indigo-300" />
-            <span className="rounded-full bg-slate-700" />
-          </div>
-          <div className="absolute inset-x-3 bottom-3 h-1 rounded-full bg-white/40" />
-        </div>
-      </div>
-
-      <div className="absolute left-[43%] top-[4%] h-[190px] w-[92px] rotate-[8deg] rounded-[28px] bg-slate-950 p-1.5 shadow-[0_25px_35px_rgba(37,99,235,0.18)] sm:h-[214px] sm:w-[104px]">
-        <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
-          <span className="absolute left-1/2 top-2.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
-          <span className="absolute -left-9 top-10 h-28 w-28 rounded-full border-[17px] border-white/20" />
-          <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
-          <span className="absolute bottom-5 left-1/2 h-2.5 w-10 -translate-x-1/2 rounded-full bg-white/30" />
-        </div>
-      </div>
-
-      <div className="absolute right-[10%] top-[18%] h-[170px] w-[82px] rotate-[14deg] rounded-[26px] bg-slate-950 p-1.5 shadow-[0_18px_30px_rgba(20,184,166,0.22)] sm:h-[188px] sm:w-[94px]">
-        <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-teal-200 via-emerald-300 to-cyan-500">
-          <span className="absolute left-1/2 top-3 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
-          <span className="absolute bottom-5 left-1/2 h-6 w-10 -translate-x-1/2 rounded-full bg-white/25" />
-        </div>
-      </div>
-
-      <div className="absolute left-2 top-4 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
-        AI
-      </div>
-      <div className="absolute bottom-7 left-5 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
-        5G
-      </div>
-      <div className="absolute right-5 top-9 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[9px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
-        CAM
-      </div>
-      <span className="absolute right-3 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
-      <span className="absolute bottom-9 left-[35%] h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.9)]" />
-    </div>
-  </header>
-);
-
-const SmartphoneCompareBanner = () => {
+export const SmartphoneCompareBanner = () => {
   return (
     <aside className="relative mt-4 overflow-hidden rounded-[20px] border border-blue-200/80 bg-gradient-to-r from-[#edf5ff] via-[#f3f7ff] to-[#eff6ff] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(147,197,253,0.1)]     sm:px-6 sm:py-5 lg:flex lg:min-h-[152px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-64 overflow-hidden sm:block lg:flex lg:items-center">
@@ -1063,31 +1054,94 @@ const SmartphoneCompareBanner = () => {
 const AdvancedSmartphoneDiscovery = ({
   priceItems = [],
   brandItems = [],
-  popularItems = [],
-  latestItems = [],
   entityType = "smartphones",
-}) => (
-  <div className="smartphones-discovery-section overflow-hidden bg-transparent px-0 py-5 text-slate-950  sm:px-0 sm:py-7">
-    <SmartphoneDiscoveryHero latestItems={latestItems} />
-    <div className="mt-5 grid grid-cols-1 gap-3 bg-transparent sm:gap-4 lg:grid-cols-3">
-      <SmartphoneDiscoveryPricePanel
-        items={priceItems}
-        entityType={entityType}
-      />
-      <SmartphoneDiscoveryBrandPanel
-        items={brandItems}
-        entityType={entityType}
-      />
-      <SmartphoneDiscoverySearchPanel
-        items={popularItems}
-        entityType={entityType}
-      />
+  showComparisonBanner = true,
+}) => {
+  const [activeDiscoveryTab, setActiveDiscoveryTab] = useState("price");
+  const entityConfig = getEntityConfig(entityType);
+  const isBrandTab = activeDiscoveryTab === "brand";
+
+  return (
+    <div className="smartphones-discovery-section space-y-4 bg-transparent px-0 pt-5 text-slate-950 sm:space-y-5 sm:pt-7">
+      <section aria-labelledby="smartphone-discovery-title">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600">
+              Discover smartphones
+            </p>
+            <h2
+              id="smartphone-discovery-title"
+              className="mt-1 text-lg font-bold tracking-tight text-slate-950"
+            >
+              {isBrandTab ? "Discover by Brand" : "Discover by Price"}
+            </h2>
+          </div>
+          <Link
+            to={entityConfig.basePath}
+            className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 sm:inline-flex"
+          >
+            {isBrandTab ? "View all brands" : "View all"}
+            <FaArrowRight className="text-xs" />
+          </Link>
+        </div>
+
+        <div
+          className="mt-4 flex w-full gap-2 border-b border-slate-300"
+          role="tablist"
+          aria-label="Discover smartphones by price or brand"
+        >
+          {[
+            { id: "price", label: "By price" },
+            { id: "brand", label: "By brand" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              id={`smartphone-discovery-tab-${tab.id}`}
+              type="button"
+              role="tab"
+              aria-selected={activeDiscoveryTab === tab.id}
+              aria-controls="smartphone-discovery-panel"
+              onClick={() => setActiveDiscoveryTab(tab.id)}
+              className={`min-h-10 border-b-2 px-3 text-sm font-semibold transition ${
+                activeDiscoveryTab === tab.id
+                  ? "border-blue-600 text-blue-700"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-3 text-xs text-slate-500">
+          {isBrandTab
+            ? "Explore smartphones from popular brands."
+            : "Find smartphones that fit your budget."}
+        </p>
+
+        <div
+          id="smartphone-discovery-panel"
+          role="tabpanel"
+          aria-labelledby={`smartphone-discovery-tab-${activeDiscoveryTab}`}
+          className="min-h-[160px]"
+        >
+          {isBrandTab ? (
+            <SmartphoneDiscoveryBrandPanel
+              items={brandItems}
+              entityType={entityType}
+            />
+          ) : (
+            <SmartphoneDiscoveryPricePanel
+              items={priceItems}
+              entityType={entityType}
+            />
+          )}
+        </div>
+      </section>
+      {showComparisonBanner ? <SmartphoneCompareBanner /> : null}
     </div>
-    <div className="mt-4 bg-transparent">
-      <SmartphoneCompareBanner />
-    </div>
-  </div>
-);
+  );
+};
 
 const PriceDiscoveryBlock = ({ items = [], entityType = "smartphones" }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -1277,6 +1331,8 @@ const ProductDiscoverySections = ({
   layout = "full",
   variant = "default",
   className = "",
+  showComparisonBanner = true,
+  fullWidthBackground = false,
 }) => {
   const discoveryEndpoint = useMemo(
     () => buildDiscoveryEndpoint(productId, entityType),
@@ -1351,6 +1407,34 @@ const ProductDiscoverySections = ({
     if (entityConfig.type === "laptops") {
       return buildLaptopCatalogSections(catalogItems, brandCatalog);
     }
+    if (entityConfig.type === "smartphones") {
+      return {
+        budget_segments: [
+          {
+            label: "Under \u20B915,000",
+            path: "/smartphones/filter/under-15000",
+          },
+          {
+            label: "Under \u20B925,000",
+            path: "/smartphones/filter/under-25000",
+          },
+          {
+            label: "Under \u20B950,000",
+            path: "/smartphones/filter/under-50000",
+          },
+          {
+            label: "Above \u20B950,000",
+            path: "/smartphones/filter/above-50000",
+          },
+        ],
+        brand_hub: brandCatalog
+          .map((brand) => ({
+            brand_name: normalizeText(brand?.name || brand?.brand_name),
+            logo_url: normalizeText(brand?.logo_url || brand?.image_url),
+          }))
+          .filter((brand) => brand.brand_name),
+      };
+    }
     return {};
   }, [brandCatalog, catalogItems, entityConfig.type]);
   const isLatestPhonesLayout = layout === "latestPhones";
@@ -1360,18 +1444,16 @@ const ProductDiscoverySections = ({
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
-      const sections = payload?.sections || catalogSections;
+      const sections = payload?.sections || {};
+      const getSectionItems = (sectionName) =>
+        Array.isArray(sections[sectionName]) && sections[sectionName].length
+          ? sections[sectionName]
+          : catalogSections[sectionName] || [];
       return {
-        latestReleases: Array.isArray(sections.latest_releases)
-          ? sections.latest_releases
-          : [],
-        budgetSegments: Array.isArray(sections.budget_segments)
-          ? sections.budget_segments
-          : [],
-        brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
-        smartDiscoveries: Array.isArray(sections.smart_discoveries)
-          ? sections.smart_discoveries
-          : [],
+        latestReleases: getSectionItems("latest_releases"),
+        budgetSegments: getSectionItems("budget_segments"),
+        brandHub: getSectionItems("brand_hub"),
+        smartDiscoveries: getSectionItems("smart_discoveries"),
       };
     }, [catalogSections, payload]);
 
@@ -1486,7 +1568,7 @@ const ProductDiscoverySections = ({
   const topBrandLinks = useMemo(
     () =>
       brandHub
-        .slice(0, 7)
+        .slice(0, entityConfig.type === "smartphones" ? 9 : 7)
         .map((item) => {
           const labelBrand = normalizeText(item?.brand_name);
           if (!labelBrand) return null;
@@ -1570,10 +1652,16 @@ const ProductDiscoverySections = ({
 
   if (loading && !hasContent) {
     return (
-      <section className={`w-full overflow-hidden bg-transparent ${className}`}>
+      <section
+        className={`w-full ${
+          fullWidthBackground ? "bg-white" : "overflow-hidden bg-transparent"
+        } ${className}`}
+      >
         <div
           className={
-            isLatestPhonesLayout || isBudgetSidebarLayout
+            fullWidthBackground
+              ? "mx-auto max-w-7xl py-4 text-sm text-slate-600 sm:py-5"
+              : isLatestPhonesLayout || isBudgetSidebarLayout
               ? "mx-auto max-w-7xl px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
               : "mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
           }
@@ -1584,17 +1672,28 @@ const ProductDiscoverySections = ({
     );
   }
 
-  if (!loading && !hasContent && !error) return null;
+  if (
+    !loading &&
+    !hasContent &&
+    !error &&
+    !(isLatestPhonesLayout && entityConfig.type === "smartphones")
+  ) {
+    return null;
+  }
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl      ${
-        isLatestPhonesLayout
-          ? "overflow-visible"
-          : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white  "
+      className={`w-full ${
+        fullWidthBackground
+          ? "bg-white"
+          : `mx-auto max-w-7xl ${
+              isLatestPhonesLayout
+                ? "overflow-visible"
+                : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white"
+            }`
       } ${className}`}
     >
-      <div className="mx-auto max-w-7xl ">
+      <div className="mx-auto max-w-7xl">
         {!isLatestPhonesLayout ? (
           <div className="px-1 pt-4 sm:px-5 sm:pt-5">
             <div className="flex items-start justify-between gap-3">
@@ -1638,9 +1737,8 @@ const ProductDiscoverySections = ({
             <AdvancedSmartphoneDiscovery
               priceItems={byPriceLinks}
               brandItems={topBrandLinks}
-              popularItems={popularLinks}
-              latestItems={latestLaunchLinks}
               entityType={entityConfig.type}
+              showComparisonBanner={showComparisonBanner}
             />
           ) : (
             <div
