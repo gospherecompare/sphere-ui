@@ -282,13 +282,14 @@ const SmartphonePriceHistory = () => {
   }, [productId, range, store, variantId]);
 
   return (
-    <main className="smartphone-price-history-page min-h-[calc(100vh-4.5rem)] w-full bg-white px-3 py-6 sm:px-6 sm:py-10">
+    <main className="smartphone-price-history-page min-h-[calc(100vh-4.5rem)] w-full bg-white px-0 py-6 sm:py-10">
       <SEO
         title={`Price History | ${variantLabel}`}
         description={`View the price history for ${variantLabel}.`}
         url={location.pathname}
       />
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
         <Link
           to={`${productPath}${variantId ? `?variantId=${encodeURIComponent(variantId)}` : ""}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
@@ -297,7 +298,7 @@ const SmartphonePriceHistory = () => {
           Back to product
         </Link>
 
-        <section className="mt-5 bg-white p-4 sm:p-7">
+        <section className="mt-5 bg-white">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
               Price history
@@ -479,6 +480,7 @@ const SmartphonePriceHistory = () => {
           )}
         </section>
       </div>
+      </div>
       <div className="mx-auto mt-6 w-full max-w-[1440px] px-3 sm:mt-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl">
       <section>
@@ -498,7 +500,7 @@ const SmartphonePriceHistory = () => {
             {detailValues.map((item) => (
               <div
                 key={item.label}
-                className="min-w-0 border border-slate-200 bg-white p-3"
+                className="min-w-0 bg-white p-3"
               >
                 <dt className="text-xs font-medium text-slate-500">
                   {item.label}
@@ -510,13 +512,13 @@ const SmartphonePriceHistory = () => {
             ))}
           </dl>
         ) : (
-          <p className="border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          <p className="bg-white p-4 text-sm text-slate-600">
             Detailed specifications are available on the product page.
           </p>
         )}
         <Link
           to={specificationsHref}
-          className="mt-3 inline-flex min-h-10 items-center justify-center border border-blue-600 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+          className="mt-3 inline-flex min-h-10 items-center justify-center bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
         >
           View full specifications
         </Link>
