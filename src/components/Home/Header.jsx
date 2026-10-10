@@ -996,11 +996,11 @@ const Header = () => {
 
       if (typeof navigator !== "undefined" && navigator.sendBeacon) {
         const blob = new Blob([body], { type: "application/json" });
-        navigator.sendBeacon(
+        const queued = navigator.sendBeacon(
           "https://api.apisphere.in/api/public/search-interest",
           blob,
         );
-        return;
+        if (queued) return;
       }
 
       fetch("https://api.apisphere.in/api/public/search-interest", {
@@ -1023,11 +1023,12 @@ const Header = () => {
     // Navigate FIRST before closing anything
     if (item.type === "product") {
       const path = resolveProductSuggestionPath(item);
+      const productId = item.product_id ?? item.productId ?? item.id;
       // Navigate directly to the canonical detail path so crawlers do not
       // discover duplicate query-string variants for the same product.
       navigate(path, {
         state: {
-          productId: item.product_id ?? item.productId ?? item.id ?? null,
+          productId: productId ?? null,
           source: "header-search",
         },
       });
@@ -1035,7 +1036,7 @@ const Header = () => {
         Promise.resolve().then(() =>
           trackSearchInterest({
             query: String(searchQuery || item.name || item.model || "").trim(),
-            product_id: item.id,
+            product_id: productId,
             source: "suggestion",
           }),
         );
@@ -1047,14 +1048,6 @@ const Header = () => {
           item.category || item.product_type || item.productType,
         ),
       );
-      if (!isLocalDevHost) {
-        Promise.resolve().then(() =>
-          trackSearchInterest({
-            query: String(item.name || searchQuery || "").trim(),
-            source: "brand-suggestion",
-          }),
-        );
-      }
     } else {
       navigate(
         buildKeywordSearchPath(
@@ -1062,14 +1055,6 @@ const Header = () => {
           item.product_type || item.productType,
         ),
       );
-      if (!isLocalDevHost) {
-        Promise.resolve().then(() =>
-          trackSearchInterest({
-            query: String(item.name || searchQuery || "").trim(),
-            source: "search-suggestion",
-          }),
-        );
-      }
     }
     // Cleanup state AFTER navigation is triggered (do not blur input before navigation)
     // Use microtask to let navigation begin; suppression flag prevents accidental restore
@@ -1575,12 +1560,6 @@ const Header = () => {
       }
 
       navigate(buildKeywordSearchPath(query));
-      if (!isLocalDevHost) {
-        trackSearchInterest({
-          query,
-          source: "header",
-        });
-      }
       setSearchQuery("");
       setShowSearchSuggestions(false);
       setSelectedSuggestionIndex(-1);

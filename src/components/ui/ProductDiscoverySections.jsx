@@ -885,7 +885,7 @@ const SmartphoneDiscoveryPricePanel = ({
 
   return (
     <article className="flex min-w-0 flex-col overflow-hidden rounded-[24px] bg-transparent">
-      <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 sm:p-5 lg:grid-cols-6 lg:gap-4">
+      <div className="smartphone-discovery-price-grid grid grid-cols-2 gap-3 px-1 py-3 sm:grid-cols-3 sm:p-5 lg:grid-cols-6 lg:gap-4">
         {priceItems.map((item, index) => {
           const label = toCompactPriceLabel(item.label);
 
@@ -925,7 +925,7 @@ const SmartphoneDiscoveryBrandPanel = ({
 
   return (
     <article className="flex min-w-0 flex-col overflow-hidden rounded-[24px] bg-transparent">
-      <div className="grid grid-flow-col auto-cols-[132px] items-stretch gap-2 overflow-x-auto p-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[148px] sm:gap-3.5 sm:p-5 xl:grid-flow-row xl:grid-cols-10 xl:auto-cols-auto xl:overflow-visible">
+      <div className="grid grid-flow-col auto-cols-[132px] items-stretch gap-2 overflow-x-auto px-0 py-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[148px] sm:gap-3.5 sm:p-5 xl:grid-flow-row xl:grid-cols-10 xl:auto-cols-auto xl:overflow-visible">
         {brandItems.map((item, index) => {
           const rawBrandName = normalizeText(item?.name || item?.label);
           const brandName = rawBrandName.replace(/\s+Mobiles$/i, "");
@@ -1062,7 +1062,7 @@ const AdvancedSmartphoneDiscovery = ({
   const isBrandTab = activeDiscoveryTab === "brand";
 
   return (
-    <div className="smartphones-discovery-section space-y-4 bg-transparent px-0 pt-5 text-slate-950 sm:space-y-5 sm:pt-7">
+    <div className="smartphones-discovery-section space-y-4 bg-transparent px-2 pt-5 text-slate-950 sm:space-y-5 sm:px-0 sm:pt-7">
       <section aria-labelledby="smartphone-discovery-title">
         <div className="flex items-end justify-between gap-4">
           <div>

@@ -1010,6 +1010,12 @@ const NewsStoryArticlePage = () => {
   );
 
   const articleDescription = articleSeo.description;
+  const articleCategory = [
+    stripMarkup(story?.brandName || story?.productName),
+    stripMarkup(story?.category || story?.label),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
@@ -1279,6 +1285,9 @@ const NewsStoryArticlePage = () => {
         <section className="hooks-article-header">
           <div className="hooks-article-shell hooks-article-header__grid">
             <div className="hooks-article-header__headline">
+              <p className="hooks-article-category">
+                {articleCategory || "Technology"}
+              </p>
               <h1>{story.title}</h1>
 
               <p className="hooks-article-deck">{articleDescription}</p>
@@ -1512,103 +1521,85 @@ const NewsStoryArticlePage = () => {
                   </footer>
                 ) : null}
 
-                <section className="hooks-article-author-card">
-                  <ArticleAuthorAvatar
-                    story={story}
-                    className="hooks-article-author-card__avatar"
+              </article>
+            </div>
+
+            {relatedStories.length ? (
+              <section className="hooks-related-section">
+                <div className="hooks-related-section__topline">
+                  <SectionTitle
+                    eyebrow="Continue reading"
+                    title="Related News"
+                    subtitle="Fresh reporting selected for this story."
+                    hideSubtitleOnMobile
                   />
 
-                  <div>
-                    <span>About the author</span>
+                  <Link
+                    to="/news"
+                    className="hooks-related-section__all-link"
+                  >
+                    View all news <FaArrowRight />
+                  </Link>
+                </div>
 
-                    <h2>{storyAuthor}</h2>
-
-                    <p>
-                      {story?.authorBio ||
-                        "Technology reporting and buying intelligence from MobilesX news."}
-                    </p>
-                  </div>
-                </section>
-              </article>
-
-              {relatedStories.length ? (
-                <section className="hooks-related-section">
-                  <div className="hooks-related-section__topline">
-                    <SectionTitle
-                      eyebrow="Continue reading"
-                      title="Related News"
-                      subtitle="Fresh reporting selected for this story."
-                      hideSubtitleOnMobile
+                <div className="hooks-related-grid">
+                  {paginatedRelatedStories.map((item, index) => (
+                    <RelatedStoryTile
+                      key={item.slug}
+                      story={item}
+                      featured={index === 0}
                     />
+                  ))}
+                </div>
 
-                    <Link
-                      to="/news"
-                      className="hooks-related-section__all-link"
+                {relatedPageCount > 1 ? (
+                  <div className="hooks-related-pagination">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRelatedPage((page) => Math.max(0, page - 1))
+                      }
+                      disabled={currentRelatedPage === 0}
+                      aria-label="Show previous related stories"
                     >
-                      View all news <FaArrowRight />
-                    </Link>
-                  </div>
+                      <FaChevronLeft />
+                    </button>
 
-                  <div className="hooks-related-grid">
-                    {paginatedRelatedStories.map((item, index) => (
-                      <RelatedStoryTile
-                        key={item.slug}
-                        story={item}
-                        featured={index === 0}
-                      />
-                    ))}
-                  </div>
+                    <div>
+                      {Array.from({
+                        length: relatedPageCount,
+                      }).map((_, index) => {
+                        const isActive = index === currentRelatedPage;
 
-                  {relatedPageCount > 1 ? (
-                    <div className="hooks-related-pagination">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRelatedPage((page) => Math.max(0, page - 1))
-                        }
-                        disabled={currentRelatedPage === 0}
-                        aria-label="Show previous related stories"
-                      >
-                        <FaChevronLeft />
-                      </button>
-
-                      <div>
-                        {Array.from({
-                          length: relatedPageCount,
-                        }).map((_, index) => {
-                          const isActive = index === currentRelatedPage;
-
-                          return (
-                            <button
-                              key={`related-page-${index + 1}`}
-                              type="button"
-                              onClick={() => setRelatedPage(index)}
-                              aria-label={`Show related stories page ${index + 1}`}
-                              aria-current={isActive ? "page" : undefined}
-                              className={isActive ? "is-active" : ""}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRelatedPage((page) =>
-                            Math.min(relatedPageCount - 1, page + 1),
-                          )
-                        }
-                        disabled={currentRelatedPage >= relatedPageCount - 1}
-                        aria-label="Show next related stories"
-                      >
-                        <FaChevronRight />
-                      </button>
+                        return (
+                          <button
+                            key={`related-page-${index + 1}`}
+                            type="button"
+                            onClick={() => setRelatedPage(index)}
+                            aria-label={`Show related stories page ${index + 1}`}
+                            aria-current={isActive ? "page" : undefined}
+                            className={isActive ? "is-active" : ""}
+                          />
+                        );
+                      })}
                     </div>
-                  ) : null}
-                </section>
-              ) : null}
 
-            </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRelatedPage((page) =>
+                          Math.min(relatedPageCount - 1, page + 1),
+                        )
+                      }
+                      disabled={currentRelatedPage >= relatedPageCount - 1}
+                      aria-label="Show next related stories"
+                    >
+                      <FaChevronRight />
+                    </button>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             <aside className="hooks-article-right-rail">
               <div className="hooks-article-sticky-stack hooks-article-sticky-stack--right">
