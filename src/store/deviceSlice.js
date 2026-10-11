@@ -20,6 +20,23 @@ const toNumber = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const toRetailPrice = (value) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+  if (value == null || String(value).trim() === "") return null;
+  const normalized = String(value)
+    .trim()
+    .replace(/^(?:₹|rs\.?|inr)\s*/i, "")
+    .replace(/\s*(?:inr|rs\.?)$/i, "")
+    .replace(/\s*\/\-\s*$/, "")
+    .replace(/,/g, "")
+    .trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  const price = Number(normalized);
+  return Number.isFinite(price) && price > 0 ? price : null;
+};
+
 const normalizeSensors = (s) => {
   if (s == null) return null;
   if (typeof s === "string") {
@@ -98,11 +115,7 @@ const normalizeStorePrices = (sp) => {
   return sp
     .filter(Boolean)
     .map((p) => {
-      const price =
-        toNumber(p.price ?? p.amount ?? p.base_price) ??
-        p.price ??
-        p.amount ??
-        null;
+      const price = toRetailPrice(p.price ?? p.amount ?? p.base_price);
       const url = p.url ?? p.link ?? p.url_link ?? null;
       const store = p.store ?? p.store_name ?? p.storeName ?? null;
       const offer = p.offer_text ?? p.offer ?? null;
@@ -170,8 +183,11 @@ const normalizeVariants = (d) => {
       vItem.price ??
       vItem.base_price ??
       null;
+    const variantStorePrices = vItem.store_prices ?? vItem.storePrices;
+    const canUseProductStorePrices = !Array.isArray(v) || v.length <= 1;
     const store_prices = normalizeStorePrices(
-      vItem.store_prices ?? vItem.storePrices ?? d.store_prices ?? [],
+      variantStorePrices ??
+        (canUseProductStorePrices ? d.store_prices : []),
     );
 
     return { ...vItem, id, ram, storage, base_price, store_prices };
