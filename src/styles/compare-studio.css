@@ -1675,8 +1675,7 @@
   --hc-green-soft: #ebfbf5;
   --hc-cyan: #0fbfe8;
   --hc-violet: #6c63ff;
-  background:
-    linear-gradient(180deg, #f8fbff 0%, #eef4fb 48%, #f3f6fb 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 48%, #f3f6fb 100%);
 }
 
 .hooks-compare-page .hc-shell {
@@ -1726,8 +1725,16 @@
   height: 164px;
   border-radius: 26px;
   background:
-    radial-gradient(circle at 78% 34%, rgba(15, 191, 232, 0.24), transparent 9px),
-    radial-gradient(circle at 30% 72%, rgba(23, 104, 255, 0.18), transparent 12px),
+    radial-gradient(
+      circle at 78% 34%,
+      rgba(15, 191, 232, 0.24),
+      transparent 9px
+    ),
+    radial-gradient(
+      circle at 30% 72%,
+      rgba(23, 104, 255, 0.18),
+      transparent 12px
+    ),
     linear-gradient(135deg, rgba(23, 104, 255, 0.12), rgba(255, 255, 255, 0.72));
 }
 
@@ -1740,11 +1747,22 @@
   opacity: 1;
   border-radius: 24px;
   background:
-    linear-gradient(110deg, transparent 0 17%, rgba(23, 104, 255, 0.18) 17% 18%, transparent 18% 33%, rgba(15, 191, 232, 0.15) 33% 34%, transparent 34%),
+    linear-gradient(
+      110deg,
+      transparent 0 17%,
+      rgba(23, 104, 255, 0.18) 17% 18%,
+      transparent 18% 33%,
+      rgba(15, 191, 232, 0.15) 33% 34%,
+      transparent 34%
+    ),
     radial-gradient(circle at 22% 38%, #1768ff 0 3px, transparent 3.5px),
     radial-gradient(circle at 64% 23%, #9ec4ff 0 3px, transparent 3.5px),
     radial-gradient(circle at 82% 68%, #0fbfe8 0 3px, transparent 3.5px);
-  background-size: 68px 46px, 100% 100%, 100% 100%, 100% 100%;
+  background-size:
+    68px 46px,
+    100% 100%,
+    100% 100%,
+    100% 100%;
   mask-image: linear-gradient(90deg, transparent, #000 18%, #000);
 }
 
@@ -1833,7 +1851,10 @@
   border-radius: 18px;
   background: linear-gradient(180deg, #fbfdff 0%, #f7faff 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .hc-slot:hover {
@@ -1909,11 +1930,18 @@
 }
 
 .hc-device--winner {
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(23, 104, 255, 0.14);
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(23, 104, 255, 0.14);
 }
 
 .hc-device--winner::before {
-  background: linear-gradient(90deg, var(--hc-blue), var(--hc-cyan), var(--hc-green));
+  background: linear-gradient(
+    90deg,
+    var(--hc-blue),
+    var(--hc-cyan),
+    var(--hc-green)
+  );
 }
 
 .hc-device--with-vs::after {
@@ -2176,12 +2204,35 @@
   background:
     linear-gradient(90deg, rgba(23, 104, 255, 0.12) 1px, transparent 1px),
     linear-gradient(180deg, rgba(23, 104, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(135deg, transparent 0 46%, rgba(23, 104, 255, 0.12) 46% 47%, transparent 47% 100%),
-    radial-gradient(circle at 20% 26%, rgba(23, 104, 255, 0.18) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 74% 18%, rgba(15, 191, 232, 0.2) 0 2px, transparent 2.5px);
-  background-size: 82px 82px, 82px 82px, 118px 78px, 100% 100%, 100% 100%;
+    linear-gradient(
+      135deg,
+      transparent 0 46%,
+      rgba(23, 104, 255, 0.12) 46% 47%,
+      transparent 47% 100%
+    ),
+    radial-gradient(
+      circle at 20% 26%,
+      rgba(23, 104, 255, 0.18) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 74% 18%,
+      rgba(15, 191, 232, 0.2) 0 2px,
+      transparent 2.5px
+    );
+  background-size:
+    82px 82px,
+    82px 82px,
+    118px 78px,
+    100% 100%,
+    100% 100%;
   opacity: 0.42;
-  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.82) 58%, transparent 100%);
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.82) 58%,
+    transparent 100%
+  );
 }
 
 .hooks-compare-page .hc-setup-grid {
@@ -2247,7 +2298,12 @@
 
   .hooks-compare-page .hc-setup::after {
     opacity: 0.32;
-    background-size: 64px 64px, 64px 64px, 96px 64px, 100% 100%, 100% 100%;
+    background-size:
+      64px 64px,
+      64px 64px,
+      96px 64px,
+      100% 100%,
+      100% 100%;
   }
 
   .hooks-compare-page .hc-setup-grid::before,
@@ -2267,11 +2323,33 @@
   pointer-events: none;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 17% 23%, rgba(23, 104, 255, 0.26) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 83% 74%, rgba(15, 191, 232, 0.22) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 66% 28%, rgba(23, 104, 255, 0.12) 0 28px, transparent 29px),
-    linear-gradient(115deg, transparent 0 38%, rgba(23, 104, 255, 0.13) 38% 39%, transparent 39% 100%),
-    linear-gradient(25deg, transparent 0 54%, rgba(15, 191, 232, 0.13) 54% 55%, transparent 55% 100%);
+    radial-gradient(
+      circle at 17% 23%,
+      rgba(23, 104, 255, 0.26) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 83% 74%,
+      rgba(15, 191, 232, 0.22) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 66% 28%,
+      rgba(23, 104, 255, 0.12) 0 28px,
+      transparent 29px
+    ),
+    linear-gradient(
+      115deg,
+      transparent 0 38%,
+      rgba(23, 104, 255, 0.13) 38% 39%,
+      transparent 39% 100%
+    ),
+    linear-gradient(
+      25deg,
+      transparent 0 54%,
+      rgba(15, 191, 232, 0.13) 54% 55%,
+      transparent 55% 100%
+    );
   opacity: 0.72;
 }
 
@@ -2286,7 +2364,11 @@
   border: 1px solid rgba(23, 104, 255, 0.22);
   border-radius: 17px;
   background:
-    radial-gradient(circle at 50% 8px, rgba(23, 104, 255, 0.2) 0 2px, transparent 2.5px),
+    radial-gradient(
+      circle at 50% 8px,
+      rgba(23, 104, 255, 0.2) 0 2px,
+      transparent 2.5px
+    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(237, 245, 255, 0.1));
   box-shadow:
     inset 0 0 0 3px rgba(255, 255, 255, 0.45),
@@ -2365,12 +2447,35 @@
   background:
     linear-gradient(90deg, rgba(23, 104, 255, 0.08) 1px, transparent 1px),
     linear-gradient(180deg, rgba(23, 104, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(135deg, transparent 0 48%, rgba(15, 191, 232, 0.12) 48% 49%, transparent 49% 100%),
-    radial-gradient(circle at 18% 38%, rgba(23, 104, 255, 0.18) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 86% 24%, rgba(15, 191, 232, 0.18) 0 2px, transparent 2.5px);
-  background-size: 84px 84px, 84px 84px, 120px 80px, 100% 100%, 100% 100%;
+    linear-gradient(
+      135deg,
+      transparent 0 48%,
+      rgba(15, 191, 232, 0.12) 48% 49%,
+      transparent 49% 100%
+    ),
+    radial-gradient(
+      circle at 18% 38%,
+      rgba(23, 104, 255, 0.18) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 86% 24%,
+      rgba(15, 191, 232, 0.18) 0 2px,
+      transparent 2.5px
+    );
+  background-size:
+    84px 84px,
+    84px 84px,
+    120px 80px,
+    100% 100%,
+    100% 100%;
   opacity: 0.38;
-  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.72) 64%, transparent 100%);
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.72) 64%,
+    transparent 100%
+  );
 }
 
 .hooks-compare-page .hc-device {
@@ -2378,9 +2483,22 @@
   border: 1px solid rgba(199, 216, 239, 0.88);
   border-radius: 20px;
   background:
-    radial-gradient(circle at 87% 18%, rgba(23, 104, 255, 0.12) 0 26px, transparent 27px),
-    radial-gradient(circle at 12% 82%, rgba(15, 191, 232, 0.08) 0 34px, transparent 35px),
-    linear-gradient(120deg, transparent 0 42%, rgba(23, 104, 255, 0.055) 42% 43%, transparent 43% 100%),
+    radial-gradient(
+      circle at 87% 18%,
+      rgba(23, 104, 255, 0.12) 0 26px,
+      transparent 27px
+    ),
+    radial-gradient(
+      circle at 12% 82%,
+      rgba(15, 191, 232, 0.08) 0 34px,
+      transparent 35px
+    ),
+    linear-gradient(
+      120deg,
+      transparent 0 42%,
+      rgba(23, 104, 255, 0.055) 42% 43%,
+      transparent 43% 100%
+    ),
     #fff;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
 }
@@ -2412,8 +2530,7 @@
   overflow: hidden;
   border: 1px solid #e2ecf8;
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
@@ -2424,10 +2541,28 @@
   pointer-events: none;
   border-radius: 14px;
   background:
-    radial-gradient(circle at 18% 24%, rgba(23, 104, 255, 0.22) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 76% 72%, rgba(15, 191, 232, 0.18) 0 2px, transparent 2.5px),
-    linear-gradient(115deg, transparent 0 38%, rgba(23, 104, 255, 0.12) 38% 39%, transparent 39% 100%),
-    linear-gradient(25deg, transparent 0 56%, rgba(15, 191, 232, 0.1) 56% 57%, transparent 57% 100%);
+    radial-gradient(
+      circle at 18% 24%,
+      rgba(23, 104, 255, 0.22) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 76% 72%,
+      rgba(15, 191, 232, 0.18) 0 2px,
+      transparent 2.5px
+    ),
+    linear-gradient(
+      115deg,
+      transparent 0 38%,
+      rgba(23, 104, 255, 0.12) 38% 39%,
+      transparent 39% 100%
+    ),
+    linear-gradient(
+      25deg,
+      transparent 0 56%,
+      rgba(15, 191, 232, 0.1) 56% 57%,
+      transparent 57% 100%
+    );
   opacity: 0.68;
 }
 
@@ -2507,13 +2642,20 @@
 @media (min-width: 1181px) {
   .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(2):last-child),
   .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(3):last-child) {
-    grid-template-columns: repeat(var(--hc-device-count), minmax(0, clamp(340px, 30vw, 450px)));
+    grid-template-columns: repeat(
+      var(--hc-device-count),
+      minmax(0, clamp(340px, 30vw, 450px))
+    );
     justify-content: center;
     align-items: stretch;
   }
 
-  .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(2):last-child) .hc-device,
-  .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(3):last-child) .hc-device {
+  .hooks-compare-page
+    .hc-stage-grid:has(.hc-device:nth-child(2):last-child)
+    .hc-device,
+  .hooks-compare-page
+    .hc-stage-grid:has(.hc-device:nth-child(3):last-child)
+    .hc-device {
     width: 100%;
   }
 }
@@ -2534,8 +2676,12 @@
 }
 
 @media (min-width: 1181px) {
-  .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(2):last-child) .hc-device__image,
-  .hooks-compare-page .hc-stage-grid:has(.hc-device:nth-child(3):last-child) .hc-device__image {
+  .hooks-compare-page
+    .hc-stage-grid:has(.hc-device:nth-child(2):last-child)
+    .hc-device__image,
+  .hooks-compare-page
+    .hc-stage-grid:has(.hc-device:nth-child(3):last-child)
+    .hc-device__image {
     height: 166px;
     min-height: 166px;
     padding: 14px;
@@ -2553,8 +2699,16 @@
 .hooks-compare-page .hc-picker-backdrop {
   background:
     linear-gradient(180deg, rgba(15, 23, 42, 0.26), rgba(15, 23, 42, 0.18)),
-    radial-gradient(circle at 18% 18%, rgba(23, 104, 255, 0.12), transparent 26rem),
-    radial-gradient(circle at 82% 70%, rgba(15, 191, 232, 0.1), transparent 22rem);
+    radial-gradient(
+      circle at 18% 18%,
+      rgba(23, 104, 255, 0.12),
+      transparent 26rem
+    ),
+    radial-gradient(
+      circle at 82% 70%,
+      rgba(15, 191, 232, 0.1),
+      transparent 22rem
+    );
   backdrop-filter: none;
 }
 
@@ -2564,10 +2718,26 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.16) 42% 42.5%, transparent 42.5% 100%),
-    radial-gradient(circle at 14% 34%, rgba(23, 104, 255, 0.34) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 88% 26%, rgba(15, 191, 232, 0.32) 0 2px, transparent 2.5px);
-  background-size: 118px 82px, 100% 100%, 100% 100%;
+    linear-gradient(
+      115deg,
+      transparent 0 42%,
+      rgba(255, 255, 255, 0.16) 42% 42.5%,
+      transparent 42.5% 100%
+    ),
+    radial-gradient(
+      circle at 14% 34%,
+      rgba(23, 104, 255, 0.34) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 88% 26%,
+      rgba(15, 191, 232, 0.32) 0 2px,
+      transparent 2.5px
+    );
+  background-size:
+    118px 82px,
+    100% 100%,
+    100% 100%;
   opacity: 0.22;
 }
 
@@ -2576,9 +2746,21 @@
   isolation: isolate;
   border: 1px solid rgba(213, 226, 245, 0.94);
   background:
-    radial-gradient(circle at 92% 10%, rgba(23, 104, 255, 0.11) 0 54px, transparent 55px),
-    radial-gradient(circle at 8% 88%, rgba(15, 191, 232, 0.1) 0 66px, transparent 67px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 251, 255, 0.98) 100%);
+    radial-gradient(
+      circle at 92% 10%,
+      rgba(23, 104, 255, 0.11) 0 54px,
+      transparent 55px
+    ),
+    radial-gradient(
+      circle at 8% 88%,
+      rgba(15, 191, 232, 0.1) 0 66px,
+      transparent 67px
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(247, 251, 255, 0.98) 100%
+    );
   box-shadow: 0 26px 72px rgba(15, 23, 42, 0.26);
 }
 
@@ -2591,12 +2773,35 @@
   background:
     linear-gradient(90deg, rgba(23, 104, 255, 0.09) 1px, transparent 1px),
     linear-gradient(180deg, rgba(23, 104, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(130deg, transparent 0 46%, rgba(23, 104, 255, 0.12) 46% 47%, transparent 47% 100%),
-    radial-gradient(circle at 78% 31%, rgba(15, 191, 232, 0.2) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 24% 67%, rgba(23, 104, 255, 0.18) 0 2px, transparent 2.5px);
-  background-size: 78px 78px, 78px 78px, 110px 76px, 100% 100%, 100% 100%;
+    linear-gradient(
+      130deg,
+      transparent 0 46%,
+      rgba(23, 104, 255, 0.12) 46% 47%,
+      transparent 47% 100%
+    ),
+    radial-gradient(
+      circle at 78% 31%,
+      rgba(15, 191, 232, 0.2) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 24% 67%,
+      rgba(23, 104, 255, 0.18) 0 2px,
+      transparent 2.5px
+    );
+  background-size:
+    78px 78px,
+    78px 78px,
+    110px 76px,
+    100% 100%,
+    100% 100%;
   opacity: 0.34;
-  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.75) 70%, transparent 100%);
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.75) 70%,
+    transparent 100%
+  );
 }
 
 .hooks-compare-page .hc-picker-header,
@@ -2939,7 +3144,9 @@
     line-height: 1.22;
   }
 
-  .hooks-compare-page .hc-verdict-card p:not(.hc-eyebrow):not(.hc-recalculating),
+  .hooks-compare-page
+    .hc-verdict-card
+    p:not(.hc-eyebrow):not(.hc-recalculating),
   .hooks-compare-page .hc-section-title p,
   .hooks-compare-page .hc-story > p:not(.hc-eyebrow),
   .hooks-compare-page .hc-confidence p,
@@ -3671,5 +3878,1054 @@
   .hooks-compare-page .hc-tradeoff__column li {
     min-height: 27px;
     padding: 5px 8px;
+  }
+}
+/* --------------------------------------------------------------------------
+   MobilesX compare refresh: flat white surfaces, thin dividers, responsive
+   product columns. All existing comparison state/data logic stays in React.
+   -------------------------------------------------------------------------- */
+.hooks-compare-page {
+  --hc-blue: #1670ef;
+  --hc-blue-strong: #075dcc;
+  --hc-blue-soft: #eef5ff;
+  --hc-ink: #111827;
+  --hc-copy: #475569;
+  --hc-muted: #64748b;
+  --hc-line: #dfe5ec;
+  --hc-line-soft: #e9edf2;
+  --hc-canvas: #ffffff;
+  --hc-green: #159447;
+  --hc-green-soft: #eefbf5;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: #fff !important;
+  color: #111827;
+}
+
+.hooks-compare-page,
+.hooks-compare-page * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.hooks-compare-page * {
+  background-image: none !important;
+}
+
+.hooks-compare-page .hc-shell {
+  width: min(calc(100% - 48px), 1480px);
+}
+
+.hooks-compare-page .hc-section {
+  margin-top: 22px;
+}
+
+.hooks-compare-page > .hc-shell > header.hc-section {
+  isolation: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.hooks-compare-page > .hc-shell > header.hc-section::before,
+.hooks-compare-page > .hc-shell > header.hc-section::after,
+.hooks-compare-page .hc-setup::before,
+.hooks-compare-page .hc-setup::after,
+.hooks-compare-page .hc-device--with-vs::after {
+  display: none !important;
+  content: none !important;
+}
+
+.hooks-compare-page .hc-eyebrow {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+}
+
+.hooks-compare-page .hc-heading {
+  max-width: 920px;
+  margin-top: 5px;
+  color: #111827;
+  font-size: clamp(27px, 3vw, 36px);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.hooks-compare-page .hc-copy {
+  max-width: 900px;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.hooks-compare-page .hc-card,
+.hooks-compare-page .hc-device,
+.hooks-compare-page .hc-verdict-card,
+.hooks-compare-page .hc-reasons-panel,
+.hooks-compare-page .hc-key-specs,
+.hooks-compare-page .hc-price-card,
+.hooks-compare-page .hc-story,
+.hooks-compare-page .hc-confidence,
+.hooks-compare-page .hc-spec-section,
+.hooks-compare-page .hc-camera-card,
+.hooks-compare-page .hc-tradeoff,
+.hooks-compare-page .hc-goal,
+.hooks-compare-page .hc-lane,
+.hooks-compare-page .hc-slot {
+  border: 1px solid var(--hc-line);
+  border-radius: 7px;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-action {
+  min-height: 38px;
+  border: 1px solid #d9e1ea;
+  border-radius: 6px;
+  background: #fff !important;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 650;
+  transform: none !important;
+}
+
+.hooks-compare-page .hc-action:hover {
+  border-color: #8abaff;
+  background: #f8fbff !important;
+  color: var(--hc-blue-strong);
+  transform: none !important;
+}
+
+.hooks-compare-page .hc-action--primary {
+  border-color: var(--hc-blue);
+  background: var(--hc-blue) !important;
+  color: #fff;
+}
+
+.hooks-compare-page .hc-action--primary:hover {
+  background: var(--hc-blue-strong) !important;
+  color: #fff;
+}
+
+/* Product selection before Compare */
+.hooks-compare-page .hc-setup {
+  overflow: visible;
+  padding: 16px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-setup-grid {
+  gap: 0;
+}
+
+.hooks-compare-page .hc-slot {
+  min-width: 0;
+  min-height: 210px;
+  padding: 12px;
+  border-radius: 0;
+  border-style: dashed;
+  border-color: #cbd5e1;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-slot + .hc-slot {
+  border-left: 0;
+}
+
+.hooks-compare-page .hc-slot--filled {
+  border-style: solid;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-slot-add__icon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 50%;
+  background: #fff !important;
+  color: var(--hc-blue);
+}
+
+/* Desktop product comparison columns */
+.hooks-compare-page .hc-stage {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--hc-device-count), minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.hooks-compare-page .hc-device,
+.hooks-compare-page .hc-device--winner {
+  position: relative;
+  min-width: 0;
+  flex: initial;
+  scroll-snap-align: none;
+  padding: 18px 14px 14px;
+  overflow: visible;
+  border: 0;
+  border-right: 1px solid var(--hc-line-soft);
+  border-radius: 0;
+  background: #fff !important;
+  transform: none !important;
+}
+
+.hooks-compare-page .hc-device:last-child {
+  border-right: 0;
+}
+
+.hooks-compare-page .hc-device:hover {
+  border-color: var(--hc-line-soft);
+  transform: none !important;
+}
+
+.hooks-compare-page .hc-device--winner {
+  border-top: 2px solid var(--hc-blue);
+}
+
+.hooks-compare-page .hc-device__index {
+  display: none;
+}
+
+.hooks-compare-page .hc-device__badge {
+  position: static;
+  display: inline-flex;
+  margin: 0 auto 8px;
+  width: fit-content;
+  border: 1px solid #cfe2ff;
+  border-radius: 4px;
+  background: #f5f9ff !important;
+  padding: 4px 7px;
+  color: var(--hc-blue-strong);
+  font-size: 9px;
+}
+
+.hooks-compare-page .hc-device__remove {
+  top: 7px;
+  right: 7px;
+  width: 27px;
+  height: 27px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: #fff !important;
+  color: #64748b;
+}
+
+.hooks-compare-page .hc-device__remove:hover {
+  border-color: #fecaca;
+  background: #fff7f7 !important;
+  color: #b91c1c;
+}
+
+.hooks-compare-page .hc-device__main {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+}
+
+.hooks-compare-page .hc-device__image {
+  display: grid;
+  width: 100%;
+  height: 138px;
+  padding: 0;
+  border-radius: 0;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-device__image img {
+  max-width: 100%;
+  max-height: 132px;
+  object-fit: contain;
+  filter: none !important;
+}
+
+.hooks-compare-page .hc-device__details {
+  width: 100%;
+  text-align: center;
+}
+
+.hooks-compare-page .hc-device__brand {
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.hooks-compare-page .hc-device__name {
+  min-height: 36px;
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.hooks-compare-page .hc-device__variant {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hooks-compare-page .hc-device__price {
+  margin-top: 6px;
+  color: var(--hc-blue);
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.hooks-compare-page .hc-device__score {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 10px;
+  border: 1px solid #dcf5e8;
+  border-radius: 5px;
+  background: #f0fbf6 !important;
+  padding: 8px 7px;
+  color: #111827;
+}
+
+.hooks-compare-page .hc-device__score strong {
+  font-size: 22px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.hooks-compare-page .hc-device__score span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.hooks-compare-page .hc-device select,
+.hooks-compare-page .hc-device__change {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 8px;
+  border: 1px solid #dbe3ed;
+  border-radius: 5px;
+  background: #fff !important;
+  padding: 0 8px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hooks-compare-page .hc-device__change {
+  color: var(--hc-blue-strong);
+}
+
+.hooks-compare-page .hc-device-add-slot {
+  display: flex;
+  min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0;
+  background: #fff !important;
+  padding: 20px 14px;
+  color: #64748b;
+  text-align: center;
+  scroll-snap-align: start;
+}
+
+.hooks-compare-page .hc-device-add-slot:hover {
+  border-color: #8abaff;
+  color: var(--hc-blue-strong);
+}
+
+.hooks-compare-page .hc-device-add-slot__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 50%;
+  color: var(--hc-blue);
+}
+
+.hooks-compare-page .hc-device-add-slot strong {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hooks-compare-page .hc-device-add-slot > span:last-child {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Flat category toolbar; still driven by COMPARE_VIEW_TABS */
+.hooks-compare-page .hc-compare-toolbar {
+  border-block: 1px solid var(--hc-line);
+  background: #fff !important;
+  backdrop-filter: none;
+}
+
+.hooks-compare-page .hc-compare-toolbar__inner {
+  min-height: 48px;
+  gap: 10px;
+}
+
+.hooks-compare-page .hc-toolbar-toggle {
+  border-right-color: var(--hc-line);
+  color: #475569;
+  font-size: 11px;
+}
+
+.hooks-compare-page .hc-view-tabs {
+  justify-content: flex-start;
+  gap: 2px;
+}
+
+.hooks-compare-page .hc-view-tab {
+  min-height: 46px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding-inline: 12px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hooks-compare-page .hc-view-tab:hover {
+  background: #f8fafc !important;
+  color: var(--hc-blue-strong);
+}
+
+.hooks-compare-page .hc-view-tab.is-active {
+  border-bottom-color: var(--hc-blue);
+  background: #fff !important;
+  color: var(--hc-blue-strong);
+}
+
+/* Verdict, category leaders, difference tables and full specification explorer */
+.hooks-compare-page .hc-analysis-grid {
+  gap: 18px;
+}
+
+.hooks-compare-page .hc-verdict-card,
+.hooks-compare-page .hc-reasons-panel,
+.hooks-compare-page .hc-key-specs,
+.hooks-compare-page .hc-confidence,
+.hooks-compare-page .hc-spec,
+.hooks-compare-page .hc-story,
+.hooks-compare-page .hc-price-card,
+.hooks-compare-page .hc-tradeoff,
+.hooks-compare-page .hc-lane {
+  border: 1px solid var(--hc-line);
+  border-radius: 7px;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-verdict-card {
+  border-radius: 7px;
+}
+
+.hooks-compare-page .hc-verdict-card__art {
+  min-height: 210px;
+  background: #fff !important;
+  color: var(--hc-blue);
+  border-right: 1px solid var(--hc-line-soft);
+}
+
+.hooks-compare-page .hc-verdict-card__art::before,
+.hooks-compare-page .hc-verdict-card__art::after {
+  display: none;
+}
+
+.hooks-compare-page .hc-verdict-card__art svg {
+  filter: none !important;
+}
+
+.hooks-compare-page .hc-verdict-card__content {
+  padding: 18px;
+}
+
+.hooks-compare-page .hc-verdict-card h2,
+.hooks-compare-page .hc-section-title h2,
+.hooks-compare-page .hc-key-specs__head h2 {
+  color: #111827;
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.hooks-compare-page .hc-verdict-badge {
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  background: #eff6ff !important;
+  color: #075dcc;
+}
+
+.hooks-compare-page .hc-question-tab,
+.hooks-compare-page .hc-spec-view-tab,
+.hooks-compare-page .hc-mobile-pair {
+  border: 1px solid #dbe3ed;
+  border-radius: 5px;
+  background: #fff !important;
+  color: #475569;
+}
+
+.hooks-compare-page .hc-question-tab--active,
+.hooks-compare-page .hc-spec-view-tab.is-active,
+.hooks-compare-page .hc-mobile-pair.is-active {
+  border-color: #93c5fd;
+  background: #eff6ff !important;
+  color: #075dcc;
+}
+
+.hooks-compare-page .hc-reasons-panel {
+  padding: 16px;
+}
+
+.hooks-compare-page .hc-reason-grid {
+  gap: 0;
+}
+
+.hooks-compare-page .hc-reason-card {
+  border: 0;
+  border-right: 1px solid var(--hc-line-soft);
+  border-radius: 0;
+  background: #fff !important;
+  padding: 12px;
+}
+
+.hooks-compare-page .hc-reason-card:last-child {
+  border-right: 0;
+}
+
+.hooks-compare-page .hc-reason-card__icon {
+  border-radius: 5px;
+  background: #eff6ff !important;
+  color: var(--hc-blue);
+}
+
+.hooks-compare-page .hc-reason-card strong {
+  color: #111827;
+  font-weight: 750;
+}
+
+.hooks-compare-page .hc-reason-card__track {
+  height: 3px;
+  border-radius: 0;
+  background: #e5e7eb !important;
+}
+
+.hooks-compare-page .hc-reason-card__track i {
+  border-radius: 0;
+  background: var(--hc-blue) !important;
+}
+
+.hooks-compare-page .hc-key-specs {
+  overflow: hidden;
+}
+
+.hooks-compare-page .hc-key-specs__head {
+  padding: 16px;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-stage-metrics span {
+  border: 1px solid var(--hc-line);
+  border-radius: 4px;
+  background: #fff !important;
+  padding: 6px 8px;
+}
+
+.hooks-compare-page .hc-key-table {
+  min-width: 860px;
+}
+
+.hooks-compare-page .hc-key-table th,
+.hooks-compare-page .hc-key-table td {
+  border-top: 1px solid var(--hc-line-soft);
+  border-right: 1px solid var(--hc-line-soft);
+  padding: 9px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hooks-compare-page .hc-key-table thead th,
+.hooks-compare-page .hc-spec-table th {
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-key-table td {
+  min-width: 150px;
+  color: #334155;
+}
+
+.hooks-compare-page .hc-key-table td.is-winner {
+  background: #f0fbf6 !important;
+  color: #166534;
+}
+
+.hooks-compare-page .hc-key-win-dot {
+  width: 16px;
+  height: 16px;
+  background: #159447 !important;
+  color: #fff;
+}
+
+.hooks-compare-page .hc-spec__toolbar {
+  padding: 18px 18px 14px;
+}
+
+.hooks-compare-page .hc-spec-view-tabs {
+  padding-inline: 18px;
+}
+
+.hooks-compare-page .hc-spec-view-tab.is-active {
+  background: #eff6ff !important;
+  color: #075dcc;
+}
+
+.hooks-compare-page .hc-spec-section {
+  overflow: hidden;
+  border: 0;
+  border-top: 1px solid var(--hc-line);
+  border-radius: 0;
+}
+
+.hooks-compare-page .hc-spec-section__button {
+  padding: 13px 17px;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-spec-section__button:hover {
+  background: #f8fafc !important;
+}
+
+.hooks-compare-page .hc-spec-section__button h3 {
+  color: #075dcc;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hooks-compare-page .hc-spec-table {
+  min-width: 780px;
+}
+
+.hooks-compare-page .hc-spec-table th,
+.hooks-compare-page .hc-spec-table td {
+  padding: 9px 12px;
+  font-size: 12px;
+}
+
+.hooks-compare-page .hc-spec-table th {
+  color: #475569;
+  font-weight: 600;
+}
+
+.hooks-compare-page .hc-spec-table td {
+  color: #334155;
+  font-weight: 500;
+}
+
+.hooks-compare-page .hc-subheading-row th {
+  background: #f8fafc !important;
+  color: #075dcc;
+}
+
+.hooks-compare-page .hc-camera-grid {
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-camera-card {
+  border-radius: 5px;
+  padding: 12px;
+}
+
+.hooks-compare-page .hc-mobile-specs {
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-mobile-property {
+  border: 1px solid var(--hc-line);
+  border-radius: 5px;
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-mobile-property h4 {
+  background: #f8fafc !important;
+  color: #334155;
+}
+
+.hooks-compare-page .hc-mobile-value {
+  padding: 10px;
+}
+
+.hooks-compare-page .hc-mobile-value strong {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.hooks-compare-page .hc-mobile-value div {
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hooks-compare-page .hc-tradeoff__head,
+.hooks-compare-page .hc-tradeoff__body,
+.hooks-compare-page .hc-tradeoff__column,
+.hooks-compare-page .hc-confidence,
+.hooks-compare-page .hc-price-card,
+.hooks-compare-page .hc-story,
+.hooks-compare-page .hc-lane {
+  background: #fff !important;
+}
+
+.hooks-compare-page .hc-tradeoff__column + .hc-tradeoff__column {
+  border-left-color: var(--hc-line);
+}
+
+.hooks-compare-page .hc-gain li {
+  border-color: #d8f1e2;
+  border-radius: 4px;
+  background: #f4fcf7 !important;
+}
+
+.hooks-compare-page .hc-giveup li {
+  border-color: #f5d8dc;
+  border-radius: 4px;
+  background: #fff8f8 !important;
+}
+
+/* Responsive layout: the product columns become horizontally swipeable;
+   the specification explorer switches to the existing phone-pair view. */
+@media (max-width: 1180px) {
+  .hooks-compare-page .hc-stage-grid {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0 0 8px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .hooks-compare-page .hc-device,
+  .hooks-compare-page .hc-device--winner,
+  .hooks-compare-page .hc-device-add-slot {
+    flex: 0 0 286px;
+    min-width: 286px;
+    scroll-snap-align: start;
+    border-right: 1px solid var(--hc-line-soft);
+  }
+
+  .hooks-compare-page .hc-reason-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .hooks-compare-page .hc-shell {
+    width: min(calc(100% - 32px), 1480px);
+  }
+
+  .hooks-compare-page .hc-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hooks-compare-page .hc-verdict-card {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+
+  .hooks-compare-page .hc-verdict-card__art {
+    min-height: 180px;
+  }
+
+  .hooks-compare-page .hc-toolbar-toggle {
+    display: inline-flex;
+  }
+
+  .hooks-compare-page .hc-compare-toolbar__inner {
+    flex-wrap: wrap;
+    padding-block: 6px;
+  }
+}
+
+@media (max-width: 720px) {
+  .hooks-compare-page .hc-shell {
+    width: min(calc(100% - 24px), 1480px);
+  }
+
+  .hooks-compare-page .hc-section {
+    margin-top: 16px;
+  }
+
+  .hooks-compare-page .hc-heading {
+    font-size: 27px;
+    line-height: 1.15;
+  }
+
+  .hooks-compare-page .hc-copy {
+    font-size: 13px;
+  }
+
+  .hooks-compare-page .hc-top-actions {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 7px;
+  }
+
+  .hooks-compare-page .hc-action {
+    flex: 0 0 auto;
+    min-height: 36px;
+  }
+
+  .hooks-compare-page .hc-setup-grid {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .hooks-compare-page .hc-slot {
+    flex: 0 0 82vw;
+    min-width: 82vw;
+    min-height: 170px;
+    scroll-snap-align: start;
+  }
+
+  .hooks-compare-page .hc-device,
+  .hooks-compare-page .hc-device--winner,
+  .hooks-compare-page .hc-device-add-slot {
+    flex-basis: min(84vw, 330px);
+    min-width: min(84vw, 330px);
+    padding: 15px 13px 13px;
+  }
+
+  .hooks-compare-page .hc-device__image {
+    height: 124px;
+  }
+
+  .hooks-compare-page .hc-device__image img {
+    max-height: 120px;
+  }
+
+  .hooks-compare-page .hc-device__name {
+    min-height: auto;
+    font-size: 14px;
+  }
+
+  .hooks-compare-page .hc-device__price {
+    font-size: 19px;
+  }
+
+  .hooks-compare-page .hc-compare-toolbar {
+    top: var(--mobile-header-height, 0px);
+  }
+
+  .hooks-compare-page .hc-compare-toolbar__inner {
+    min-height: 0;
+    display: block;
+    padding-block: 0;
+  }
+
+  .hooks-compare-page .hc-toolbar-toggle {
+    display: flex;
+    padding: 9px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--hc-line-soft);
+  }
+
+  .hooks-compare-page .hc-view-tabs {
+    width: 100%;
+    gap: 3px;
+    padding: 0;
+  }
+
+  .hooks-compare-page .hc-view-tab {
+    min-height: 42px;
+    padding-inline: 10px;
+    font-size: 10px;
+  }
+
+  .hooks-compare-page .hc-view-tab svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .hooks-compare-page .hc-verdict-card {
+    grid-template-columns: 1fr;
+  }
+
+  .hooks-compare-page .hc-verdict-card__art {
+    min-height: 82px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hc-line-soft);
+  }
+
+  .hooks-compare-page .hc-verdict-card__art svg {
+    width: 35px;
+    height: 35px;
+  }
+
+  .hooks-compare-page .hc-verdict-card__content,
+  .hooks-compare-page .hc-reasons-panel {
+    padding: 14px;
+  }
+
+  .hooks-compare-page .hc-question-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .hooks-compare-page .hc-question-tab {
+    flex: 0 0 auto;
+    font-size: 10px;
+  }
+
+  .hooks-compare-page .hc-reason-grid {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .hooks-compare-page .hc-reason-card {
+    flex: 0 0 148px;
+    min-width: 148px;
+    scroll-snap-align: start;
+    border-right: 1px solid var(--hc-line-soft);
+  }
+
+  .hooks-compare-page .hc-key-specs__head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .hooks-compare-page .hc-stage-metrics {
+    justify-content: flex-start;
+  }
+
+  .hooks-compare-page .hc-key-table {
+    min-width: 760px;
+  }
+
+  .hooks-compare-page .hc-key-table th,
+  .hooks-compare-page .hc-key-table td {
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  .hooks-compare-page .hc-spec__toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .hooks-compare-page .hc-spec__toolbar h2 {
+    font-size: 20px;
+  }
+
+  .hooks-compare-page .hc-spec-view-tabs {
+    padding: 0 14px 12px;
+  }
+
+  .hooks-compare-page .hc-spec-view-tab {
+    font-size: 10px;
+  }
+
+  .hooks-compare-page .hc-mobile-pairs {
+    gap: 6px;
+    padding: 0 14px 10px;
+  }
+
+  .hooks-compare-page .hc-mobile-pair {
+    flex: 0 0 auto;
+    max-width: 78vw;
+    font-size: 10px;
+  }
+
+  .hooks-compare-page .hc-spec-section__button {
+    padding: 12px 14px;
+  }
+
+  .hooks-compare-page .hc-spec-section__button h3 {
+    font-size: 14px;
+  }
+
+  .hooks-compare-page .hc-confidence {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .hooks-compare-page .hc-tradeoff__body {
+    grid-template-columns: 1fr;
+  }
+
+  .hooks-compare-page .hc-tradeoff__column + .hc-tradeoff__column {
+    border-top: 1px solid var(--hc-line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .hooks-compare-page .hc-shell {
+    width: calc(100% - 20px);
+  }
+
+  .hooks-compare-page .hc-heading {
+    font-size: 24px;
+  }
+
+  .hooks-compare-page .hc-copy {
+    font-size: 12px;
+  }
+
+  .hooks-compare-page .hc-device,
+  .hooks-compare-page .hc-device--winner,
+  .hooks-compare-page .hc-device-add-slot {
+    flex-basis: calc(100vw - 36px);
+    min-width: calc(100vw - 36px);
+  }
+
+  .hooks-compare-page .hc-view-tab {
+    gap: 5px;
+    padding-inline: 8px;
+    font-size: 9px;
+  }
+
+  .hooks-compare-page .hc-view-tab svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .hooks-compare-page .hc-stage-metrics span {
+    padding: 5px 7px;
+    font-size: 9px;
   }
 }

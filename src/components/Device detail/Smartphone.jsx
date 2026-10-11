@@ -53,7 +53,6 @@ import Spinner from "../ui/Spinner";
 import NotFound from "../Static/NotFound";
 import Breadcrumbs from "../Breadcrumbs";
 import ProductAiSummary from "../Product/ProductAiSummary";
-import TrackPriceButton from "./TrackPriceButton";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
@@ -5583,12 +5582,6 @@ Price: ${price}
                           View price history
                           <span aria-hidden="true">›</span>
                         </button>
-                        <TrackPriceButton
-                          productId={currentProductId}
-                          variant={currentVariant}
-                          variantLabel={currentVariantLabel}
-                          stores={getStorePriceList(currentVariant)}
-                        />
                       </div>
                     </div>
                   </div>
