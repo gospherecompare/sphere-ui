@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { FaExchangeAlt } from "react-icons/fa";
 import { useDevice } from "../hooks/useDevice";
 import useStoreLogos from "../hooks/useStoreLogos";
+import ContinueBrowsingSmartphones from "./ui/ContinueBrowsingSmartphones";
+import ProductDiscoverySections from "./ui/ProductDiscoverySections";
+import { buildApiUrl } from "../utils/apiUrl";
+import { readPreloadedApiResponse } from "../utils/preloadedApi";
+import { fetchPublicJson } from "../utils/publicJsonRequest";
 
 const MIN_COMPARE_DEVICES = 2;
 const MAX_COMPARE_DEVICES = 3;
+const SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT = buildApiUrl(
+  "/public/compare-pages/routes?limit=6",
+);
 const SECTION_DEFINITIONS = [
   { id: "overview", label: "Overview", sources: [] },
   { id: "display", label: "Display", sources: ["display", "display_json"] },
@@ -41,8 +50,6 @@ const SECTION_DEFINITIONS = [
     label: "Features & Sensors",
     sources: ["features", "features_json", "sensors"],
   },
-  { id: "pros", label: "Pros", sources: [] },
-  { id: "cons", label: "Cons", sources: [] },
 ];
 
 const FIELD_LABELS = {
@@ -87,6 +94,29 @@ const OMIT_KEYS = new Set([
   "product_url",
   "url",
   "status",
+  "spec_score",
+  "specscore",
+  "spec_score_v2",
+  "specscorev2",
+  "spec_score_v2_raw",
+  "specscorev2raw",
+  "spec_score_v2_source",
+  "specscorev2source",
+  "specification_score",
+  "specificationscore",
+  "mobilesx_specification_score",
+  "mobilesxspecificationscore",
+  "mobilesx_score",
+  "mobilesxscore",
+  "hook_score",
+  "hookscore",
+  "pros",
+  "cons",
+  "advantages",
+  "disadvantages",
+  "drawbacks",
+  "limitations",
+  "strengths",
   "_raw",
 ]);
 
@@ -108,12 +138,32 @@ const toObject = (value) => {
   return {};
 };
 
-const getProductId = (device) =>
-  device?.productId ??
-  device?.product_id ??
-  device?.id ??
-  device?.smartphoneId ??
-  null;
+// Catalog resources do not always use the same ID field. Skip blank values
+// rather than letting an empty productId hide a valid id/baseId/model.
+const getProductId = (device) => {
+  const candidates = [
+    device?.productId,
+    device?.product_id,
+    device?.id,
+    device?.smartphoneId,
+    device?.smartphone_id,
+    device?.deviceId,
+    device?.device_id,
+    device?.phoneId,
+    device?.phone_id,
+    device?.baseId,
+    device?.base_id,
+    device?._id,
+    device?.model,
+    device?.slug,
+  ];
+  return (
+    candidates.find(
+      (value) =>
+        value !== null && value !== undefined && String(value).trim() !== "",
+    ) ?? null
+  );
+};
 
 const getProductName = (device) =>
   device?.name ||
@@ -139,6 +189,25 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-price-in-india$/i, "");
+
+const parseRetailPrice = (value) => {
+  if (typeof value === "number")
+    return Number.isFinite(value) && value > 0 ? value : null;
+  if (value === null || value === undefined || String(value).trim() === "")
+    return null;
+  // Accept a single currency amount, but reject ranges/text (e.g. "₹16,999 onwards")
+  // rather than silently converting them to a misleading integer.
+  const normalized = String(value)
+    .trim()
+    .replace(/^(?:₹|rs\.?|inr)\s*/i, "")
+    .replace(/\s*(?:inr|rs\.?)$/i, "")
+    .replace(/\s*\/\-\s*$/, "")
+    .replace(/,/g, "")
+    .trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+};
 
 const formatPrice = (value) => {
   const number = Number(value);
@@ -202,6 +271,21 @@ const formatValue = (value) => {
   }
   if (typeof value === "number") return String(value);
   return String(value).trim() || "—";
+};
+
+// Give meaningful specifications stronger visual hierarchy while keeping unavailable values quiet.
+const getSpecValueClass = (value) => {
+  const text = formatValue(value);
+  if (/^(—|n\/?a|not available|unknown)$/i.test(text))
+    return "font-normal text-slate-400";
+  if (
+    /\d|\b(amoled|oled|ips|snapdragon|dimensity|adreno|mali|wi-fi|wifi|bluetooth|nfc|5g|4g|usb-c|dual sim|yes|no)\b/i.test(
+      text,
+    )
+  ) {
+    return "font-semibold text-slate-950";
+  }
+  return "font-medium text-slate-800";
 };
 
 const flattenSpecs = (object, prefix = "", depth = 0) => {
@@ -272,29 +356,54 @@ const getVariants = (device) => {
     ...variant,
     base_price:
       variant?.base_price ?? variant?.basePrice ?? variant?.price ?? null,
-    store_prices: Array.isArray(variant?.store_prices)
-      ? variant.store_prices
-      : Array.isArray(variant?.storePrices)
-        ? variant.storePrices
-        : [],
+    // The API can return retailer offers under `stores` after payload normalization.
+    store_prices:
+      Array.isArray(variant?.store_prices) && variant.store_prices.length
+        ? variant.store_prices
+        : Array.isArray(variant?.storePrices) && variant.storePrices.length
+          ? variant.storePrices
+          : Array.isArray(variant?.stores)
+            ? variant.stores
+            : [],
   }));
 };
 
 const getSelectedVariant = (device) => {
   const variants = getVariants(device);
   if (!variants.length) return null;
-  const index = Math.max(0, Number(device?.selectedVariantIndex) || 0);
+  const requestedIndex = Math.max(0, Number(device?.selectedVariantIndex) || 0);
+  const index = Math.min(requestedIndex, variants.length - 1);
   return variants[index] || variants[0];
 };
 
+const getSelectedVariantLabel = (device) => {
+  const variant = getSelectedVariant(device);
+  if (!variant) return "";
+  const ram = variant.ram ?? variant.RAM ?? variant.memory;
+  const storage =
+    variant.storage ??
+    variant.internal_storage ??
+    variant.storage_capacity ??
+    variant.rom;
+  return [
+    ram != null && ram !== "" ? `${formatValue(ram)} RAM` : null,
+    storage != null && storage !== ""
+      ? `${formatValue(storage)} storage`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+};
+
 const getPrice = (device) => {
+  const variants = getVariants(device);
   const variant = getSelectedVariant(device);
   const direct = Number(
     variant?.base_price ??
       variant?.price ??
-      device?.price ??
-      device?.base_price ??
-      device?.basePrice,
+      (variants.length <= 1
+        ? (device?.price ?? device?.base_price ?? device?.basePrice)
+        : null),
   );
   if (Number.isFinite(direct) && direct > 0) return direct;
   const storePrices = variant?.store_prices || [];
@@ -313,34 +422,109 @@ const normalizeStoreKey = (name) => {
   return normalized;
 };
 
+const getVariantScopedStoreRows = (device, variant, variantIndex) => {
+  // Some API responses provide a flattened retailer-price list for all variants.
+  // Only reuse those rows when the row explicitly identifies this exact variant.
+  const allRows = [
+    device?.variant_store_prices,
+    device?.variantStorePrices,
+    device?.store_prices,
+    device?.storePrices,
+  ]
+    .filter(Array.isArray)
+    .flat();
+  const variantIds = [variant?.id, variant?.variant_id, variant?.variantId]
+    .filter(
+      (value) =>
+        value !== null && value !== undefined && String(value).trim() !== "",
+    )
+    .map(String);
+  const variantKeys = [variant?.variant_key, variant?.variantKey, variant?.key]
+    .filter(
+      (value) =>
+        value !== null && value !== undefined && String(value).trim() !== "",
+    )
+    .map((value) => String(value).trim().toLowerCase());
+
+  return allRows.filter((store) => {
+    if (!store || typeof store !== "object") return false;
+    const rowId = store.variant_id ?? store.variantId;
+    const rowIndex = store.variant_index ?? store.variantIndex;
+    const rowKey = store.variant_key ?? store.variantKey;
+    if (rowId !== null && rowId !== undefined && String(rowId).trim() !== "") {
+      return variantIds.includes(String(rowId));
+    }
+    if (
+      rowIndex !== null &&
+      rowIndex !== undefined &&
+      String(rowIndex).trim() !== ""
+    ) {
+      return Number(rowIndex) === variantIndex;
+    }
+    if (
+      rowKey !== null &&
+      rowKey !== undefined &&
+      String(rowKey).trim() !== ""
+    ) {
+      return variantKeys.includes(String(rowKey).trim().toLowerCase());
+    }
+    return false;
+  });
+};
+
 const getStoreRows = (device) => {
+  const variants = getVariants(device);
+  const requestedIndex = Math.max(0, Number(device?.selectedVariantIndex) || 0);
+  const variantIndex = variants.length
+    ? Math.min(requestedIndex, variants.length - 1)
+    : 0;
   const variant = getSelectedVariant(device);
   const variantStores = Array.isArray(variant?.store_prices)
     ? variant.store_prices
     : [];
-  const deviceStores = Array.isArray(device?.store_prices)
+  const directDeviceStores = Array.isArray(device?.store_prices)
     ? device.store_prices
     : Array.isArray(device?.storePrices)
       ? device.storePrices
       : [];
-  // Some catalog variants omit retailer prices even when product-level prices exist.
-  const stores = variantStores.length ? variantStores : deviceStores;
-  if (!Array.isArray(stores)) return [];
+
+  let stores = variantStores;
+  if (!stores.length && variants.length > 1) {
+    stores = getVariantScopedStoreRows(device, variant, variantIndex);
+    // Do not use an unscoped aggregate price list for a multi-variant phone:
+    // it can select a price from a different RAM/storage configuration.
+    if (!stores.length) return [];
+  } else if (!stores.length && variants.length <= 1) {
+    stores = directDeviceStores;
+  }
+
   return stores
     .filter(Boolean)
     .map((store) => ({
       name:
+        store?.display_store_name ||
+        store?.displayStoreName ||
         store?.store_name ||
         store?.storeName ||
         store?.store ||
         store?.merchant ||
         "Store",
-      price: store?.price ?? store?.amount ?? null,
+      price: parseRetailPrice(
+        store?.price ??
+          store?.current_price ??
+          store?.currentPrice ??
+          store?.sale_price ??
+          store?.salePrice ??
+          store?.amount ??
+          store?.base_price,
+      ),
       url:
         store?.url ||
         store?.link ||
         store?.url_link ||
         store?.product_url ||
+        store?.affiliate_url ||
+        store?.affiliateUrl ||
         null,
     }))
     .filter((store) => store.name && (store.price != null || store.url))
@@ -364,6 +548,8 @@ const getImage = (device) => {
   const candidate =
     device?.image ||
     device?.image_url ||
+    device?.product_image ||
+    device?.productImage ||
     device?.thumbnail ||
     images.find(Boolean) ||
     pictures.find(Boolean);
@@ -372,56 +558,35 @@ const getImage = (device) => {
     : candidate?.url || candidate?.src || "";
 };
 
-const normalizeSpecScore100 = (rawValue) => {
-  if (
-    rawValue === null ||
-    rawValue === undefined ||
-    String(rawValue).trim() === ""
-  )
-    return null;
-  const value = Number(rawValue);
-  if (!Number.isFinite(value) || value <= 0 || value > 100) return null;
-  if (value <= 1) return value * 100;
-  if (value <= 10) return value * 10;
-  return value;
-};
+const getSuggestedPhones = (suggestion, devices) => {
+  const productSlugs = String(suggestion.slug || "")
+    .replace(/-comparison$/i, "")
+    .split("-and-")
+    .filter(Boolean);
 
-// Only use dedicated MobilesX specification-score fields. Generic `score`,
-// store ratings and hook/trending scores are different metrics and must not be
-// rendered as a specification score.
-const getScore = (device) => {
-  if (!device) return "—";
-  const v2Source = String(
-    device?.spec_score_v2_source ?? device?.specScoreV2Source ?? "",
-  ).toLowerCase();
-  const legacySource = String(
-    device?.spec_score_source ?? device?.specScoreSource ?? "",
-  ).toLowerCase();
-  const candidates = [
-    {
-      value: device?.spec_score_v2_raw ?? device?.specScoreV2Raw,
-      source: v2Source,
-    },
-    { value: device?.spec_score_v2 ?? device?.specScoreV2, source: v2Source },
-    { value: device?.spec_score ?? device?.specScore, source: legacySource },
-  ];
-  for (const candidate of candidates) {
-    if (candidate.source.includes("fallback")) continue;
-    const score100 = normalizeSpecScore100(candidate.value);
-    if (score100 != null) return `${(score100 / 10).toFixed(1)}/10`;
-  }
-  return "—";
-};
+  return productSlugs.map((productSlug) => {
+    const device = devices.find((candidate) => {
+      const candidateSlugs = [
+        slugify(getProductName(candidate)),
+        slugify(candidate?.model),
+      ].filter(Boolean);
+      return candidateSlugs.some(
+        (candidateSlug) =>
+          candidateSlug === productSlug ||
+          candidateSlug.startsWith(`${productSlug}-`) ||
+          productSlug.startsWith(`${candidateSlug}-`),
+      );
+    });
 
-const getVariantLabel = (device) => {
-  const variant = getSelectedVariant(device);
-  const ram = variant?.ram || variant?.memory || "";
-  const storage =
-    variant?.storage || variant?.internal_storage || variant?.rom || "";
-  const value = [ram, storage].filter(Boolean).join(" · ");
-  return (
-    value || device?.variant_label || device?.variant || "Variant not listed"
-  );
+    return {
+      name:
+        (device && getProductName(device)) ||
+        productSlug
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+      image: device ? getImage(device) : "",
+    };
+  });
 };
 
 const getLaunchLabel = (device) => {
@@ -466,106 +631,6 @@ const getColors = (device) => {
   return formatValue(colors);
 };
 
-const normalizeEditorialItems = (value) => {
-  if (value == null || value === "") return [];
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => {
-      if (item == null || item === "") return [];
-      if (typeof item === "object") {
-        const text =
-          item.text ??
-          item.title ??
-          item.description ??
-          item.value ??
-          item.content ??
-          item.name;
-        return text == null || String(text).trim() === ""
-          ? []
-          : [String(text).trim()];
-      }
-      return [
-        String(item)
-          .replace(/^\s*[•●▪*-]\s*/, "")
-          .trim(),
-      ].filter(Boolean);
-    });
-  }
-  if (typeof value === "object") {
-    for (const key of [
-      "items",
-      "list",
-      "points",
-      "pros",
-      "cons",
-      "advantages",
-      "disadvantages",
-    ]) {
-      if (value[key] != null) {
-        const nested = normalizeEditorialItems(value[key]);
-        if (nested.length) return nested;
-      }
-    }
-    return Object.entries(value).flatMap(([key, item]) => {
-      if (item == null || item === false || item === "") return [];
-      if (item === true) return [formatLabel(key)];
-      if (typeof item === "string" || typeof item === "number")
-        return [String(item).trim()].filter(Boolean);
-      return normalizeEditorialItems(item);
-    });
-  }
-  const text = String(value).trim();
-  if (!text) return [];
-  if (text.startsWith("[") || text.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed && typeof parsed === "object")
-        return normalizeEditorialItems(parsed);
-    } catch {
-      // A plain text value can still be a single editorial point.
-    }
-  }
-  return text
-    .split(/\r?\n|[•●▪]\s*|;\s*/)
-    .map((item) => item.replace(/^\s*[-*]\s*/, "").trim())
-    .filter(Boolean);
-};
-
-const getProsConsItems = (device, kind) => {
-  const isPros = kind === "pros";
-  const alternatives = isPros
-    ? ["advantages", "strengths"]
-    : ["cons", "disadvantages", "drawbacks", "limitations"];
-  const rootCandidates = [
-    toObject(device?.pros_cons_json),
-    toObject(device?.prosCons),
-    toObject(device?.pros_cons),
-    toObject(device?.review),
-    toObject(device?.review_json),
-    toObject(device?.reviews_json),
-    toObject(
-      device?.specifications_json ||
-        device?.specifications ||
-        device?.specs_json ||
-        device?.specs,
-    ),
-  ];
-  const candidates = [
-    device?.[kind],
-    device?.[`${kind}_json`],
-    ...alternatives.map((field) => device?.[field]),
-    ...rootCandidates.flatMap((root) => [
-      root?.[kind],
-      root?.[`${kind}_json`],
-      ...alternatives.map((field) => root?.[field]),
-    ]),
-  ];
-  for (const candidate of candidates) {
-    const items = normalizeEditorialItems(candidate);
-    if (items.length) return Array.from(new Set(items));
-  }
-  return [];
-};
-
 const normalizeSelected = (device, variantIndex = 0) => {
   if (!device) return null;
   const id = getProductId(device);
@@ -578,6 +643,27 @@ const normalizeSelected = (device, variantIndex = 0) => {
   };
 };
 
+const mapSystemCompareSuggestions = (payload) =>
+  (Array.isArray(payload?.routes) ? payload.routes : [])
+    .map((item) => {
+      const routePath = String(
+        item?.route_path ||
+          (item?.slug ? `/compare/${String(item.slug).replace(/^\/+/, "")}` : ""),
+      ).trim();
+      if (!routePath.startsWith("/compare/") || routePath.startsWith("//")) {
+        return null;
+      }
+
+      return {
+        routePath,
+        slug:
+          String(item?.slug || "").trim() ||
+          routePath.split("/").filter(Boolean).pop() ||
+          "",
+      };
+    })
+    .filter(Boolean);
+
 const MobileCompare = () => {
   const { devices: availableDevices = [], loading } = useDevice({
     resources: ["smartphones", "laptops", "tvs", "networking"],
@@ -586,11 +672,100 @@ const MobileCompare = () => {
   const location = useLocation();
   const { compareSlug = "" } = useParams();
   const [selectedDevices, setSelectedDevices] = useState([]);
+  const [draftDeviceIds, setDraftDeviceIds] = useState(["", "", ""]);
+  const [openDraftSlot, setOpenDraftSlot] = useState(null);
+  const [draftSearch, setDraftSearch] = useState("");
+  const [activeDraftOptionIndex, setActiveDraftOptionIndex] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
   const [search, setSearch] = useState("");
+  const [pickerMessage, setPickerMessage] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
   const [hideCommonSpecs, setHideCommonSpecs] = useState(false);
   const hydratedRoute = useRef("");
+  const draftPickerRef = useRef(null);
+  const draftSearchRef = useRef(null);
+  const draftTriggerRefs = useRef([]);
+  const draftOptionRefs = useRef([]);
+  const [systemCompareSuggestions, setSystemCompareSuggestions] = useState(
+    () =>
+      mapSystemCompareSuggestions(
+        readPreloadedApiResponse(SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT),
+      ),
+  );
+
+  useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(
+      SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT,
+    );
+    if (preloadedPayload) {
+      setSystemCompareSuggestions(
+        mapSystemCompareSuggestions(preloadedPayload),
+      );
+      return undefined;
+    }
+
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    const loadSuggestions = async () => {
+      try {
+        const payload = await fetchPublicJson(
+          SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT,
+          { signal: controller?.signal },
+        );
+        if (!cancelled) {
+          setSystemCompareSuggestions(mapSystemCompareSuggestions(payload));
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError" && !cancelled) {
+          console.error("Failed to load system compare suggestions:", error);
+          setSystemCompareSuggestions([]);
+        }
+      }
+    };
+
+    loadSuggestions();
+    return () => {
+      cancelled = true;
+      controller?.abort?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showPicker) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setShowPicker(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showPicker]);
+
+  useEffect(() => {
+    if (openDraftSlot === null) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!draftPickerRef.current?.contains(event.target)) {
+        setOpenDraftSlot(null);
+        setDraftSearch("");
+      }
+    };
+    const focusSearch = window.requestAnimationFrame(() =>
+      draftSearchRef.current?.focus(),
+    );
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      window.cancelAnimationFrame(focusSearch);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [openDraftSlot]);
 
   useEffect(() => {
     if (loading) return;
@@ -678,26 +853,88 @@ const MobileCompare = () => {
   ]);
 
   const selectedType = getProductType(selectedDevices[0]);
-  const compatibleDevices = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const suggestedMobileDevices = useMemo(() => {
+    const seen = new Set();
     return availableDevices
       .filter((device) => {
-        const sameType =
-          !selectedDevices.length || getProductType(device) === selectedType;
-        const notSelected = !selectedDevices.some(
-          (selected) =>
-            String(getProductId(selected)) === String(getProductId(device)),
-        );
-        const matches =
-          !query ||
-          [getProductName(device), device?.brand, device?.model].some((value) =>
-            String(value || "")
-              .toLowerCase()
-              .includes(query),
-          );
-        return sameType && notSelected && matches;
+        if (getProductType(device) !== "smartphone") return false;
+        const id = getProductId(device);
+        if (id == null || seen.has(String(id))) return false;
+        seen.add(String(id));
+        return true;
       })
-      .slice(0, 40);
+      .slice(0, 3);
+  }, [availableDevices]);
+
+  const draftCompareDevices = draftDeviceIds
+    .filter(Boolean)
+    .map((id) =>
+      availableDevices.find(
+        (device) => String(getProductId(device)) === String(id),
+      ),
+    )
+    .filter(Boolean);
+
+  const getDraftOptions = (slotIndex, searchTerm = draftSearch) => {
+    const query = searchTerm.trim().toLowerCase();
+    return availableDevices.filter((device) => {
+      if (getProductType(device) !== "smartphone") return false;
+      const productId = getProductId(device);
+      if (productId == null) return false;
+      const id = String(productId);
+      if (
+        id !== draftDeviceIds[slotIndex] &&
+        draftDeviceIds.some(
+          (draftId, index) => index !== slotIndex && draftId === id,
+        )
+      ) {
+        return false;
+      }
+      return (
+        !query ||
+        [
+          getProductName(device),
+          device?.brand,
+          device?.manufacturer,
+          device?.model,
+        ].some((value) =>
+          String(value || "")
+            .toLowerCase()
+            .includes(query),
+        )
+      );
+    });
+  };
+
+  const compatibleDevices = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const matchesQuery = (device) =>
+      !query ||
+      [
+        getProductName(device),
+        device?.brand,
+        device?.manufacturer,
+        device?.model,
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(query),
+      );
+    const selectedIds = new Set(
+      selectedDevices.map((device) => String(getProductId(device))),
+    );
+    // Keep selected devices visible at the top so the picker clearly shows what has been added.
+    const selectedMatches = selectedDevices.filter(matchesQuery);
+    const availableMatches = availableDevices.filter((device) => {
+      const sameType =
+        !selectedDevices.length || getProductType(device) === selectedType;
+      return (
+        sameType &&
+        !selectedIds.has(String(getProductId(device))) &&
+        matchesQuery(device)
+      );
+    });
+    return [...selectedMatches, ...availableMatches].slice(0, 60);
   }, [availableDevices, search, selectedDevices, selectedType]);
 
   const storePriceRows = useMemo(() => {
@@ -726,20 +963,67 @@ const MobileCompare = () => {
   };
 
   const addDevice = (device) => {
-    if (!device || selectedDevices.length >= MAX_COMPARE_DEVICES) return;
+    setPickerMessage("");
+    if (!device) {
+      setPickerMessage(
+        "This device could not be selected. Please choose another phone.",
+      );
+      return;
+    }
+
+    const deviceId = getProductId(device);
+    if (deviceId == null || String(deviceId).trim() === "") {
+      setPickerMessage(
+        "This catalogue item is missing a usable device ID. Refresh the catalogue and try again.",
+      );
+      return;
+    }
+    if (selectedDevices.length >= MAX_COMPARE_DEVICES) {
+      setPickerMessage(
+        `You can compare up to ${MAX_COMPARE_DEVICES} devices at a time.`,
+      );
+      return;
+    }
     if (
       selectedDevices.some(
-        (item) => String(getProductId(item)) === String(getProductId(device)),
+        (item) => String(getProductId(item)) === String(deviceId),
       )
-    )
+    ) {
+      setPickerMessage(`${getProductName(device)} is already selected.`);
       return;
-    if (selectedDevices.length && getProductType(device) !== selectedType)
+    }
+    if (selectedDevices.length && getProductType(device) !== selectedType) {
+      setPickerMessage(
+        "Choose a device of the same type as the phones already selected.",
+      );
       return;
-    setSelectedDevices((current) =>
-      [...current, normalizeSelected(device, 0)].filter(Boolean),
+    }
+
+    const normalized = normalizeSelected(device, 0);
+    if (!normalized) {
+      setPickerMessage(
+        "We could not prepare this device for comparison. Please try another item.",
+      );
+      return;
+    }
+
+    // Keep the picker open so users can add their second and third devices in one session.
+    setSelectedDevices((current) => {
+      if (current.length >= MAX_COMPARE_DEVICES) return current;
+      if (
+        current.some((item) => String(getProductId(item)) === String(deviceId))
+      )
+        return current;
+      if (
+        current.length &&
+        getProductType(device) !== getProductType(current[0])
+      )
+        return current;
+      return [...current, normalized];
+    });
+    setPickerMessage(
+      `${getProductName(device)} added. Press Done to view your updated comparison.`,
     );
-    setShowPicker(false);
-    setSearch("");
   };
 
   const removeDevice = (id) => {
@@ -748,45 +1032,10 @@ const MobileCompare = () => {
     );
   };
 
-  const changeVariant = (id, index) => {
-    setSelectedDevices((current) =>
-      current.map((device) =>
-        String(getProductId(device)) === String(id)
-          ? { ...device, selectedVariantIndex: Number(index) || 0 }
-          : device,
-      ),
-    );
-  };
-
   const overviewRows = useMemo(
     () => [
       { key: "launch_date", label: "Launch Date", value: getLaunchLabel },
       { key: "availability", label: "Status", value: getAvailability },
-      {
-        key: "starting_price",
-        label: "Starting Price",
-        value: (device) => formatPrice(getPrice(device)),
-      },
-      {
-        key: "variants",
-        label: "Variants",
-        value: (device) => {
-          const variants = getVariants(device);
-          const values = variants
-            .map((variant) =>
-              [
-                variant?.ram || variant?.memory,
-                variant?.storage || variant?.internal_storage,
-              ]
-                .filter(Boolean)
-                .join(" / "),
-            )
-            .filter(Boolean);
-          return values.length
-            ? Array.from(new Set(values)).join(", ")
-            : getVariantLabel(device);
-        },
-      },
       { key: "colors", label: "Colors", value: getColors },
     ],
     [],
@@ -802,24 +1051,6 @@ const MobileCompare = () => {
               ...row,
               values: selectedDevices.map((device) => row.value(device)),
             })),
-          };
-        }
-        if (section.id === "pros" || section.id === "cons") {
-          const values = selectedDevices.map((device) =>
-            getProsConsItems(device, section.id),
-          );
-          return {
-            ...section,
-            rows: [
-              {
-                key: "editorial-items",
-                label:
-                  section.id === "pros"
-                    ? "What stands out"
-                    : "Things to consider",
-                values,
-              },
-            ],
           };
         }
         const maps = selectedDevices.map((device) =>
@@ -891,20 +1122,56 @@ const MobileCompare = () => {
   const visibleSections = useMemo(() => {
     if (!hideCommonSpecs || selectedDevices.length < 2) return sectionRows;
     return sectionRows
-      .map((section) => {
-        if (section.id === "pros" || section.id === "cons") return section;
-        return {
-          ...section,
-          rows: section.rows.filter((row) => {
-            const values = row.values.map((value) =>
-              formatValue(value).toLowerCase().replace(/\s+/g, " "),
-            );
-            return !values.every((value) => value === values[0]);
-          }),
-        };
-      })
+      .map((section) => ({
+        ...section,
+        rows: section.rows.filter((row) => {
+          const values = row.values.map((value) =>
+            formatValue(value).toLowerCase().replace(/\s+/g, " "),
+          );
+          return !values.every((value) => value === values[0]);
+        }),
+      }))
       .filter((section) => section.rows.length > 0);
   }, [hideCommonSpecs, sectionRows, selectedDevices.length]);
+
+  const smartphoneBrandCatalog = useMemo(() => {
+    const brands = new Map();
+    availableDevices
+      .filter((device) => getProductType(device) === "smartphone")
+      .forEach((device) => {
+        const name = String(device?.brand || device?.manufacturer || "").trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (!brands.has(key)) {
+          brands.set(key, {
+            name,
+            logo_url:
+              device?.brand_logo ||
+              device?.brandLogo ||
+              device?.brand_image ||
+              device?.brandImage ||
+              "",
+          });
+        }
+      });
+    return Array.from(brands.values());
+  }, [availableDevices]);
+
+  const suggestedCompareCards = useMemo(() => {
+    const currentPath = location.pathname.replace(/\/+$/, "");
+    return systemCompareSuggestions
+      .filter((item) => item.routePath.replace(/\/+$/, "") !== currentPath)
+      .map((suggestion) => ({
+        ...suggestion,
+        phones: getSuggestedPhones(suggestion, availableDevices),
+      }))
+      .filter(
+        (suggestion) =>
+          suggestion.phones.length >= 2 &&
+          suggestion.phones.every((phone) => phone.image),
+      )
+      .slice(0, 3);
+  }, [availableDevices, location.pathname, systemCompareSuggestions]);
 
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
@@ -920,24 +1187,24 @@ const MobileCompare = () => {
   };
 
   return (
-    <main className="min-h-screen min-w-0 bg-white font-sans text-slate-900">
-      <div className="mx-auto w-full max-w-[1600px] min-w-0 px-3 pb-10 pt-4 sm:px-5 sm:pb-14 sm:pt-6 lg:px-8">
-        <header className="mb-5 flex min-w-0 flex-col gap-3 border-b border-slate-200 pb-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:pb-5">
+    <main className="min-h-screen min-w-0 bg-slate-50 font-sans text-slate-900">
+      <style>{`
+        .compare-hidden-scrollbar { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        .compare-hidden-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+      `}</style>
+      <div className="mx-auto w-full max-w-[1360px] min-w-0 px-0 pb-10 pt-4 sm:px-5 sm:pb-14 sm:pt-6 lg:px-6 xl:px-8">
+        <header className="mb-5 flex min-w-0 flex-col gap-3 border-b border-slate-200 px-4 pb-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:px-0 sm:pb-5">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-medium text-slate-400 sm:text-sm">
               <span className="text-blue-600">Home</span>
               <span className="px-2">/</span>Compare
             </p>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
-              Compare{" "}
-              {selectedType === "smartphone"
-                ? "Mobiles"
-                : selectedType
-                  ? `${selectedType.charAt(0).toUpperCase()}${selectedType.slice(1)}s`
-                  : "Devices"}
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-3xl">
+              Compare Phones Your Way
             </h1>
             <p className="mt-1 text-sm leading-5 text-slate-500 sm:text-base">
-              Compare prices and specifications side by side.
+              Compare prices, specifications and features side by side to find
+              the right phone for you.
             </p>
           </div>
           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
@@ -947,6 +1214,7 @@ const MobileCompare = () => {
             <button
               type="button"
               onClick={() => {
+                setPickerMessage("");
                 setShowPicker(true);
                 setSearch("");
               }}
@@ -956,31 +1224,444 @@ const MobileCompare = () => {
               <span aria-hidden="true" className="text-lg leading-none">
                 +
               </span>{" "}
-              Add phone
+              Add Phone
             </button>
           </div>
         </header>
 
         {selectedDevices.length === 0 ? (
-          <section className="flex min-h-64 flex-col items-center justify-center border border-dashed border-slate-300 px-4 py-12 text-center sm:min-h-80 sm:px-6">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center border border-blue-200 text-3xl font-light text-blue-600">
-              +
+          <>
+            <section className="flex min-h-64 flex-col items-center justify-center px-4 py-10 text-center sm:min-h-72">
+              <span
+                aria-hidden="true"
+                className="mb-4 flex h-10 w-10 items-center justify-center text-3xl font-light leading-none text-blue-600"
+              >
+                +
+              </span>
+              <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+                Start Your Comparison
+              </h2>
+              <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
+                Select 2 or 3 phones to explore their differences.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerMessage("");
+                  setShowPicker(true);
+                  setSearch("");
+                }}
+                className="mt-5 inline-flex min-h-10 items-center gap-2 px-2 py-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-800 focus-visible:outline-none focus-visible:underline"
+              >
+                + Select a phone
+              </button>
+            </section>
+            <section className="border-t-4 border-slate-100 bg-transparent px-4 py-5 sm:px-0 sm:py-6">
+            <div className="mb-4">
+              <h2 className="border-l-4 border-blue-600 pl-3 text-base font-semibold text-slate-900 sm:text-lg">
+                Build Your Phone Comparison
+              </h2>
+              <p className="mt-1 pl-4 text-sm text-slate-500">
+                Choose 2 or 3 smartphones to compare their prices, features and
+                specifications.
+              </p>
             </div>
-            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-              Select mobiles to compare
-            </h2>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
-              Choose 2 or 3 devices to compare their price, display,
-              performance, camera and other specifications.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowPicker(true)}
-              className="mt-5 inline-flex min-h-11 items-center gap-2 border border-blue-600 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+            <div
+              ref={draftPickerRef}
+              className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)_32px_minmax(0,1fr)]"
             >
-              + Select a phone
-            </button>
-          </section>
+              {draftDeviceIds.map((selectedId, index) => (
+                <React.Fragment key={`compare-slot-${index}`}>
+                  {index > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-7 w-7 items-center justify-center justify-self-center rounded-full border border-blue-200 bg-blue-50 text-blue-600 shadow-sm"
+                    >
+                      <FaExchangeAlt className="text-xs" />
+                    </span>
+                  ) : null}
+                  <div className="relative min-w-0">
+                    <button
+                      ref={(element) => {
+                        draftTriggerRefs.current[index] = element;
+                      }}
+                      type="button"
+                      aria-label={`Select ${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : "rd"} mobile to compare`}
+                      aria-haspopup="listbox"
+                      aria-expanded={openDraftSlot === index}
+                      aria-controls={`compare-device-list-${index}`}
+                      onClick={() => {
+                        setDraftSearch("");
+                        setActiveDraftOptionIndex(0);
+                        draftOptionRefs.current[index] = [];
+                        setOpenDraftSlot((current) =>
+                          current === index ? null : index,
+                        );
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "ArrowDown" || event.key === "Enter") {
+                          event.preventDefault();
+                          setDraftSearch("");
+                          setActiveDraftOptionIndex(0);
+                          draftOptionRefs.current[index] = [];
+                          setOpenDraftSlot(index);
+                        } else if (
+                          event.key === "Escape" &&
+                          openDraftSlot === index
+                        ) {
+                          event.preventDefault();
+                          setOpenDraftSlot(null);
+                        }
+                      }}
+                      className={`flex h-12 w-full min-w-0 items-center justify-between border-2 bg-white px-3 text-left text-sm outline-none transition-colors focus:ring-2 focus:ring-blue-100 ${
+                        openDraftSlot === index
+                          ? "border-blue-500"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`truncate ${
+                          selectedId ? "text-slate-700" : "text-slate-500"
+                        }`}
+                      >
+                        {selectedId
+                          ? getProductName(
+                              availableDevices.find(
+                                (device) =>
+                                  String(getProductId(device)) === selectedId,
+                              ),
+                            )
+                          : loading
+                            ? "Loading mobiles…"
+                            : "Select a product"}
+                      </span>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className={`ml-3 h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+                          openDraftSlot === index ? "rotate-180" : ""
+                        }`}
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    {openDraftSlot === index ? (
+                      <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden border border-slate-200 bg-white shadow-xl">
+                        <div className="border-b border-slate-200 p-2">
+                          <input
+                            ref={draftSearchRef}
+                            type="search"
+                            value={draftSearch}
+                            aria-label="Search mobiles"
+                            aria-autocomplete="list"
+                            aria-controls={`compare-device-list-${index}`}
+                            aria-activedescendant={
+                              activeDraftOptionIndex >= 0
+                                ? `compare-device-option-${index}-${activeDraftOptionIndex}`
+                                : undefined
+                            }
+                            onChange={(event) => {
+                              draftOptionRefs.current[index] = [];
+                              setDraftSearch(event.target.value);
+                              setActiveDraftOptionIndex(0);
+                            }}
+                            onKeyDown={(event) => {
+                              const optionCount =
+                                draftOptionRefs.current[index]?.length || 0;
+                              if (
+                                (event.key === "ArrowDown" ||
+                                  event.key === "ArrowUp") &&
+                                optionCount
+                              ) {
+                                event.preventDefault();
+                                const nextIndex =
+                                  event.key === "ArrowDown"
+                                    ? 0
+                                    : optionCount - 1;
+                                setActiveDraftOptionIndex(nextIndex);
+                                draftOptionRefs.current[index][
+                                  nextIndex
+                                ]?.focus();
+                              } else if (
+                                event.key === "Enter" &&
+                                optionCount
+                              ) {
+                                event.preventDefault();
+                                draftOptionRefs.current[index][
+                                  activeDraftOptionIndex
+                                ]?.click();
+                              } else if (
+                                event.key === "Escape" ||
+                                event.key === "Tab"
+                              ) {
+                                if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  draftTriggerRefs.current[index]?.focus();
+                                }
+                                setOpenDraftSlot(null);
+                                setDraftSearch("");
+                              }
+                            }}
+                            placeholder="Search mobiles…"
+                            className="h-9 w-full border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                          />
+                        </div>
+                        <ul
+                          id={`compare-device-list-${index}`}
+                          role="listbox"
+                          aria-label="Available mobiles"
+                          className="max-h-56 overflow-y-auto py-1"
+                        >
+                          <li>
+                            <button
+                              ref={(element) => {
+                                if (!draftOptionRefs.current[index]) {
+                                  draftOptionRefs.current[index] = [];
+                                }
+                                draftOptionRefs.current[index][0] = element;
+                              }}
+                              id={`compare-device-option-${index}-0`}
+                              type="button"
+                              role="option"
+                              aria-selected={!selectedId}
+                              onMouseEnter={() =>
+                                setActiveDraftOptionIndex(0)
+                              }
+                              onClick={() => {
+                                setDraftDeviceIds((current) =>
+                                  current.map((draftId, slotIndex) =>
+                                    slotIndex === index ? "" : draftId,
+                                  ),
+                                );
+                                setOpenDraftSlot(null);
+                                setDraftSearch("");
+                                draftTriggerRefs.current[index]?.focus();
+                              }}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "ArrowDown" ||
+                                  event.key === "ArrowUp"
+                                ) {
+                                  event.preventDefault();
+                                  const optionCount =
+                                    draftOptionRefs.current[index]?.length || 0;
+                                  const nextIndex =
+                                    event.key === "ArrowDown"
+                                      ? 1 % optionCount
+                                      : optionCount - 1;
+                                  setActiveDraftOptionIndex(nextIndex);
+                                  draftOptionRefs.current[index][
+                                    nextIndex
+                                  ]?.focus();
+                                } else if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  setOpenDraftSlot(null);
+                                  setDraftSearch("");
+                                  draftTriggerRefs.current[index]?.focus();
+                                } else if (event.key === "Tab") {
+                                  setOpenDraftSlot(null);
+                                  setDraftSearch("");
+                                }
+                              }}
+                              className={`flex min-h-10 w-full items-center px-3 py-2 text-left text-sm transition-colors ${
+                                !selectedId
+                                  ? "bg-blue-50 font-semibold text-blue-800"
+                                  : activeDraftOptionIndex === 0
+                                    ? "bg-slate-100 text-slate-900"
+                                    : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              Select a product
+                            </button>
+                          </li>
+                          {getDraftOptions(index).map((device, optionIndex) => {
+                            const id = String(getProductId(device));
+                            const focusIndex = optionIndex + 1;
+                            const isSelected = id === selectedId;
+                            const isActive =
+                              focusIndex === activeDraftOptionIndex;
+                            return (
+                              <li key={id}>
+                                <button
+                                  ref={(element) => {
+                                    if (!draftOptionRefs.current[index]) {
+                                      draftOptionRefs.current[index] = [];
+                                    }
+                                    draftOptionRefs.current[index][
+                                      focusIndex
+                                    ] = element;
+                                  }}
+                                  id={`compare-device-option-${index}-${focusIndex}`}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onMouseEnter={() =>
+                                    setActiveDraftOptionIndex(focusIndex)
+                                  }
+                                  onClick={() => {
+                                    setDraftDeviceIds((current) =>
+                                      current.map((draftId, slotIndex) =>
+                                        slotIndex === index ? id : draftId,
+                                      ),
+                                    );
+                                    setOpenDraftSlot(null);
+                                    setDraftSearch("");
+                                    draftTriggerRefs.current[index]?.focus();
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (
+                                      event.key === "ArrowDown" ||
+                                      event.key === "ArrowUp"
+                                    ) {
+                                      event.preventDefault();
+                                      const direction =
+                                        event.key === "ArrowDown" ? 1 : -1;
+                                      const optionCount =
+                                        draftOptionRefs.current[index]?.length ||
+                                        0;
+                                      const nextIndex =
+                                        (focusIndex +
+                                          direction +
+                                          optionCount) %
+                                        optionCount;
+                                      setActiveDraftOptionIndex(nextIndex);
+                                      draftOptionRefs.current[index][
+                                        nextIndex
+                                      ]?.focus();
+                                    } else if (event.key === "Escape") {
+                                      event.preventDefault();
+                                      setOpenDraftSlot(null);
+                                      setDraftSearch("");
+                                      draftTriggerRefs.current[index]?.focus();
+                                    } else if (event.key === "Tab") {
+                                      setOpenDraftSlot(null);
+                                      setDraftSearch("");
+                                    }
+                                  }}
+                                  className={`flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                                    isSelected
+                                      ? "bg-blue-50 font-semibold text-blue-800"
+                                      : isActive
+                                        ? "bg-slate-100 text-slate-900"
+                                        : "text-slate-700 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <span className="truncate">
+                                    {getProductName(device)}
+                                  </span>
+                                  {isSelected ? (
+                                    <span
+                                      aria-hidden="true"
+                                      className="ml-2 text-xs text-blue-600"
+                                    >
+                                      ✓
+                                    </span>
+                                  ) : null}
+                                </button>
+                              </li>
+                            );
+                          })}
+                          {!getDraftOptions(index).length ? (
+                            <li className="px-3 py-4 text-center text-sm text-slate-500">
+                              {loading
+                                ? "Loading mobiles…"
+                                : "No mobiles found."}
+                            </li>
+                          ) : null}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                disabled={draftCompareDevices.length < MIN_COMPARE_DEVICES}
+                onClick={() => {
+                  const devices = draftCompareDevices
+                    .slice(0, MAX_COMPARE_DEVICES)
+                    .map((device) => normalizeSelected(device, 0))
+                    .filter(Boolean);
+                  if (devices.length >= MIN_COMPARE_DEVICES) {
+                    setSelectedDevices(devices);
+                  }
+                }}
+                className="min-h-11 w-full max-w-xs border-2 border-slate-200 bg-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors enabled:border-blue-600 enabled:bg-blue-600 enabled:text-white enabled:hover:bg-blue-700 disabled:cursor-not-allowed sm:text-base"
+              >
+                Compare Now!
+              </button>
+            </div>
+
+            {suggestedMobileDevices.length ? (
+              <div className="mt-8">
+                <div className="mb-3">
+                  <h3 className="border-l-4 border-blue-600 pl-3 text-base font-semibold text-slate-900 sm:text-lg">
+                    Phones Worth Comparing
+                  </h3>
+                  <p className="mt-1 pl-4 text-sm text-slate-500">
+                    Explore recommended smartphones and add them to your
+                    comparison.
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {suggestedMobileDevices.map((device) => {
+                    const image = getImage(device);
+                    const id = String(getProductId(device));
+                    return (
+                      <article
+                        key={`suggested-mobile-${id}`}
+                        className="flex min-h-[92px] min-w-0 items-center gap-3 border-2 border-slate-200 bg-transparent px-3 py-2"
+                      >
+                        <div className="flex h-14 w-12 shrink-0 items-center justify-center">
+                          {image ? (
+                            <img
+                              src={image}
+                              alt=""
+                              loading="lazy"
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="text-xs text-slate-400"
+                            >
+                              Mobile
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+                            {getProductName(device)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => addDevice(device)}
+                            className="mt-1 inline-flex min-h-7 items-center gap-2 text-xs font-medium text-slate-600 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:underline"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-sm leading-none"
+                            >
+                              +
+                            </span>
+                            Add to Compare
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            </section>
+          </>
         ) : selectedDevices.length < MIN_COMPARE_DEVICES ? (
           <section className="mx-auto max-w-4xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 sm:py-5">
@@ -998,9 +1679,6 @@ const MobileCompare = () => {
             {selectedDevices.map((device) => {
               const id = getProductId(device);
               const image = getImage(device);
-              const variants = getVariants(device);
-              const selectedIndex = Number(device.selectedVariantIndex) || 0;
-              const score = getScore(device);
               return (
                 <article
                   key={`single-device-${id}`}
@@ -1027,61 +1705,15 @@ const MobileCompare = () => {
                     <p className="mt-1 text-sm text-slate-500">
                       {device?.brand || device?.manufacturer || selectedType}
                     </p>
-                    {variants.length > 1 ? (
-                      <label className="mt-3 block max-w-xs">
-                        <span className="mb-1 block text-xs font-medium text-slate-600">
-                          Variant
-                        </span>
-                        <select
-                          aria-label={`Select variant for ${getProductName(device)}`}
-                          value={Math.min(selectedIndex, variants.length - 1)}
-                          onChange={(event) =>
-                            changeVariant(id, event.target.value)
-                          }
-                          className="min-h-10 w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-500"
-                        >
-                          {variants.map((variant, variantIndex) => {
-                            const label =
-                              [
-                                variant?.ram || variant?.memory,
-                                variant?.storage ||
-                                  variant?.internal_storage ||
-                                  variant?.rom,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ") || `Variant ${variantIndex + 1}`;
-                            return (
-                              <option
-                                key={`${id}-single-variant-${variantIndex}`}
-                                value={variantIndex}
-                              >
-                                {label}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </label>
-                    ) : (
-                      <p className="mt-2 text-sm text-slate-500">
-                        {getVariantLabel(device)}
-                      </p>
-                    )}
                     <p className="mt-3 text-xl font-bold text-blue-700 sm:text-2xl">
                       {formatPrice(getPrice(device))}
                     </p>
-                    {score !== "—" ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        MobilesX specification score:{" "}
-                        <span className="font-semibold text-slate-800">
-                          {score}
-                        </span>
-                      </p>
-                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2 sm:flex-col">
                     <button
                       type="button"
                       onClick={() => {
+                        setPickerMessage("");
                         setShowPicker(true);
                         setSearch("");
                       }}
@@ -1106,23 +1738,27 @@ const MobileCompare = () => {
           </section>
         ) : (
           <>
-            <div className="mb-4 flex flex-col gap-3 border-b border-slate-200 pb-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-4 flex min-w-0 flex-col gap-2 border-b border-slate-200 px-4 pb-3 sm:mb-5 sm:px-0 md:flex-row md:items-center md:justify-between md:gap-4">
+              {/* Keep section tabs off small screens to avoid a multi-row toolbar. Desktop uses one compact, scrollbar-free tab rail. */}
               <nav
                 aria-label="Comparison sections"
-                className="flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent]"
+                className="compare-hidden-scrollbar hidden min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 md:flex md:flex-nowrap lg:gap-2"
               >
                 {visibleSections.map((section) => (
                   <button
                     key={section.id}
                     type="button"
                     onClick={() => scrollToSection(section.id)}
-                    className={`shrink-0 border px-3 py-2 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${activeSection === section.id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700"}`}
+                    aria-current={
+                      activeSection === section.id ? "true" : undefined
+                    }
+                    className={`shrink-0 whitespace-nowrap border-0 border-b-2 bg-transparent px-2.5 py-2 text-xs font-medium transition-colors lg:px-3 lg:py-2.5 ${activeSection === section.id ? "border-b-blue-600 text-blue-700" : "border-b-transparent text-slate-600 hover:border-b-blue-300 hover:text-blue-700"}`}
                   >
                     {section.label}
                   </button>
                 ))}
               </nav>
-              <label className="flex shrink-0 items-center gap-2 text-xs text-slate-600 sm:text-sm">
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 self-end text-xs text-slate-600 sm:text-sm md:self-auto md:pl-2">
                 <input
                   type="checkbox"
                   checked={hideCommonSpecs}
@@ -1133,31 +1769,10 @@ const MobileCompare = () => {
               </label>
             </div>
 
-            <div className="mb-2 hidden items-center gap-2 text-xs text-slate-500 sm:text-sm md:flex">
-              <span aria-hidden="true" className="text-base text-blue-600">
-                ↔
-              </span>
-              <span>
-                Scroll horizontally to compare all selected phones and
-                specifications.
-              </span>
-            </div>
-
             {/* Mobile layout follows a phone-comparison pattern: device columns stay visible, while each spec name gets its own full-width band. */}
             <div className="md:hidden">
-              <div
-                className={`${selectedDevices.length > 3 ? "overflow-x-auto overscroll-x-contain" : "overflow-visible"} [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent]`}
-                style={{ WebkitOverflowScrolling: "touch" }}
-              >
-                <div
-                  className="min-w-0"
-                  style={{
-                    minWidth:
-                      selectedDevices.length > 3
-                        ? `${selectedDevices.length * 132}px`
-                        : "100%",
-                  }}
-                >
+              <div className="compare-hidden-scrollbar overflow-visible">
+                <div className="min-w-0 w-full">
                   <div
                     className="grid border-t border-slate-200"
                     style={{
@@ -1166,15 +1781,11 @@ const MobileCompare = () => {
                   >
                     {selectedDevices.map((device) => {
                       const id = getProductId(device);
-                      const variants = getVariants(device);
-                      const selectedIndex =
-                        Number(device.selectedVariantIndex) || 0;
                       const image = getImage(device);
-                      const score = getScore(device);
                       return (
                         <article
                           key={`mobile-product-${id}`}
-                          className="relative flex min-w-0 flex-col items-center border-b border-r border-slate-200 bg-white px-2 pb-3 pt-4 text-center"
+                          className="relative flex min-w-0 flex-col items-center border-b border-r border-slate-200 bg-white px-2 pb-4 pt-4 text-center"
                         >
                           <button
                             type="button"
@@ -1202,99 +1813,12 @@ const MobileCompare = () => {
                           <h2 className="mt-2 min-h-[42px] w-full break-words text-[13px] font-semibold leading-[1.2] text-slate-950">
                             {getProductName(device)}
                           </h2>
-                          {variants.length > 1 ? (
-                            <select
-                              aria-label={`Select variant for ${getProductName(device)}`}
-                              value={Math.min(
-                                selectedIndex,
-                                variants.length - 1,
-                              )}
-                              onChange={(event) =>
-                                changeVariant(id, event.target.value)
-                              }
-                              className="mt-2 min-h-8 w-full min-w-0 border border-slate-200 bg-white px-1 text-[11px] text-slate-700 outline-none focus:border-blue-500"
-                            >
-                              {variants.map((variant, variantIndex) => {
-                                const label =
-                                  [
-                                    variant?.ram || variant?.memory,
-                                    variant?.storage ||
-                                      variant?.internal_storage ||
-                                      variant?.rom,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ") ||
-                                  `Variant ${variantIndex + 1}`;
-                                return (
-                                  <option
-                                    key={`${id}-mobile-variant-${variantIndex}`}
-                                    value={variantIndex}
-                                  >
-                                    {label}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          ) : (
-                            <p className="mt-2 min-h-8 w-full text-[11px] leading-4 text-slate-500">
-                              {getVariantLabel(device)}
+                          {getSelectedVariantLabel(device) ? (
+                            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+                              {getSelectedVariantLabel(device)}
                             </p>
-                          )}
-                          <p className="mt-1 break-words text-base font-bold leading-5 text-slate-950">
-                            {formatPrice(getPrice(device))}
-                          </p>
-                          <div className="mt-3 flex min-h-[44px] w-full items-center justify-center border-t border-slate-100 pt-2">
-                            {score !== "—" ? (
-                              <div className="rounded-sm border border-blue-100 bg-blue-50 px-2 py-1 text-left text-blue-800">
-                                <span className="block text-base font-bold leading-5">
-                                  {score}
-                                </span>
-                                <span className="block text-[9px] leading-3">
-                                  Spec score
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-slate-400">
-                                Score unavailable
-                              </span>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-
-                  {/* Compact device strip stays visible while the user scrolls through long specification groups. */}
-                  <div
-                    className="sticky top-0 z-30 grid border-b border-slate-300 bg-white/95 backdrop-blur-sm"
-                    style={{
-                      gridTemplateColumns: `repeat(${Math.max(selectedDevices.length, 1)}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {selectedDevices.map((device) => {
-                      const image = getImage(device);
-                      return (
-                        <div
-                          key={`mobile-sticky-${getProductId(device)}`}
-                          className="flex min-h-[76px] min-w-0 items-center gap-1.5 border-r border-slate-200 px-1.5 py-2"
-                        >
-                          {image ? (
-                            <img
-                              src={image}
-                              alt=""
-                              loading="lazy"
-                              className="h-10 w-7 shrink-0 object-contain"
-                            />
                           ) : null}
-                          <div className="min-w-0 flex-1">
-                            <p className="line-clamp-2 break-words text-[10px] font-semibold leading-[14px] text-slate-800">
-                              {getProductName(device)}
-                            </p>
-                            <p className="mt-1 break-words text-xs font-bold leading-4 text-slate-950">
-                              {formatPrice(getPrice(device))}
-                            </p>
-                          </div>
-                        </div>
+                        </article>
                       );
                     })}
                   </div>
@@ -1307,6 +1831,11 @@ const MobileCompare = () => {
                       <h3 className="text-sm font-bold text-slate-900">
                         Compare Prices
                       </h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Retailer prices are shown only when tied to the
+                        displayed variant. “Not listed” means no verified
+                        variant price is available.
+                      </p>
                     </div>
                     {storePriceRows.map((storeRow) => {
                       const logo = getStoreLogo(storeRow.label);
@@ -1359,13 +1888,29 @@ const MobileCompare = () => {
                                       {formatPrice(numericPrice)}{" "}
                                       <span aria-hidden="true">›</span>
                                     </a>
+                                  ) : hasPrice ? (
+                                    <span
+                                      title="Retailer price recorded, but no product link is available"
+                                      className="break-words text-xs font-semibold text-slate-900"
+                                    >
+                                      {formatPrice(numericPrice)}
+                                    </span>
+                                  ) : store?.url ? (
+                                    <a
+                                      href={store.url}
+                                      target="_blank"
+                                      rel="nofollow sponsored noopener noreferrer"
+                                      className="break-words text-xs font-semibold text-blue-700"
+                                    >
+                                      View offer{" "}
+                                      <span aria-hidden="true">›</span>
+                                    </a>
                                   ) : (
                                     <span
-                                      className={`break-words text-xs ${hasPrice ? "font-semibold text-slate-900" : "text-slate-400"}`}
+                                      title="No variant-matched retailer price or offer link is recorded"
+                                      className="break-words text-xs text-slate-400"
                                     >
-                                      {hasPrice
-                                        ? formatPrice(numericPrice)
-                                        : "—"}
+                                      Not listed
                                     </span>
                                   )}
                                 </div>
@@ -1381,9 +1926,13 @@ const MobileCompare = () => {
                     <section
                       key={`mobile-${section.id}`}
                       id={`compare-mobile-section-${section.id}`}
-                      className="scroll-mt-20 border-b border-slate-200"
+                      className="scroll-mt-20"
                     >
-                      <div className="flex items-center gap-2 border-b border-slate-200 bg-blue-50 px-3 py-3">
+                      <div className="flex items-center gap-2 bg-blue-50 px-3 py-3">
+                        <span
+                          aria-hidden="true"
+                          className="h-5 w-1 shrink-0 bg-blue-600"
+                        />
                         <h3 className="text-sm font-bold text-slate-950">
                           {section.label}
                         </h3>
@@ -1391,63 +1940,34 @@ const MobileCompare = () => {
                           ({section.rows.length})
                         </span>
                       </div>
-                      {section.rows.map((row) => (
-                        <div key={`mobile-row-${section.id}-${row.key}`}>
-                          <div className="border-b border-slate-200 bg-blue-50 px-3 py-2 text-[13px] font-semibold leading-5 text-slate-900">
-                            {row.label}
-                          </div>
-                          <div
-                            className="grid"
-                            style={{
-                              gridTemplateColumns: `repeat(${Math.max(selectedDevices.length, 1)}, minmax(0, 1fr))`,
-                            }}
-                          >
-                            {selectedDevices.map((device, index) => (
-                              <div
-                                key={`mobile-value-${section.id}-${row.key}-${getProductId(device)}`}
-                                className={`flex min-h-[54px] min-w-0 items-center justify-center border-b border-r border-slate-200 px-2 py-3 text-center text-[13px] leading-5 ${section.id === "pros" ? "bg-blue-50/50 text-slate-700" : section.id === "cons" ? "bg-slate-50 text-slate-700" : "bg-white text-slate-700"}`}
-                              >
-                                {section.id === "pros" ||
-                                section.id === "cons" ? (
-                                  Array.isArray(row.values[index]) &&
-                                  row.values[index].length ? (
-                                    <ul className="w-full space-y-2 text-left text-[12px] leading-5 sm:text-sm">
-                                      {row.values[index].map(
-                                        (item, itemIndex) => (
-                                          <li
-                                            key={`${section.id}-${getProductId(device)}-${itemIndex}`}
-                                            className="flex items-start gap-1.5"
-                                          >
-                                            <span
-                                              className="mt-0.5 shrink-0 font-bold text-blue-600"
-                                              aria-hidden="true"
-                                            >
-                                              {section.id === "pros"
-                                                ? "+"
-                                                : "−"}
-                                            </span>
-                                            <span className="break-words">
-                                              {item}
-                                            </span>
-                                          </li>
-                                        ),
-                                      )}
-                                    </ul>
-                                  ) : (
-                                    <span className="text-xs text-slate-400">
-                                      Not listed
-                                    </span>
-                                  )
-                                ) : (
-                                  <span className="whitespace-normal break-words">
+                      <div className="border-x border-t border-slate-200">
+                        {section.rows.map((row) => (
+                          <div key={`mobile-row-${section.id}-${row.key}`}>
+                            <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold leading-5 text-slate-800">
+                              {row.label}
+                            </div>
+                            <div
+                              className="grid"
+                              style={{
+                                gridTemplateColumns: `repeat(${Math.max(selectedDevices.length, 1)}, minmax(0, 1fr))`,
+                              }}
+                            >
+                              {selectedDevices.map((device, index) => (
+                                <div
+                                  key={`mobile-value-${section.id}-${row.key}-${getProductId(device)}`}
+                                  className="flex min-h-[58px] min-w-0 items-center justify-center border-b border-r border-slate-200 bg-white px-2.5 py-3 text-center last:border-r-0"
+                                >
+                                  <span
+                                    className={`whitespace-normal break-words text-sm leading-6 ${getSpecValueClass(row.values[index])}`}
+                                  >
                                     {formatValue(row.values[index])}
                                   </span>
-                                )}
-                              </div>
-                            ))}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </section>
                   ))}
                 </div>
@@ -1455,12 +1975,10 @@ const MobileCompare = () => {
             </div>
 
             {/* Desktop mirrors the mobile comparison rhythm: product columns first, then full-width labels and aligned values. */}
-            <div className="hidden min-w-0 md:block">
+            <div className="mx-auto hidden min-w-0 md:block">
               <div
-                aria-label="Scrollable device comparison table"
-                className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-slate-200 bg-white [scrollbar-color:#bfdbfe_#f8fafc] [scrollbar-width:thin]"
-                style={{ WebkitOverflowScrolling: "touch" }}
-                tabIndex={0}
+                aria-label="Device comparison table"
+                className="w-full min-w-0 max-w-full bg-white compare-hidden-scrollbar"
               >
                 <div className="min-w-0">
                   <div
@@ -1471,32 +1989,28 @@ const MobileCompare = () => {
                   >
                     {selectedDevices.map((device) => {
                       const id = getProductId(device);
-                      const variants = getVariants(device);
-                      const selectedIndex =
-                        Number(device.selectedVariantIndex) || 0;
                       const image = getImage(device);
-                      const score = getScore(device);
                       return (
                         <article
                           key={`desktop-product-${id}`}
-                          className="relative flex min-w-0 flex-col items-center border-r border-slate-200 px-4 pb-5 pt-5 text-center last:border-r-0 lg:px-6 lg:pt-6"
+                          className="relative flex min-w-0 flex-col items-center border-r border-slate-200 px-3 pb-3 pt-3 text-center last:border-r-0 xl:px-4 xl:pt-4"
                         >
                           <button
                             type="button"
                             onClick={() => removeDevice(id)}
                             aria-label={`Remove ${getProductName(device)}`}
-                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center text-2xl leading-none text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                            className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center text-xl leading-none text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-700"
                             title="Remove phone"
                           >
                             ×
                           </button>
-                          <div className="flex h-36 w-full items-center justify-center lg:h-40">
+                          <div className="flex h-28 w-full items-center justify-center xl:h-32">
                             {image ? (
                               <img
                                 src={image}
                                 alt={getProductName(device)}
                                 loading="lazy"
-                                className="max-h-32 max-w-[150px] object-contain lg:max-h-36 lg:max-w-[170px]"
+                                className="max-h-24 max-w-[112px] object-contain xl:max-h-28 xl:max-w-[132px]"
                               />
                             ) : (
                               <div className="flex h-24 w-20 items-center justify-center border border-slate-200 text-xs text-slate-400">
@@ -1504,66 +2018,14 @@ const MobileCompare = () => {
                               </div>
                             )}
                           </div>
-                          <h2 className="mt-3 min-h-12 w-full max-w-[320px] break-words text-base font-bold leading-6 text-slate-950 lg:text-lg">
+                          <h2 className="mt-2 min-h-10 w-full max-w-[260px] break-words text-sm font-bold leading-5 text-slate-950 xl:text-base">
                             {getProductName(device)}
                           </h2>
-                          {variants.length > 1 ? (
-                            <select
-                              aria-label={`Select variant for ${getProductName(device)}`}
-                              value={Math.min(
-                                selectedIndex,
-                                variants.length - 1,
-                              )}
-                              onChange={(event) =>
-                                changeVariant(id, event.target.value)
-                              }
-                              className="mt-2 min-h-10 w-full max-w-[280px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            >
-                              {variants.map((variant, variantIndex) => {
-                                const label =
-                                  [
-                                    variant?.ram || variant?.memory,
-                                    variant?.storage ||
-                                      variant?.internal_storage ||
-                                      variant?.rom,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ") ||
-                                  `Variant ${variantIndex + 1}`;
-                                return (
-                                  <option
-                                    key={`${id}-desktop-variant-${variantIndex}`}
-                                    value={variantIndex}
-                                  >
-                                    {label}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          ) : (
-                            <p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">
-                              {getVariantLabel(device)}
+                          {getSelectedVariantLabel(device) ? (
+                            <p className="mt-1 text-xs leading-4 text-slate-500">
+                              {getSelectedVariantLabel(device)}
                             </p>
-                          )}
-                          <p className="mt-3 text-2xl font-bold tracking-tight text-blue-700 lg:text-3xl">
-                            {formatPrice(getPrice(device))}
-                          </p>
-                          <div className="mt-4 w-full max-w-[280px] border border-blue-100 bg-blue-50 px-3 py-3">
-                            {score !== "—" ? (
-                              <>
-                                <p className="text-2xl font-bold tabular-nums text-blue-800 lg:text-3xl">
-                                  {score}
-                                </p>
-                                <p className="mt-1 text-xs font-medium text-blue-700">
-                                  MobilesX specification score
-                                </p>
-                              </>
-                            ) : (
-                              <p className="text-sm text-slate-500">
-                                Specification score unavailable
-                              </p>
-                            )}
-                          </div>
+                          ) : null}
                         </article>
                       );
                     })}
@@ -1573,32 +2035,34 @@ const MobileCompare = () => {
                     id="compare-store-prices"
                     className="border-b border-slate-200"
                   >
-                    <div className="border-b border-blue-100 bg-blue-50 px-4 py-4 lg:px-6">
-                      <h3 className="text-base font-bold text-blue-900 lg:text-lg">
+                    <div className="border-b border-blue-100 bg-blue-50 px-3 py-3 xl:px-4">
+                      <h3 className="text-sm font-bold text-blue-900 xl:text-base">
                         Compare Prices
                       </h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Compare retailer prices for each selected variant.
+                      <p className="mt-0.5 text-xs leading-5 text-slate-600 xl:text-sm">
+                        Retailer prices are shown only when tied to the
+                        displayed variant. “Not listed” means no verified
+                        variant price is available.
                       </p>
                     </div>
                     {storePriceRows.map((storeRow) => {
                       const logo = getStoreLogo(storeRow.label);
                       return (
                         <div key={`desktop-store-${storeRow.key}`}>
-                          <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 lg:px-6">
+                          <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 xl:px-4">
                             {logo ? (
                               <img
                                 src={logo}
                                 alt={`${storeRow.label} logo`}
                                 loading="lazy"
-                                className="h-7 w-10 shrink-0 object-contain"
+                                className="h-6 w-8 shrink-0 object-contain"
                               />
                             ) : (
-                              <span className="flex h-7 w-10 shrink-0 items-center justify-center border border-slate-200 bg-white text-xs font-bold uppercase text-slate-500">
+                              <span className="flex h-6 w-8 shrink-0 items-center justify-center border border-slate-200 bg-white text-[10px] font-bold uppercase text-slate-500">
                                 {storeRow.label.slice(0, 2)}
                               </span>
                             )}
-                            <span className="text-sm font-semibold text-slate-800 lg:text-base">
+                            <span className="text-xs font-semibold text-slate-800 xl:text-sm">
                               {storeRow.label}
                             </span>
                           </div>
@@ -1623,14 +2087,14 @@ const MobileCompare = () => {
                               return (
                                 <div
                                   key={`desktop-store-price-${storeRow.key}-${getProductId(device)}`}
-                                  className="flex min-h-14 min-w-0 items-center justify-center border-b border-r border-slate-200 px-4 py-3 text-center last:border-r-0 lg:min-h-16 lg:px-6"
+                                  className="flex min-h-11 min-w-0 items-center justify-center border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 xl:min-h-12 xl:px-3"
                                 >
                                   {hasPrice && store?.url ? (
                                     <a
                                       href={store.url}
                                       target="_blank"
                                       rel="nofollow sponsored noopener noreferrer"
-                                      className="break-words text-base font-semibold text-blue-700 underline-offset-4 hover:underline lg:text-lg"
+                                      className="break-words text-sm font-semibold text-blue-700 underline-offset-4 hover:underline xl:text-base"
                                     >
                                       {priceLabel}
                                       <span
@@ -1640,11 +2104,34 @@ const MobileCompare = () => {
                                         ↗
                                       </span>
                                     </a>
-                                  ) : (
+                                  ) : hasPrice ? (
                                     <span
-                                      className={`text-base lg:text-lg ${hasPrice ? "font-semibold text-slate-900" : "text-slate-400"}`}
+                                      title="Retailer price recorded, but no product link is available"
+                                      className="text-sm font-semibold text-slate-900 xl:text-base"
                                     >
                                       {priceLabel}
+                                    </span>
+                                  ) : store?.url ? (
+                                    <a
+                                      href={store.url}
+                                      target="_blank"
+                                      rel="nofollow sponsored noopener noreferrer"
+                                      className="break-words text-sm font-semibold text-blue-700 underline-offset-4 hover:underline xl:text-base"
+                                    >
+                                      View offer{" "}
+                                      <span
+                                        aria-hidden="true"
+                                        className="ml-1 text-sm"
+                                      >
+                                        ↗
+                                      </span>
+                                    </a>
+                                  ) : (
+                                    <span
+                                      title="No variant-matched retailer price or offer link is recorded"
+                                      className="text-xs text-slate-400 xl:text-sm"
+                                    >
+                                      Not listed
                                     </span>
                                   )}
                                 </div>
@@ -1660,76 +2147,45 @@ const MobileCompare = () => {
                     <section
                       key={`desktop-${section.id}`}
                       id={`compare-section-${section.id}`}
-                      className="scroll-mt-24 border-b border-slate-200"
+                      className="scroll-mt-24"
                     >
-                      <div className="flex items-center gap-3 border-b border-blue-100 bg-blue-50 px-4 py-4 lg:px-6">
-                        <span className="h-6 w-1.5 bg-blue-600" />
-                        <h3 className="text-base font-bold text-blue-950 lg:text-lg">
+                      <div className="flex items-center gap-2 bg-blue-50 px-3 py-3 xl:px-4">
+                        <span className="h-5 w-1 bg-blue-600" />
+                        <h3 className="text-sm font-bold text-blue-950 xl:text-base">
                           {section.label}
                         </h3>
-                        <span className="text-sm text-slate-500">
+                        <span className="text-xs text-slate-500">
                           ({section.rows.length})
                         </span>
                       </div>
-                      {section.rows.map((row) => (
-                        <div key={`desktop-row-${section.id}-${row.key}`}>
-                          <div
-                            className={`border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 lg:px-6 lg:text-base ${section.id === "pros" ? "bg-blue-50/70" : section.id === "cons" ? "bg-slate-50" : "bg-slate-50"}`}
-                          >
-                            {row.label}
-                          </div>
-                          <div
-                            className="grid"
-                            style={{
-                              gridTemplateColumns: `repeat(${Math.max(selectedDevices.length, 1)}, minmax(0, 1fr))`,
-                            }}
-                          >
-                            {selectedDevices.map((device, index) => (
-                              <div
-                                key={`desktop-value-${section.id}-${row.key}-${getProductId(device)}`}
-                                className={`flex min-h-14 min-w-0 items-center justify-center border-b border-r border-slate-200 px-4 py-4 text-center last:border-r-0 lg:min-h-16 lg:px-6 ${section.id === "pros" ? "bg-blue-50/30" : "bg-white"}`}
-                              >
-                                {section.id === "pros" ||
-                                section.id === "cons" ? (
-                                  Array.isArray(row.values[index]) &&
-                                  row.values[index].length ? (
-                                    <ul className="w-full max-w-sm space-y-3 text-left text-sm leading-6 text-slate-700 lg:text-base">
-                                      {row.values[index].map(
-                                        (item, itemIndex) => (
-                                          <li
-                                            key={`${section.id}-${getProductId(device)}-${itemIndex}`}
-                                            className="flex items-start gap-2"
-                                          >
-                                            <span
-                                              className="mt-px shrink-0 font-bold text-blue-600"
-                                              aria-hidden="true"
-                                            >
-                                              {section.id === "pros"
-                                                ? "+"
-                                                : "−"}
-                                            </span>
-                                            <span className="break-words">
-                                              {item}
-                                            </span>
-                                          </li>
-                                        ),
-                                      )}
-                                    </ul>
-                                  ) : (
-                                    <span className="text-sm text-slate-400">
-                                      Not listed
-                                    </span>
-                                  )
-                                ) : (
-                                  <span className="whitespace-normal break-words text-sm leading-6 text-slate-700 lg:text-base">
+                      <div className="border-x border-t border-slate-200">
+                        {section.rows.map((row) => (
+                          <div key={`desktop-row-${section.id}-${row.key}`}>
+                            <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold leading-5 text-slate-800 xl:px-4">
+                              {row.label}
+                            </div>
+                            <div
+                              className="grid"
+                              style={{
+                                gridTemplateColumns: `repeat(${Math.max(selectedDevices.length, 1)}, minmax(0, 1fr))`,
+                              }}
+                            >
+                              {selectedDevices.map((device, index) => (
+                                <div
+                                  key={`desktop-value-${section.id}-${row.key}-${getProductId(device)}`}
+                                  className="flex min-h-14 min-w-0 items-center justify-center border-b border-r border-slate-200 bg-white px-3 py-3.5 text-center last:border-r-0 xl:min-h-16 xl:px-4 xl:py-4"
+                                >
+                                  <span
+                                    className={`whitespace-normal break-words text-sm leading-6 ${getSpecValueClass(row.values[index])}`}
+                                  >
                                     {formatValue(row.values[index])}
                                   </span>
-                                )}
-                              </div>
-                            ))}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </section>
                   ))}
                 </div>
@@ -1743,6 +2199,75 @@ const MobileCompare = () => {
             Loading device catalogue…
           </p>
         ) : null}
+
+        {suggestedCompareCards.length ? (
+          <section
+            aria-labelledby="system-compare-suggestions-title"
+            className="mt-8 border-t border-slate-200 px-4 pt-5 sm:px-0 sm:pt-6"
+          >
+            <div className="mb-4">
+              <h2
+                id="system-compare-suggestions-title"
+                className="border-l-4 border-blue-600 pl-3 text-lg font-semibold text-slate-900"
+              >
+                Popular Phone Matchups
+              </h2>
+              <p className="mt-1 pl-4 text-sm text-slate-500">
+                Explore popular smartphone combinations and see how their
+                features stack up.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {suggestedCompareCards.map(({ routePath, phones }) => (
+                <Link
+                  key={routePath}
+                  to={routePath}
+                  aria-label={`Compare ${phones.map((phone) => phone.name).join(" with ")}`}
+                  className="group flex min-h-20 items-center gap-2 rounded-lg border-2 border-slate-200 bg-transparent px-3 py-2 transition-colors hover:border-blue-300 hover:bg-blue-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:px-3"
+                >
+                  {phones.map((phone, index) => (
+                    <React.Fragment key={`${routePath}-phone-${index}`}>
+                      {index > 0 ? (
+                        <span
+                          aria-hidden="true"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-600 shadow-sm"
+                        >
+                          <FaExchangeAlt className="text-xs" />
+                        </span>
+                      ) : null}
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <img
+                          src={phone.image}
+                          alt=""
+                          loading="lazy"
+                          className="h-10 w-8 shrink-0 object-contain sm:h-12 sm:w-9"
+                        />
+                        <span className="line-clamp-2 min-w-0 text-xs font-semibold leading-5 text-slate-900 group-hover:text-blue-800 sm:text-sm">
+                          {phone.name}
+                        </span>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {selectedType === "smartphone" ? (
+          <>
+            <section className="mt-8 px-4 sm:px-0">
+              <ProductDiscoverySections
+                entityType="smartphones"
+                catalogItems={availableDevices}
+                brandCatalog={smartphoneBrandCatalog}
+                layout="latestPhones"
+                showComparisonBanner={false}
+              />
+            </section>
+            <ContinueBrowsingSmartphones transparentBackground />
+          </>
+        ) : null}
       </div>
 
       {showPicker ? (
@@ -1751,92 +2276,231 @@ const MobileCompare = () => {
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setShowPicker(false);
           }}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 sm:items-center sm:p-5"
+          onTouchStart={(event) => {
+            if (event.target === event.currentTarget) setShowPicker(false);
+          }}
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/40 sm:items-center sm:p-4"
         >
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-device-title"
-            className="flex max-h-[92dvh] w-full max-w-2xl flex-col border border-slate-200 bg-white sm:max-h-[85vh]"
+            aria-describedby="add-device-description"
+            className="flex h-[92dvh] max-h-[92dvh] w-full flex-col overflow-hidden border border-slate-200 bg-white sm:h-auto sm:max-h-[min(84vh,760px)] sm:max-w-xl sm:rounded-xl lg:max-w-2xl"
           >
-            <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4">
-              <div>
-                <h2
-                  id="add-device-title"
-                  className="text-lg font-bold text-slate-950 sm:text-xl"
+            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2
+                    id="add-device-title"
+                    className="text-base font-bold tracking-tight text-slate-950 sm:text-lg"
+                  >
+                    Select a{" "}
+                    {selectedType === "smartphone" ? "mobile" : selectedType} to
+                    compare
+                  </h2>
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-blue-700">
+                    {selectedDevices.length}/{MAX_COMPARE_DEVICES} selected
+                  </span>
+                </div>
+                <p
+                  id="add-device-description"
+                  className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm"
                 >
-                  Select a mobile to compare
-                </h2>
-                <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                  Search the catalogue and add a device to the table.
+                  Search the catalogue and add up to {MAX_COMPARE_DEVICES}{" "}
+                  compatible devices.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPicker(false)}
                 aria-label="Close device picker"
-                className="flex h-9 w-9 items-center justify-center text-2xl text-slate-500 hover:bg-slate-100"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 ×
               </button>
             </header>
-            <div className="border-b border-slate-200 p-3 sm:p-4">
-              <input
-                autoFocus
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search name or brand…"
-                className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:px-4 sm:text-base"
-              />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {compatibleDevices.map((device) => {
-                const image = getImage(device);
-                return (
+
+            <div className="shrink-0 border-b border-slate-200 px-4 py-3 sm:px-5">
+              <label htmlFor="compare-device-search" className="sr-only">
+                Search phones by name or brand
+              </label>
+              <div className="flex items-center gap-3 border border-slate-300 bg-white px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 shrink-0 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <circle cx="10.8" cy="10.8" r="6.8" />
+                  <path d="m16 16 4.2 4.2" strokeLinecap="round" />
+                </svg>
+                <input
+                  id="compare-device-search"
+                  autoFocus
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by phone name or brand"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-3 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-base"
+                />
+                {search ? (
                   <button
-                    key={String(getProductId(device))}
                     type="button"
-                    onClick={() => addDevice(device)}
-                    className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-3 text-left last:border-b-0 hover:bg-blue-50/50 sm:gap-4 sm:px-5 sm:py-4"
+                    onClick={() => setSearch("")}
+                    className="shrink-0 px-1 py-2 text-xs font-semibold text-blue-700 hover:text-blue-900"
+                    aria-label="Clear search"
                   >
-                    {image ? (
-                      <img
-                        src={image}
-                        alt=""
-                        loading="lazy"
-                        className="h-16 w-12 shrink-0 object-contain sm:h-20 sm:w-16"
-                      />
-                    ) : (
-                      <span className="h-16 w-12 shrink-0 border border-slate-200 sm:h-20 sm:w-16" />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-slate-900 sm:text-base">
-                        {getProductName(device)}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-500 sm:text-sm">
-                        {device?.brand || device?.manufacturer || ""}{" "}
-                        {getPrice(device)
-                          ? `· ${formatPrice(getPrice(device))}`
-                          : ""}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs font-semibold text-blue-700 sm:text-sm">
-                      Add +
-                    </span>
+                    Clear
                   </button>
-                );
-              })}
-              {!compatibleDevices.length ? (
-                <p className="px-5 py-10 text-center text-sm text-slate-500">
-                  No matching devices found.
+                ) : null}
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
+                <span>
+                  {compatibleDevices.length}{" "}
+                  {compatibleDevices.length === 1 ? "device" : "devices"} shown
+                </span>
+                {selectedDevices.length >= MAX_COMPARE_DEVICES ? (
+                  <span className="font-medium text-slate-600">
+                    Comparison limit reached
+                  </span>
+                ) : (
+                  <span>
+                    {MAX_COMPARE_DEVICES - selectedDevices.length} slot
+                    {MAX_COMPARE_DEVICES - selectedDevices.length === 1
+                      ? ""
+                      : "s"}{" "}
+                    available
+                  </span>
+                )}
+              </div>
+              {pickerMessage ? (
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className="mt-2 border-l-2 border-blue-600 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800 sm:text-sm"
+                >
+                  {pickerMessage}
                 </p>
               ) : null}
             </div>
-            <footer className="border-t border-slate-200 px-4 py-3 text-right sm:px-5 sm:py-4">
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {compatibleDevices.map((device) => {
+                const id = String(getProductId(device));
+                const image = getImage(device);
+                const isSelected = selectedDevices.some(
+                  (selected) => String(getProductId(selected)) === id,
+                );
+                const limitReached =
+                  selectedDevices.length >= MAX_COMPARE_DEVICES;
+                const price = getPrice(device);
+                return (
+                  <div
+                    key={id}
+                    className={`grid grid-cols-[3.5rem_minmax(0,1fr)_5.25rem] items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 sm:grid-cols-[4.25rem_minmax(0,1fr)_5.75rem] sm:gap-4 sm:px-5 sm:py-3.5 ${isSelected ? "bg-blue-50/60" : "bg-white hover:bg-slate-50"}`}
+                  >
+                    <div className="flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16">
+                      {image ? (
+                        <img
+                          src={image}
+                          alt=""
+                          loading="lazy"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span
+                          className="flex h-11 w-9 items-center justify-center bg-slate-100 text-lg text-slate-400"
+                          aria-hidden="true"
+                        >
+                          ▯
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 py-1">
+                      <p className="line-clamp-2 break-words text-sm font-semibold leading-5 text-slate-900 sm:text-[15px]">
+                        {getProductName(device)}
+                      </p>
+                      <p className="mt-1 truncate text-xs leading-4 text-slate-500 sm:text-sm">
+                        {[
+                          device?.brand || device?.manufacturer,
+                          price ? formatPrice(price) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "Price unavailable"}
+                      </p>
+                    </div>
+                    <div className="flex justify-end">
+                      {isSelected ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 sm:text-sm"
+                          aria-label="Already added"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.26a1 1 0 0 1-1.42.005L3.3 9.2a1 1 0 0 1 1.4-1.43l4.08 3.997 6.51-6.47a1 1 0 0 1 1.414-.006Z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Added
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => addDevice(device)}
+                          disabled={limitReached}
+                          className="inline-flex min-h-9 items-center justify-center gap-1 border border-blue-600 px-2.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 sm:min-h-10 sm:px-3 sm:text-sm"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="text-base leading-none"
+                          >
+                            +
+                          </span>{" "}
+                          Add
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {!compatibleDevices.length ? (
+                <div className="flex min-h-44 flex-col items-center justify-center px-6 py-10 text-center">
+                  <div
+                    className="mb-3 flex h-10 w-10 items-center justify-center bg-slate-100 text-slate-400"
+                    aria-hidden="true"
+                  >
+                    ⌕
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {loading
+                      ? "Loading device catalogue…"
+                      : "No matching devices found"}
+                  </p>
+                  <p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">
+                    Try a different phone name or brand.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
+              <p className="min-w-0 text-xs leading-5 text-slate-500 sm:text-sm">
+                {selectedDevices.length < MIN_COMPARE_DEVICES
+                  ? `Select at least ${MIN_COMPARE_DEVICES} devices to compare.`
+                  : `${selectedDevices.length} devices ready to compare.`}
+              </p>
               <button
                 type="button"
                 onClick={() => setShowPicker(false)}
-                className="min-h-10 border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="min-h-10 shrink-0 bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 Done
               </button>
