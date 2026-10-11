@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-
+  <url>
+    <loc>https://mobilesx.in/news/starlink-s-india-launch-stalls-as-elon-musk-takes-on-regulators-and-telecom-giants</loc>
+    <news:news>
+      <news:publication>
+        <news:name>MobilesX</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-10T10:31:00.000Z</news:publication_date>
+      <news:title>Starlink’s India Launch Stalls as Elon Musk Takes on Regulators and Telecom Giants</news:title>
+    </news:news>
+  </url>
 </urlset>

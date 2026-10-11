@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
-  CartesianGrid,
+  Area,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -13,6 +13,7 @@ import SEO from "../SEO";
 import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import TrackPriceButton from "./TrackPriceButton";
 import { buildApiUrl } from "../../utils/apiUrl";
 import { useDevice } from "../../hooks/useDevice";
 
@@ -70,6 +71,28 @@ const formatPrice = (price) => {
   return Number.isFinite(value)
     ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)
     : "—";
+};
+
+const PriceHistoryTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+
+  const price = payload.find((entry) => entry.dataKey === "price")?.value;
+  if (price == null) return null;
+
+  return (
+    <div className="animate-in slide-in-from-top-2 min-w-36 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
+      <div className="h-1 bg-blue-600" />
+      <div className="px-3.5 py-2.5">
+        <p className="text-[11px] font-medium text-slate-500">{label}</p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-blue-600 ring-4 ring-blue-50" />
+          <p className="text-sm font-bold tabular-nums text-slate-900">
+            ₹ {formatPrice(price)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const SmartphonePriceHistory = () => {
@@ -192,8 +215,15 @@ const SmartphonePriceHistory = () => {
       value: variantLabel,
     },
   ].filter((item) => item.value != null && String(item.value).trim());
-  const productName =
-    product?.name || product?.model || "This smartphone";
+  const productName = product?.name || product?.model || "This smartphone";
+  const productImageValue =
+    (Array.isArray(product?.images) ? product.images[0] : null) ||
+    product?.image ||
+    product?.image_url;
+  const productImage =
+    typeof productImageValue === "string"
+      ? productImageValue
+      : productImageValue?.url || productImageValue?.image_url || "";
   const specificationsHref = `${productPath}#spec-specifications`;
 
   const selectVariant = (variant, index) => {
@@ -227,6 +257,8 @@ const SmartphonePriceHistory = () => {
           month: "short",
         }),
         price: Number(entry.price),
+        entryOrigin: entry.entry_origin || "observed",
+        derivedType: entry.derived_type || null,
       })),
     [history],
   );
@@ -289,272 +321,357 @@ const SmartphonePriceHistory = () => {
         url={location.pathname}
       />
       <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl">
-        <Link
-          to={`${productPath}${variantId ? `?variantId=${encodeURIComponent(variantId)}` : ""}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
-        >
-          <span aria-hidden="true">‹</span>
-          Back to product
-        </Link>
+        <div className="mx-auto w-full max-w-7xl">
+          <Link
+            to={`${productPath}${variantId ? `?variantId=${encodeURIComponent(variantId)}` : ""}`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+          >
+            <span aria-hidden="true">‹</span>
+            Back to product
+          </Link>
 
-        <section className="mt-5 bg-white">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
-              Price history
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
-              {variantLabel}
-            </h1>
-          </div>
-
-          {variants.length > 1 && (
-            <div className="mt-5">
-              <p className="mb-2 text-xs font-medium text-slate-500">
-                Choose variant
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {variants.map((variant, index) => {
-                  const optionId =
-                    variant?.variant_id ?? variant?.id ?? variant?.variantId;
-                  const selected = String(optionId) === String(variantId);
-                  return (
-                    <button
-                      key={optionId ?? index}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => selectVariant(variant, index)}
-                      className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                        selected
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
-                      }`}
-                    >
-                      {variantLabelFor(variant, index)}
-                    </button>
-                  );
-                })}
+          <section className="mt-5 bg-white">
+            <div className="flex flex-wrap items-center gap-4">
+              {productImage ? (
+                <img
+                  src={productImage}
+                  alt={productName}
+                  className="h-16 w-16 shrink-0 rounded-lg object-contain sm:h-20 sm:w-20"
+                  loading="lazy"
+                />
+              ) : null}
+              <div className="min-w-0">
+                <h1 className="truncate text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                  {productName}
+                </h1>
+                <p className="mt-0.5 text-lg font-medium text-slate-600">
+                  Price History
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{variantLabel}</p>
+              </div>
+              <div className="ml-auto">
+                <TrackPriceButton
+                  productId={productId}
+                  variant={selectedVariant}
+                  variantLabel={variantLabel}
+                  stores={
+                    selectedVariant?.store_prices ??
+                    selectedVariant?.storePrices ??
+                    []
+                  }
+                />
               </div>
             </div>
-          )}
-          {variantsLoading && (
-            <p className="mt-3 text-xs text-slate-500">Loading variants…</p>
-          )}
-          {variantsError && (
-            <p role="status" className="mt-3 text-xs text-amber-700">
-              {variantsError}
-            </p>
-          )}
 
-          {error && !loading ? (
-            <p role="alert" className="mt-8 rounded-lg bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </p>
-          ) : (
-            <>
-              <div className="mt-6 flex flex-col gap-4 border-b border-slate-100 pb-5 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="mb-1 text-xs font-medium text-slate-500">Source</p>
-                  <div className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
-                    {storeOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        aria-pressed={store === option.value}
-                        onClick={() => setStore(option.value)}
-                        className={`min-h-8 rounded-md px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                          store === option.value
-                            ? "bg-white text-blue-700 shadow-sm"
-                            : "text-slate-600 hover:text-slate-950"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-1 text-xs font-medium text-slate-500">Range</p>
-                  <div className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
-                    {PRICE_HISTORY_RANGES.map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        aria-pressed={range === option.key}
-                        onClick={() => setRange(option.key)}
-                        className={`min-h-8 min-w-9 rounded-md px-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                          range === option.key
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "text-slate-600 hover:text-slate-950"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 border-b border-slate-100 sm:grid-cols-4">
-                {[
-                  { label: "Current", value: summary.current_price },
-                  { label: "Lowest", value: summary.lowest_price },
-                  { label: "Highest", value: summary.highest_price },
-                  { label: "Change", value: summary.change_percent, percent: true },
-                ].map((metric) => (
-                  <div
-                    key={metric.label}
-                    className="border-l border-slate-100 py-4 pl-3 first:border-l-0 first:pl-0 sm:px-4 sm:first:pl-0"
-                  >
-                    <p className="text-xs font-medium text-slate-500">{metric.label}</p>
-                    <p className="mt-1 text-lg font-bold tabular-nums text-slate-900">
-                      {metric.value == null || Number.isNaN(Number(metric.value))
-                        ? "—"
-                        : metric.percent
-                          ? `${Number(metric.value).toFixed(1)}%`
-                          : `₹ ${formatPrice(metric.value)}`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
+            {variants.length > 1 && (
               <div className="mt-5">
-                {loading ? (
-                  <div className="flex h-72 items-center justify-center text-sm text-slate-500">
-                    Loading price history…
-                  </div>
-                ) : chartData.length > 0 ? (
-                  <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
-                        <CartesianGrid stroke="#dfe7f3" strokeDasharray="4 4" vertical={false} />
-                        <XAxis
-                          dataKey="date"
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          padding={{ left: 12, right: 12 }}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          width={76}
-                          tickFormatter={(value) => `₹${formatPrice(value)}`}
-                          domain={([min, max]) => [
-                            min === max ? min * 0.9 : min * 0.97,
-                            max === min ? max * 1.1 : max * 1.03,
-                          ]}
-                        />
-                        <Tooltip
-                          cursor={false}
-                          formatter={(value) => [`₹ ${formatPrice(value)}`, "Price"]}
-                          labelFormatter={(label) => `Date: ${label}`}
-                          contentStyle={{
-                            borderRadius: 12,
-                            borderColor: "#dbeafe",
-                            background: "rgba(255,255,255,0.96)",
-                            boxShadow: "0 12px 24px rgba(15, 23, 42, 0.06)",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="price"
-                          stroke="#2563eb"
-                          strokeWidth={3}
-                          dot={{ r: 4.5, fill: "#2563eb", stroke: "#ffffff", strokeWidth: 1.5 }}
-                          activeDot={{ r: 6, stroke: "#2563eb", strokeWidth: 2, fill: "#2563eb" }}
-                          isAnimationActive={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-64 items-center justify-center text-sm text-slate-500">
-                    No published price observations for this source and range.
-                  </div>
-                )}
+                <p className="mb-2 text-xs font-medium text-slate-500">
+                  Choose variant
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant, index) => {
+                    const optionId =
+                      variant?.variant_id ?? variant?.id ?? variant?.variantId;
+                    const selected = String(optionId) === String(variantId);
+                    return (
+                      <button
+                        key={optionId ?? index}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => selectVariant(variant, index)}
+                        className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                          selected
+                            ? "border-blue-600 bg-blue-50 text-blue-700"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                        }`}
+                      >
+                        {variantLabelFor(variant, index)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </>
-          )}
-        </section>
-      </div>
+            )}
+            {variantsLoading && (
+              <p className="mt-3 text-xs text-slate-500">Loading variants…</p>
+            )}
+            {variantsError && (
+              <p role="status" className="mt-3 text-xs text-amber-700">
+                {variantsError}
+              </p>
+            )}
+
+            {error && !loading ? (
+              <p
+                role="alert"
+                className="mt-8 rounded-lg bg-red-50 p-4 text-sm text-red-700"
+              >
+                {error}
+              </p>
+            ) : (
+              <>
+                <div className="mt-6 flex flex-col gap-4 border-b border-slate-100 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-slate-500">
+                      Source
+                    </p>
+                    <div className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+                      {storeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={store === option.value}
+                          onClick={() => setStore(option.value)}
+                          className={`min-h-8 rounded-md px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                            store === option.value
+                              ? "bg-white text-blue-700 shadow-sm"
+                              : "text-slate-600 hover:text-slate-950"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-slate-500">
+                      Range
+                    </p>
+                    <div className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+                      {PRICE_HISTORY_RANGES.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          aria-pressed={range === option.key}
+                          onClick={() => setRange(option.key)}
+                          className={`min-h-8 min-w-9 rounded-md px-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                            range === option.key
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-slate-600 hover:text-slate-950"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 border-b border-slate-100 sm:grid-cols-4">
+                  {[
+                    { label: "Current", value: summary.current_price },
+                    { label: "Lowest", value: summary.lowest_price },
+                    { label: "Highest", value: summary.highest_price },
+                    {
+                      label: "Change",
+                      value: summary.change_percent,
+                      percent: true,
+                    },
+                  ].map((metric) => (
+                    <div
+                      key={metric.label}
+                      className="border-l border-slate-100 py-4 pl-3 first:border-l-0 first:pl-0 sm:px-4 sm:first:pl-0"
+                    >
+                      <p className="text-xs font-medium text-slate-500">
+                        {metric.label}
+                      </p>
+                      <p className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+                        {metric.value == null ||
+                        Number.isNaN(Number(metric.value))
+                          ? "—"
+                          : metric.percent
+                            ? `${Number(metric.value).toFixed(1)}%`
+                            : `₹ ${formatPrice(metric.value)}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5">
+                  {summary.estimated_baseline ? (
+                    <p className="mb-3 text-xs text-amber-700">
+                      Estimated baseline: this starting price was assumed
+                      unchanged from the date set by an administrator.
+                    </p>
+                  ) : null}
+                  {summary.live_baseline ? (
+                    <p className="mb-3 text-xs text-slate-500">
+                      Showing today’s live price as the starting point. No
+                      earlier price history is assumed.
+                    </p>
+                  ) : null}
+                  {loading ? (
+                    <div className="flex h-72 items-center justify-center text-sm text-slate-500">
+                      Loading price history…
+                    </div>
+                  ) : chartData.length > 0 ? (
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={chartData}
+                          margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
+                        >
+                          <defs>
+                            <linearGradient
+                              id="priceHistoryArea"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor="#2563eb"
+                                stopOpacity={0.22}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor="#2563eb"
+                                stopOpacity={0.03}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
+                            padding={{ left: 12, right: 12 }}
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
+                            width={76}
+                            tickFormatter={(value) => `₹${formatPrice(value)}`}
+                            label={{
+                              value: "Price (₹)",
+                              angle: -90,
+                              position: "insideLeft",
+                              fill: "#475569",
+                              fontSize: 11,
+                            }}
+                            domain={([min, max]) => [
+                              min === max ? min * 0.9 : min * 0.97,
+                              max === min ? max * 1.1 : max * 1.03,
+                            ]}
+                          />
+                          <Tooltip
+                            cursor={{
+                              stroke: "#94a3b8",
+                              strokeDasharray: "4 4",
+                              strokeWidth: 1,
+                            }}
+                            content={<PriceHistoryTooltip />}
+                          />
+                          <Area
+                            type="stepAfter"
+                            dataKey="price"
+                            stroke="none"
+                            fill="url(#priceHistoryArea)"
+                            isAnimationActive
+                            animationDuration={850}
+                            animationEasing="ease-out"
+                          />
+                          <Line
+                            type="stepAfter"
+                            dataKey="price"
+                            stroke="#2563eb"
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: "#2563eb", stroke: "#fff", strokeWidth: 2 }}
+                            activeDot={{ r: 6, fill: "#2563eb", stroke: "#fff", strokeWidth: 2 }}
+                            isAnimationActive
+                            animationDuration={850}
+                            animationEasing="ease-out"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="flex h-64 items-center justify-center text-sm text-slate-500">
+                      No published price observations for this source and range.
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
       </div>
       <div className="mx-auto mt-6 w-full max-w-[1440px] px-3 sm:mt-10 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl">
-      <section>
-        <div className="mb-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 sm:text-[11px]">
-            Full specifications
-          </p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-            {productName} specifications
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-            Key device details for the selected price-history variant.
-          </p>
+        <div className="mx-auto w-full max-w-7xl">
+          <section>
+            <div className="mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 sm:text-[11px]">
+                Full specifications
+              </p>
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                {productName} specifications
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+                Key device details for the selected price-history variant.
+              </p>
+            </div>
+            {detailValues.length ? (
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {detailValues.map((item) => (
+                  <div key={item.label} className="min-w-0 bg-white p-3">
+                    <dt className="text-xs font-medium text-slate-500">
+                      {item.label}
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-slate-900">
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="bg-white p-4 text-sm text-slate-600">
+                Detailed specifications are available on the product page.
+              </p>
+            )}
+            <Link
+              to={specificationsHref}
+              className="mt-3 inline-flex min-h-10 items-center justify-center bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+            >
+              View full specifications
+            </Link>
+          </section>
+
+          <section className="mt-8">
+            <LatestNewsRouteSection
+              title="Related News"
+              subtitle={`News and updates linked to ${productName}.`}
+              productId={
+                Number.isInteger(productId) && productId > 0 ? productId : null
+              }
+              showWhenEmpty
+              emptyMessage={`There are no news stories linked to ${productName} yet.`}
+              newsLinkLabel="More smartphone news"
+              className="sm:!p-0"
+            />
+          </section>
+
+          <section className="mt-8">
+            <LatestNewsRouteSection
+              title="Latest Updates"
+              subtitle="The latest smartphone launches, product updates, and buying context."
+              productType="smartphone"
+              newsLinkLabel="Latest smartphone news"
+              className="sm:!p-0"
+            />
+          </section>
+
+          <section className="mt-8 w-full">
+            <ProductDiscoverySections
+              productId={productId}
+              entityType="smartphones"
+              layout="latestPhones"
+              showComparisonBanner={false}
+            />
+          </section>
         </div>
-        {detailValues.length ? (
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {detailValues.map((item) => (
-              <div
-                key={item.label}
-                className="min-w-0 bg-white p-3"
-              >
-                <dt className="text-xs font-medium text-slate-500">
-                  {item.label}
-                </dt>
-                <dd className="mt-1 break-words text-sm font-semibold text-slate-900">
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <p className="bg-white p-4 text-sm text-slate-600">
-            Detailed specifications are available on the product page.
-          </p>
-        )}
-        <Link
-          to={specificationsHref}
-          className="mt-3 inline-flex min-h-10 items-center justify-center bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-        >
-          View full specifications
-        </Link>
-      </section>
-
-      <section className="mt-8">
-        <LatestNewsRouteSection
-          title="Related News"
-          subtitle={`News and updates linked to ${productName}.`}
-          productId={Number.isInteger(productId) && productId > 0 ? productId : null}
-          showWhenEmpty
-          emptyMessage={`There are no news stories linked to ${productName} yet.`}
-          newsLinkLabel="More smartphone news"
-          className="sm:!p-0"
-        />
-      </section>
-
-      <section className="mt-8">
-        <LatestNewsRouteSection
-          title="Latest Updates"
-          subtitle="The latest smartphone launches, product updates, and buying context."
-          productType="smartphone"
-          newsLinkLabel="Latest smartphone news"
-          className="sm:!p-0"
-        />
-      </section>
-
-      <section className="mt-8 w-full">
-        <ProductDiscoverySections
-          productId={productId}
-          entityType="smartphones"
-          layout="latestPhones"
-          showComparisonBanner={false}
-        />
-      </section>
-      </div>
       </div>
       <ContinueBrowsingSmartphones />
     </main>
