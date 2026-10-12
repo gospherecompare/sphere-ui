@@ -14,7 +14,6 @@ import {
   useParams,
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
-import PriceNotificationCenter from "./components/ui/PriceNotificationCenter";
 import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import RouteExperience from "./components/ui/RouteExperience";
 import { useDevice } from "./hooks/useDevice";
@@ -243,7 +242,6 @@ function App() {
       <RouteExperience />
       <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
-        <PriceNotificationCenter />
         <AppPushOptInPrompt />
 
         <ScrollToTop />
@@ -380,6 +378,8 @@ function App() {
               path="/popular-comparisons"
               element={<PopularComparisonsPage />}
             />
+
+            <Route path="/career" element={<Careers />} />
 
             {/* Placeholder routes for footer links (can be implemented later) */}
             <Route path="/about" element={<About />} />

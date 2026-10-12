@@ -1,981 +1,552 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import { buildApiUrl } from "../../utils/apiUrl";
 
 const SITE_ORIGIN = "https://mobilesx.in";
-const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/mobilex-favicon.svg`;
 const CAREERS_API_URL = buildApiUrl("/careers");
+const CURRENT_YEAR = new Date().getFullYear();
 
-const ROLE_OPTIONS = [
-  { value: "frontend", label: "Frontend Developer" },
-  { value: "backend", label: "Backend Developer" },
-  { value: "content-developer", label: "Content Developer" },
-  { value: "fullstack", label: "Fullstack Developer" },
-  { value: "python Developer", label: "Python Developer" },
-];
-
-const GENDER_OPTIONS = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
-  { value: "prefer-not-to-say", label: "Prefer not to say" },
-];
+const ROLE_OPTIONS = [{ value: "fullstack", label: "Full-Stack Developer" }];
 
 const EXPERIENCE_OPTIONS = [
-  { value: "fresher", label: "Fresher (0 years)" },
-  { value: "0-1", label: "0-1 years" },
-  { value: "1-3", label: "1-3 years" },
-  { value: "3-5", label: "3-5 years" },
-  { value: "5+", label: "5+ years" },
+  { value: "fresher", label: "Entry level — no professional experience" },
+  { value: "0-1", label: "Less than 1 year" },
+  { value: "1-3", label: "1–3 years" },
+  { value: "3-5", label: "3–5 years" },
+  { value: "5-8", label: "5–8 years" },
+  { value: "8+", label: "8+ years" },
 ];
 
 const EMPLOYMENT_OPTIONS = [
-  { value: "fresher", label: "Fresher" },
+  { value: "fresher", label: "Not currently employed / first role" },
   { value: "employed", label: "Currently employed" },
-  { value: "notice-period", label: "On notice period" },
-  { value: "between-jobs", label: "Between jobs" },
+  { value: "notice-period", label: "Serving notice period" },
+  { value: "between-jobs", label: "Between roles" },
 ];
 
-const NOTICE_OPTIONS = [
-  { value: "immediate", label: "Immediate" },
-  { value: "15-days", label: "15 days" },
-  { value: "30-days", label: "30 days" },
-  { value: "60-days", label: "60 days" },
-  { value: "90-days", label: "90 days" },
+const AVAILABILITY_OPTIONS = [
+  { value: "immediate", label: "Immediately" },
+  { value: "15-days", label: "Within 2 weeks" },
+  { value: "30-days", label: "Within 1 month" },
+  { value: "60-days", label: "Within 2 months" },
+  { value: "90-days", label: "Within 3 months" },
+  { value: "flexible", label: "Flexible" },
+  { value: "not-applicable", label: "Not applicable" },
 ];
 
-const UG_STREAM_OPTIONS = [
-  { value: "btech-cse", label: "B.Tech (Computer Science)" },
-  { value: "btech-it", label: "B.Tech (Information Technology)" },
-  { value: "btech-aiml", label: "B.Tech (AI & ML)" },
-  { value: "btech-ds", label: "B.Tech (Data Science)" },
-  { value: "btech-ece", label: "B.Tech (Electronics & Communication)" },
-  { value: "btech-eee", label: "B.Tech (Electrical & Electronics)" },
-  { value: "btech-me", label: "B.Tech (Mechanical)" },
-  { value: "btech-ce", label: "B.Tech (Civil)" },
-  { value: "btech-chem", label: "B.Tech (Chemical)" },
-  { value: "btech-biotech", label: "B.Tech (Biotechnology)" },
-  { value: "btech-ae", label: "B.Tech (Aerospace)" },
-  { value: "btech-mt", label: "B.Tech (Mechatronics)" },
-  { value: "btech-ise", label: "B.Tech (Information Science)" },
-  { value: "btech-ise-sp", label: "B.Tech (Cyber Security)" },
-  { value: "btech-ise-iot", label: "B.Tech (IoT)" },
-  { value: "be-cse", label: "B.E (Computer Science)" },
-  { value: "be-it", label: "B.E (Information Technology)" },
-  { value: "be-ece", label: "B.E (Electronics & Communication)" },
-  { value: "be-eee", label: "B.E (Electrical & Electronics)" },
-  { value: "be-me", label: "B.E (Mechanical)" },
-  { value: "be-ce", label: "B.E (Civil)" },
-  { value: "bsc-cs", label: "B.Sc (Computer Science)" },
-  { value: "bsc-it", label: "B.Sc (IT)" },
-  { value: "bsc-ds", label: "B.Sc (Data Science)" },
-  { value: "bsc-maths", label: "B.Sc (Mathematics)" },
-  { value: "bsc-physics", label: "B.Sc (Physics)" },
-  { value: "bsc-chemistry", label: "B.Sc (Chemistry)" },
-  { value: "bsc-bio", label: "B.Sc (Biology)" },
-  { value: "bsc-bt", label: "B.Sc (Biotechnology)" },
-  { value: "bsc-micro", label: "B.Sc (Microbiology)" },
-  { value: "bca", label: "BCA" },
-  { value: "bcom-gen", label: "B.Com (General)" },
-  { value: "bcom-ca", label: "B.Com (Computer Applications)" },
-  { value: "bcom-acc", label: "B.Com (Accounting & Finance)" },
-  { value: "bba", label: "BBA" },
-  { value: "ba-eng", label: "B.A (English)" },
-  { value: "ba-eco", label: "B.A (Economics)" },
-  { value: "ba-ps", label: "B.A (Political Science)" },
-  { value: "ba-soc", label: "B.A (Sociology)" },
-  { value: "ba-psy", label: "B.A (Psychology)" },
-  { value: "barch", label: "B.Arch" },
-  { value: "bdes", label: "B.Des" },
-  { value: "bpharm", label: "B.Pharm" },
-  { value: "bpt", label: "BPT (Physiotherapy)" },
-  { value: "bsc-nursing", label: "B.Sc Nursing" },
-  { value: "mbbs", label: "MBBS" },
-  { value: "bds", label: "BDS" },
-  { value: "llb", label: "LLB" },
-  { value: "ba-llb", label: "BA LLB" },
-  { value: "bba-llb", label: "BBA LLB" },
-  { value: "other", label: "Other" },
+const QUALIFICATION_OPTIONS = [
+  { value: "high-school", label: "High school / secondary education" },
+  { value: "vocational", label: "Vocational / technical qualification" },
+  { value: "associate", label: "Associate degree / equivalent" },
+  { value: "bachelors", label: "Bachelor’s degree" },
+  { value: "masters", label: "Master’s degree" },
+  { value: "doctorate", label: "Doctorate / PhD" },
+  { value: "professional-certificate", label: "Professional certification" },
+  { value: "bootcamp", label: "Bootcamp / intensive training" },
+  { value: "self-taught", label: "Self-taught / equivalent experience" },
+  { value: "other", label: "Other / prefer to discuss" },
 ];
 
-const normalizeInstituteLabel = (label) =>
-  String(label ?? "")
-    .replace(/&#39;|&#039;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+const WORK_ARRANGEMENT_OPTIONS = [
+  { value: "remote", label: "Remote" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "onsite", label: "On-site" },
+  { value: "flexible", label: "Flexible / open to discussion" },
+];
 
-const UG_INSTITUTE_OPTIONS = [
-  "Indian Institute of Technology Madras, Tamil Nadu",
-  "Indian Institute of Technology Hyderabad, Telangana",
-  "National Institute of Technology Tiruchirappalli, Tamil Nadu",
-  "S.R.M. Institute of Science and Technology, Tamil Nadu",
-  "Vellore Institute of Technology, Tamil Nadu",
-  "National Institute of Technology Karnataka, Surathkal, Karnataka",
-  "Anna University, Tamil Nadu",
-  "National Institute of Technology Calicut, Kerala",
-  "Amrita Vishwa Vidyapeetham, Tamil Nadu",
-  "National Institute of Technology Warangal, Telangana",
-  "Kalasalingam Academy of Research and Education, Tamil Nadu",
-  "Koneru Lakshmaiah Education Foundation University (K L College of Engineering), Andhra Pradesh",
-  "International Institute of Information Technology Hyderabad, Telangana",
-  "Shanmugha Arts Science Technology & Research Academy, Tamil Nadu",
-  "Saveetha Institute of Medical and Technical Sciences, Tamil Nadu",
-  "Sri Sivasubramaniya Nadar College of Engineering, Tamil Nadu",
-  "Indian Institute of Technology, Tirupati, Andhra Pradesh",
-  "Manipal Institute of Technology, Karnataka",
-  "Indian Institute of Space Science and Technology, Kerala",
-  "Indian Institute of Technology Palakkad, Kerala",
-  "Sathyabama Institute of Science and Technology, Tamil Nadu",
-  "PSG College of Technology, Tamil Nadu",
-  "International Institute of Information Technology Bangalore, Karnataka",
-  "University of Hyderabad, Telangana",
-  "M. S. Ramaiah Institute of Technology, Karnataka",
-  "Christ University, Karnataka",
-  "Indian Institute of Technology Dharwad, Karnataka",
-  "Vignan's Foundation for Science, Technology and Research, Andhra Pradesh",
-  "Jain university,Bangalore, Karnataka",
-  "Vel Tech Rangarajan Dr. Sagunthala R & D Institute of Science and Technology, Tamil Nadu",
-  "AU College of Engineering (A), Andhra Pradesh",
-  "SR University, Telangana",
-  "Jawaharlal Nehru Technological University, Telangana",
-  "National Institute of Technology Puducherry, Pondicherry",
-  "Sri Krishna College of Engineering and Technology, Tamil Nadu",
-  "Anurag University, Telangana",
-  "Chennai Institute of Technology, Tamil Nadu",
-  "Coimbatore Institute of Technology, Tamil Nadu",
-  "College of Engineering Trivandrum, Kerala",
-  "Easwari Engineering College, Tamil Nadu",
-  "Gandhi Institute of Technology And Management (GITAM), Andhra Pradesh",
-  "Hindustan Institute of Technology and Science (HITS), Tamil Nadu",
-  "Jawaharlal Nehru Technological University, Andhra Pradesh",
-  "Karunya Institute of Technology and Sciences, Tamil Nadu",
-  "Kongu Engineering College, Tamil Nadu",
-  "KPR Institute of Engineering and Technology, Tamil Nadu",
-  "Mahindra University, Telangana",
-  "Maulana Azad National Urdu University, Telangana",
-  "National Institute of Food Technology, Entrepreneurship and Management - Thanjavur (NIFTEM - Thanjavur), Tamil Nadu",
-  "Nitte Meenakshi Institute of Technology, Karnataka",
-  "PES University, Karnataka",
-  "PSG Institute of Technology and Applied Research, Tamil Nadu",
-  "R.V. College of Engineering, Karnataka",
-  "Rajalakshmi Engineering College, Tamil Nadu",
-  "Siddaganga Institute of Technology, Karnataka",
-  "Thiagarajar College of Engineering, Tamil Nadu",
-  "University College of Engineering, Telangana",
-  "B. S. Abdur Rahman Crescent Institute of Science and Technology, Tamil Nadu",
-  "B.M.S. College of Engineering, Karnataka",
-  "C M R Institute of Technology, Karnataka",
-  "Chaitanya Bharathi Institute of Technology, Telangana",
-  "CVR College of Engineering, Telangana",
-  "Dr. M. G. R. Educational and Research Institute, Tamil Nadu",
-  "Goka Raju Ranga Raju Institute of Engineering & Technology, Telangana",
-  "Indian Institute of Information Technology, Design & Manufacturing, Kancheepuram, Tamil Nadu",
-  "Institute of Aeronautical Engineering, Telangana",
-  "KLE Technological University, Karnataka",
-  "Kumaraguru College of Technology, Tamil Nadu",
-  "Mepco Schlenk Engineering College, Tamil Nadu",
-  "New Horizon College of Engineering, Karnataka",
-  "NMAM Institute of Technology, Karnataka",
-  "R.M.K. Engineering College, Tamil Nadu",
-  "Sona College of Technology, Tamil Nadu",
-  "Sri Ramakrishna Engineering College, Tamil Nadu",
-  "Sri Sai Ram Institute of Technology, Tamil Nadu",
-  "Sri Sairam Engineering College, Tamil Nadu",
-  "The National Institute of Engineering, Karnataka",
-  "Vallurupalli Nageswara Rao Vignana Jyothi Institute of Engineering and Technology, Telangana",
-  "Vardhaman College of Engineering, Telangana",
-  "Velagapudi Ramakrishna Siddhartha Engineering College, Andhra Pradesh",
-  "Vels Institute of Science Technology and Advanced Studies (VISTAS), Tamil Nadu",
-  "Vignan Institute of Technology and Science, Telangana",
-  "Visvesvaraya Technological University, Karnataka",
-  "Aditya Institute of Technology and Management, Andhra Pradesh",
-  "Aditya University, Andhra Pradesh",
-  "Annamalai University, Tamil Nadu",
-  "BMS Institute of Technology & Management, Karnataka",
-  "CMR College of Engineering & Technology, Telangana",
-  "CMR Technical Campus, Telangana",
-  "Dayananda Sagar College of Engineering, Karnataka",
-  "E.G.S. Pillay Engineering College, Tamil Nadu",
-  "G. Narayanamma Institute of Technology & Science for Women, Telangana",
-  "GMR Institute of Technology, Andhra Pradesh",
-  "Godavari Institute of Engineering & Technology, Andhra Pradesh",
-  "Hindusthan College of Engineering and Technology, Tamil Nadu",
-  "Indian Institute of Petroleum & Energy, Andhra Pradesh",
-  "JSS Science and Technology University, Karnataka",
-  "K. Ramakrishnan College of Engineering, Tamil Nadu",
-  "K. Ramakrishnan College of Technology, Tamil Nadu",
-  "Kakatiya Institute of Technology & Science, Telangana",
-  "Kalaignar Karunanidhi Institute of Technology, Tamil Nadu",
-  "Karpagam College of Engineering, Tamil Nadu",
-  "M.Kumarasamy College of Engineering, Tamil Nadu",
-  "Madanapalle Institute of Technology & Science, Andhra Pradesh",
-  "Malla Reddy Engineering College, Telangana",
-  "Malla Reddy Engineering College for Women (Autonomous), Telangana",
-  "MLR Institute of Technology, Telangana",
-  "National Engineering College, Tamil Nadu",
-  "National Institute Of Technology, Andhra Pradesh, Andhra Pradesh",
-  "P E S College of Engineering, MANDYA, Karnataka",
-  "Panimalar Engineering College, Tamil Nadu",
-  "Prasad V Potluri Siddhartha Institue of Technology, Andhra Pradesh",
-  "Presidency University , Bengaluru, Karnataka",
-  "Prince Shri Venkateshwara Padmavathy Engineering College, Tamil Nadu",
-  "PSNA College of Engineering and Technology, Dindigul, Tamil Nadu",
-  "Puducherry Technological University, Pondicherry",
-  "QIS College of Engineering & Technology, Andhra Pradesh",
-  "R. M. K. College of Engineering and Technology, Tamil Nadu",
-  "R.M.D Engineering College, Tamil Nadu",
-  "Rajalakshmi Institute of Technology, Tamil Nadu",
-  "Rajeev Gandhi Memorial College of Engineering & Technology, Andhra Pradesh",
-  "Rathinam Technical Campus, Tamil Nadu",
-  "Reva University, Karnataka",
-  "Saveetha Engineering College, Tamil Nadu",
-  "SNS College of Technology, Tamil Nadu",
-  "Sree Vidyanikethan Engineering College, Andhra Pradesh",
-  "Sri Eshwar College of Engineering, Tamil Nadu",
-  "Sri Manakula Vinayagar Engineering College, Pondicherry",
-  "Sri Venkateswara College of Engineering, Tamil Nadu",
-  "Sri Venkateswara College of Engineering and Technology, Andhra Pradesh",
-  "Sri Venkateswara College of Engineering, Tirupati, Andhra Pradesh",
-  "Sri Venkateswara University, Andhra Pradesh",
-  "St. Joseph`s Institute of Technology, Tamil Nadu",
-  "St. Josephs College of Engineering, Tamil Nadu",
-  "Vidya Jyothi Institute of Technology, Telangana",
-  "Vignan`s Institute of Information Technology, Andhra Pradesh",
-  "ADITYA COLLEGE OF ENGINEERING, Andhra Pradesh",
-  "ADITYA DEGREE COLLEGE, Andhra Pradesh",
-  "ADITYA ENGINEERING COLLEGE, Andhra Pradesh",
-  "ALAGAPPA UNIVERSITY, Tamil Nadu",
-  "AMAL COLLEGE OF ADVANCED STUDIES, Kerala",
-  "ANDHRA UNIVERSITY, Andhra Pradesh",
-  "ANNA ADARSH COLLEGE FOR WOMEN, Tamil Nadu",
-  "ANNAMMAL COLLEGE OF EDUCATION FOR WOMEN, Tamil Nadu",
-  "ATRIA INSTITUTE OF TECHNOLOGY, Karnataka",
-  "AVINASHILINGAM INSTITUTE FOR HOME SCIENCE AND HIGHER EDUCATION FOR WOMEN, Tamil Nadu",
-  "B.M.S.COLLEGE OF ENGINEERING, Karnataka",
-  "BANGALORE UNIVERSITY, Karnataka",
-  "BASELIUS COLLEGE, Kerala",
-  "BHARATHIAR UNIVERSITY, Tamil Nadu",
-  "BISHOP HEBER COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "BLDEA&#39;S SHRI SANGANABASAVA MAHASWAMIJI COLLEGE OF PHARMACY AND RESEARCH CENTRE, Karnataka",
-  "BON SECOURS COLLEGE FOR WOMEN, Tamil Nadu",
-  "CATHOLICATE COLLEGE, Kerala",
-  "CHETTINAD ACADEMY OF RESEARCH AND EDUCATION, Tamil Nadu",
-  "CHRIST COLLEGE (AUTONOMOUS), IRINJALAKUDA, Kerala",
-  "CMR INSTITUTE OF TECHNOLOGY, Karnataka",
-  "CMS COLLEGE OF SCIENCE AND COMMERCE, Tamil Nadu",
-  "DEVA MATHA COLLEGE, Kerala",
-  "DHANALAKSHMI SRINIVASAN COLLEGE OF ARTS AND SCIENCE FOR WOMEN, Tamil Nadu",
-  "DNR COLLEGE OF ENGINEERING AND TECHNOLOGY, Andhra Pradesh",
-  "DR. MAHALINGAM COLLEGE OF ENGINEERING AND TECHNOLOGY, Tamil Nadu",
-  "DR. N.G.P. ARTS AND SCIENCE COLLEGE, Tamil Nadu",
-  "DWARAKA DOSS GOVERDHAN DOSS VAISHNAV COLLEGE, Tamil Nadu",
-  "E. G. S. PILLAY ENGINEERING COLLEGE, Tamil Nadu",
-  "FAROOK COLLEGE (AUTONOMOUS), Kerala",
-  "FATIMA COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "G. T. N.  ARTS COLLEGE, Tamil Nadu",
-  "GANDHI INSTITUTE OF TECHNOLOGY AND MANAGEMENT (GITAM)- DEEMED TO BE UNIVERSITY, Andhra Pradesh",
-  "GANDHIGRAM RURAL INSTITUTE (DEEMED TO BE UNIVERSITY), Tamil Nadu",
-  "GAYATRI VIDYA PARISHAD COLLEGE OF ENGINEERING, Andhra Pradesh",
-  "GODAVARI INSTITUTE OF ENGINEERING AND TECHNOLOGY, Andhra Pradesh",
-  "GOKARAJU RANGARAJU INSTITUTE OF ENGINEERING AND TECHNOLOGY, Telangana",
-  "GOVERNMENT CITY COLLEGE (AUTONOMOUS), Telangana",
-  "GRT INSTITUTE OF ENGINEERING AND TECHNOLOGY, Tamil Nadu",
-  "GURU NANAK COLLEGE(AUTONOMOUS), Tamil Nadu",
-  "HAJEE KARUTHA ROWTHER HOWDIA COLLEGE, Tamil Nadu",
-  "HER HIGHNESS MAHARANI SETHU PARVATHI BAI NSS COLLEGE FOR WOMEN, Kerala",
-  "HINDUSTHAN COLLEGE OF ARTS AND SCIENCE, Tamil Nadu",
-  "HOLY CROSS COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "INDIAN ACADEMY DEGREE COLLEGE, Karnataka",
-  "INDIAN INSTITUTE OF SCIENCE, Karnataka",
-  "INTERNATIONAL INSTITUTE OF INFORMATION TECHNOLOGY, Telangana",
-  "ISLAMIAH COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "JAIN(Deemed-to- be University), Karnataka",
-  "JAMAL MOHAMED COLLEGE, Tamil Nadu",
-  "JSS ACADEMY OF HIGHER EDUCATION & RESEARCH, Karnataka",
-  "JUSTICE BASHEER AHMED SAYEED COLLEGE FOR WOMEN, Tamil Nadu",
-  "K.L.E SOCIETY&#39;S JAGADGURU GANGADHAR COLLEGE OF COMMERCE, Karnataka",
-  "K.L.E. Society&#039;s P.C. Jabin Science College, Karnataka",
-  "K.S. RANGASAMY COLLEGE OF TECHNOLOGY (AUTONOMOUS), Tamil Nadu",
-  "K.S.R. COLLEGE OF ENGINEERING, Tamil Nadu",
-  "KAMALA INSTITUTE OF TECHNOLOGY AND SCIENCE, Telangana",
-  "KARPAGAM INSTITUTE OF TECHNOLOGY, Tamil Nadu",
-  "KBN COLLEGE, Andhra Pradesh",
-  "KG COLLEGE OF ARTS AND SCIENCE, Tamil Nadu",
-  "KONERU LAKSHMAIAH EDUCATION FOUNDATION, Andhra Pradesh",
-  "KONGU ENGINEERING COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "KRISTU JAYANTI COLLEGE, Karnataka",
-  "LOYOLA COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "LOYOLA COLLEGE OF SOCIAL SCIENCES, Kerala",
-  "M E S KALLADI COLLEGE, Kerala",
-  "M.O.P. VAISHNAV COLLEGE FOR WOMEN (AUTONOMOUS), Tamil Nadu",
-  "MADURAI KAMARAJ UNIVERSITY, Tamil Nadu",
-  "MAHATMA GANDHI INSTITUTE OF TECHNOLOGY, Telangana",
-  "MAHATMA GANDHI UNIVERSITY, Kerala",
-  "MAHENDRA ARTS AND SCIENCE COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "MAHENDRA ENGINEERING COLLEGE (AUTONOMOUS), Tamil Nadu",
-  "MALLA REDDY ENGINEERING COLLEGE (AUTONOMOUS), Telangana",
-  "MANIPAL ACADEMY OF HIGHER EDUCATION (DEEMED-TO-BE-UNIVERSITY U/S 3 OF THE UGC ACT), Karnataka",
-  "MAR IVANIOS COLLEGE (AUTONOMOUS), Kerala",
-  "MARIAN COLLEGE, Kerala",
-  "MORNING STAR HOME SCIENCE COLLEGE, Kerala",
-  "N.V.K.S.D.COLLEGE OF EDUCATION, Tamil Nadu",
-  "NAIPUNNYA INSTITUTE OF MANAGEMENT AND INFORMATION TECHNOLOGY, Kerala",
-  "NALLAMUTHU GOUNDER MAHALINGAM COLLEGE, Tamil Nadu",
-  "NALSAR UNIVERSITY OF LAW, Telangana",
-  "NEWMAN COLLEGE, Kerala",
-  "NILGIRI COLLEGE OF ARTS AND SCIENCE, Tamil Nadu",
-  "NIRMALA COLLEGE, Kerala",
-  "Other (India)",
-].map((label) => {
-  const clean = normalizeInstituteLabel(label);
-  return { value: clean, label: clean };
-});
+const WORK_AUTHORIZATION_OPTIONS = [
+  { value: "authorized", label: "Authorized to work in my preferred location" },
+  {
+    value: "sponsorship",
+    label: "I may require work authorization sponsorship",
+  },
+  {
+    value: "remote",
+    label: "Applying for a remote role; location requirements may vary",
+  },
+  { value: "discuss", label: "I would prefer to discuss this" },
+];
+
+const CURRENCY_OPTIONS = [
+  { value: "USD", label: "USD — US Dollar" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "GBP", label: "GBP — British Pound" },
+  { value: "INR", label: "INR — Indian Rupee" },
+  { value: "CAD", label: "CAD — Canadian Dollar" },
+  { value: "AUD", label: "AUD — Australian Dollar" },
+  { value: "SGD", label: "SGD — Singapore Dollar" },
+  { value: "AED", label: "AED — UAE Dirham" },
+  { value: "Other", label: "Other currency" },
+];
 
 const STEPS = [
-  { title: "Step 1", subtitle: "Role and contact" },
-  { title: "Step 2", subtitle: "Education details" },
-  { title: "Step 3", subtitle: "Work experience" },
-  { title: "Step 4", subtitle: "Final details and submit" },
+  {
+    title: "Contact & role",
+    description: "Your contact details and the role.",
+  },
+  {
+    title: "Education",
+    description: "Your education or equivalent background.",
+  },
+  {
+    title: "Experience",
+    description: "Skills, work preferences and availability.",
+  },
+  {
+    title: "Review & submit",
+    description: "Share relevant links and submit your application.",
+  },
 ];
 
-const getTodayDate = () => new Date().toISOString().slice(0, 10);
+const localISODate = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+};
 
 const createInitialForm = () => ({
   role: "",
-  gender: "",
   firstName: "",
   lastName: "",
   email: "",
   phone: "",
-  dob: "",
-
-  tenthBoard: "",
-  tenthStream: "",
-  tenthMarks: "",
-  tenthYear: "",
-
-  twelfthBoard: "",
-  twelfthStream: "",
-  twelfthMarks: "",
-  twelfthYear: "",
-
-  ugInstitute: "",
-  ugStream: "",
-  ugMarks: "",
-  ugYear: "",
-
-  pgInstitute: "",
-  pgStream: "",
-  pgMarks: "",
-  pgYear: "",
-
+  country: "",
+  city: "",
+  highestQualification: "",
+  fieldOfStudy: "",
+  institution: "",
+  graduationYear: "",
   experienceLevel: "",
   employmentStatus: "",
   currentCompany: "",
   currentRole: "",
   noticePeriod: "",
   preferredLocation: "",
+  workArrangement: "",
+  workAuthorization: "",
   expectedCtc: "",
+  expectedCtcCurrency: "",
+  expectedCtcOtherCurrency: "",
   skills: "",
   projects: "",
-
+  resumeUrl: "",
+  linkedinUrl: "",
+  portfolioUrl: "",
   coverLetter: "",
-  applicationPlace: "",
-  applicationDate: getTodayDate(),
   agreeTerms: false,
+  applicationDate: localISODate(),
 });
 
 const INPUT_CLASS =
-  "w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+  "block min-h-11 w-full rounded-none border-x-0 border-t-0 border-b-2 border-slate-300 bg-transparent px-0 py-2.5 text-sm text-slate-900 shadow-none outline-none transition-colors placeholder:text-slate-400 hover:border-b-slate-500 focus:border-b-blue-600 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:border-b-slate-200 disabled:text-slate-400";
 
-const LABEL_CLASS =
-  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600";
+const LABEL_CLASS = "mb-1.5 block text-sm font-medium text-slate-800";
 
 const hasValue = (value) => String(value ?? "").trim().length > 0;
-
+const normalizePhoneDigits = (value) => String(value || "").replace(/\D/g, "");
+const isValidPhone = (value) => {
+  const digits = normalizePhoneDigits(value);
+  return digits.length >= 7 && digits.length <= 15;
+};
+const isValidEmail = (value) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
+const isValidYear = (value) => {
+  const year = Number(value);
+  return Number.isInteger(year) && year >= 1950 && year <= CURRENT_YEAR + 10;
+};
+const isValidUrl = (value) => {
+  if (!hasValue(value)) return true;
+  try {
+    const normalized = /^https?:\/\//i.test(value.trim())
+      ? value.trim()
+      : `https://${value.trim()}`;
+    const parsed = new URL(normalized);
+    return Boolean(
+      parsed.hostname.includes(".") &&
+      ["http:", "https:"].includes(parsed.protocol),
+    );
+  } catch {
+    return false;
+  }
+};
+const normalizeUrl = (value) => {
+  if (!hasValue(value)) return "";
+  return /^https?:\/\//i.test(value.trim())
+    ? value.trim()
+    : `https://${value.trim()}`;
+};
 const toNullableNumber = (value) => {
   if (value === undefined || value === null || value === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const currentYear = new Date().getFullYear();
-
-const isValidEmail = (value) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
-
-const normalizePhoneDigits = (value) => String(value || "").replace(/\D/g, "");
-
-const isValidPhone = (value) => {
-  const digits = normalizePhoneDigits(value);
-  if (digits.length === 10) {
-    return /^[6-9]\d{9}$/.test(digits);
-  }
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return /^[6-9]\d{9}$/.test(digits.slice(2));
-  }
-  return false;
-};
-
-const isValidYear = (value) => {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 1980 && parsed <= currentYear;
-};
-
-const parseMarksValue = (value) => {
-  const raw = String(value || "").trim();
-  if (!raw) return { ok: false, message: "Marks are required." };
-
-  const lower = raw.toLowerCase();
-  const cleaned = lower.replace(/cgpa|gpa|%/g, "").trim();
-  const num = Number(cleaned);
-
-  if (!Number.isFinite(num)) {
-    return { ok: false, message: "Enter a valid percentage or CGPA." };
-  }
-
-  if (lower.includes("%")) {
-    return num >= 0 && num <= 100
-      ? { ok: true }
-      : { ok: false, message: "Percentage should be between 0 and 100." };
-  }
-
-  if (lower.includes("cgpa") || lower.includes("gpa") || num <= 10) {
-    return num >= 0 && num <= 10
-      ? { ok: true }
-      : { ok: false, message: "CGPA should be between 0 and 10." };
-  }
-
-  if (num > 10 && num <= 100) {
-    return { ok: true };
-  }
-
-  return { ok: false, message: "Enter a valid percentage or CGPA." };
-};
-
-const formatISODateForDisplay = (value) => {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
-
-  const parsedDate = new Date(`${value}T00:00:00`);
-  return parsedDate.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const DATE_WEEK_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const DATE_MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const parseISODate = (value) => {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  const parsed = new Date(year, month - 1, day);
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month - 1 ||
-    parsed.getDate() !== day
-  ) {
-    return null;
-  }
-  return parsed;
-};
-
-const formatDateToISO = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const isBeforeDay = (left, right) => {
-  if (!left || !right) return false;
-  return (
-    left.getFullYear() < right.getFullYear() ||
-    (left.getFullYear() === right.getFullYear() &&
-      (left.getMonth() < right.getMonth() ||
-        (left.getMonth() === right.getMonth() &&
-          left.getDate() < right.getDate())))
-  );
-};
-
-const isAfterDay = (left, right) => {
-  if (!left || !right) return false;
-  return isBeforeDay(right, left);
-};
-
-const QuestionInput = ({ question, name, className = "", error, ...props }) => (
-  <div>
-    <label htmlFor={name} className={LABEL_CLASS}>
-      {question}
-    </label>
-    <input
-      id={name}
-      name={name}
-      aria-invalid={Boolean(error)}
-      aria-describedby={error ? `${name}-error` : undefined}
-      className={`${INPUT_CLASS} ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-100" : ""} ${className}`}
-      {...props}
-    />
-    {error ? (
-      <p
-        id={`${name}-error`}
-        className="mt-1 text-xs font-medium text-rose-600"
-      >
-        {error}
-      </p>
-    ) : null}
-  </div>
-);
-
-const QuestionTextArea = ({
-  question,
+function Field({
   name,
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required = false,
+  error,
+  help,
   className = "",
-  error,
   ...props
-}) => (
-  <div>
-    <label htmlFor={name} className={LABEL_CLASS}>
-      {question}
-    </label>
-    <textarea
-      id={name}
-      name={name}
-      aria-invalid={Boolean(error)}
-      aria-describedby={error ? `${name}-error` : undefined}
-      className={`${INPUT_CLASS} ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-100" : ""} ${className}`}
-      {...props}
-    />
-    {error ? (
-      <p
-        id={`${name}-error`}
-        className="mt-1 text-xs font-medium text-rose-600"
-      >
-        {error}
-      </p>
-    ) : null}
-  </div>
-);
-
-const QuestionSelect = ({
-  question,
-  name,
-  value,
-  onChange,
-  options,
-  required = false,
-  placeholder = "Choose an option",
-  error,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef(null);
-  const normalizedValue = value == null ? "" : String(value);
-  const selectedOption = options.find(
-    (option) => String(option.value) === normalizedValue,
-  );
-
-  useEffect(() => {
-    const closeOnOutsideClick = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    document.addEventListener("touchstart", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-      document.removeEventListener("touchstart", closeOnOutsideClick);
-    };
-  }, []);
-
-  const selectValue = (nextValue) => {
-    onChange({ target: { name, value: String(nextValue ?? "") } });
-    setIsOpen(false);
-  };
-
-  const onTriggerKeyDown = (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setIsOpen((prev) => !prev);
-    }
-
-    if (event.key === "Escape") {
-      setIsOpen(false);
-    }
-  };
-
+}) {
+  const errorId = error ? `${name}-error` : undefined;
+  const helpId = help ? `${name}-help` : undefined;
   return (
-    <div>
+    <div className={className}>
       <label htmlFor={name} className={LABEL_CLASS}>
-        {question}
-      </label>
-      <div ref={wrapperRef} className="relative">
-        <button
-          id={name}
-          type="button"
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${name}-error` : undefined}
-          onClick={() => setIsOpen((prev) => !prev)}
-          onKeyDown={onTriggerKeyDown}
-          className={`${INPUT_CLASS} ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-100" : ""} flex items-center justify-between pr-10 text-left`}
-        >
-          <span
-            className={selectedOption ? "text-slate-900" : "text-slate-400"}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <svg
-            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M5 7.5L10 12.5L15 7.5"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        <input type="hidden" name={name} value={normalizedValue} />
-
-        {isOpen ? (
-          <ul
-            role="listbox"
-            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-2"
-          >
-            {!required ? (
-              <li>
-                <button
-                  type="button"
-                  onClick={() => selectValue("")}
-                  className="w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-500 transition hover:text-slate-700"
-                >
-                  {placeholder}
-                </button>
-              </li>
-            ) : null}
-
-            {options.map((option) => {
-              const isSelected = String(option.value) === normalizedValue;
-
-              return (
-                <li key={option.value}>
-                  <button
-                    type="button"
-                    onClick={() => selectValue(option.value)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
-                      isSelected
-                        ? "border border-slate-200 bg-white text-blue-700"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                    {isSelected ? (
-                      <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                        Selected
-                      </span>
-                    ) : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </div>
-      {error ? (
-        <p
-          id={`${name}-error`}
-          className="mt-1 text-xs font-medium text-rose-600"
-        >
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-};
-
-const QuestionSearchSelect = ({
-  question,
-  name,
-  value,
-  onChange,
-  options,
-  required = false,
-  placeholder = "Search and select",
-  error,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const wrapperRef = useRef(null);
-  const inputRef = useRef(null);
-  const normalizedValue = value == null ? "" : String(value);
-  const selectedOption = options.find(
-    (option) => String(option.value) === normalizedValue,
-  );
-
-  useEffect(() => {
-    const closeOnOutsideClick = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    document.addEventListener("touchstart", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-      document.removeEventListener("touchstart", closeOnOutsideClick);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-    if (!isOpen) {
-      setQuery("");
-    }
-  }, [isOpen]);
-
-  const selectValue = (nextValue) => {
-    onChange({ target: { name, value: String(nextValue ?? "") } });
-    setIsOpen(false);
-  };
-
-  const onTriggerKeyDown = (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setIsOpen((prev) => !prev);
-    }
-
-    if (event.key === "Escape") {
-      setIsOpen(false);
-    }
-  };
-
-  const search = query.trim().toLowerCase();
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(search),
-  );
-
-  return (
-    <div>
-      <label htmlFor={name} className={LABEL_CLASS}>
-        {question}
-      </label>
-      <div ref={wrapperRef} className="relative">
-        <button
-          id={name}
-          type="button"
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${name}-error` : undefined}
-          onClick={() => setIsOpen((prev) => !prev)}
-          onKeyDown={onTriggerKeyDown}
-          className={`${INPUT_CLASS} ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-100" : ""} flex items-center justify-between pr-10 text-left`}
-        >
-          <span
-            className={selectedOption ? "text-slate-900" : "text-slate-400"}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <svg
-            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M5 7.5L10 12.5L15 7.5"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        <input type="hidden" name={name} value={normalizedValue} />
-
-        {isOpen ? (
-          <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-md border border-slate-200 bg-white">
-            <div className="border-b border-slate-100 px-3 py-3">
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-700">
-                <svg
-                  className="h-4 w-4 text-slate-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      setIsOpen(false);
-                    }
-                  }}
-                  placeholder="Search college or university"
-                  className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
-                />
-              </div>
-            </div>
-
-            <ul role="listbox" className="max-h-64 overflow-y-auto p-2">
-              {!required ? (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => selectValue("")}
-                    className="w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-500 transition hover:text-slate-700"
-                  >
-                    {placeholder}
-                  </button>
-                </li>
-              ) : null}
-
-              {filteredOptions.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-slate-500">
-                  No matches found. Try another keyword.
-                </li>
-              ) : (
-                filteredOptions.map((option) => {
-                  const isSelected = String(option.value) === normalizedValue;
-
-                  return (
-                    <li key={option.value}>
-                      <button
-                        type="button"
-                        onClick={() => selectValue(option.value)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
-                          isSelected
-                            ? "border border-slate-200 bg-white text-blue-700"
-                            : "text-slate-700"
-                        }`}
-                      >
-                        <span>{option.label}</span>
-                        {isSelected ? (
-                          <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                            Selected
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </div>
-        ) : null}
-      </div>
-      {error ? (
-        <p
-          id={`${name}-error`}
-          className="mt-1 text-xs font-medium text-rose-600"
-        >
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-};
-
-const QuestionDate = ({
-  question,
-  name,
-  value,
-  onChange,
-  min = "1980-01-01",
-  max = new Date().toISOString().slice(0, 10),
-  error,
-}) => {
-  return (
-    <div>
-      <label htmlFor={name} className={LABEL_CLASS}>
-        {question}
+        {label}
+        {required ? <span className="ml-1 text-blue-700">*</span> : null}
       </label>
       <input
         id={name}
         name={name}
-        type="date"
+        type={type}
         value={value}
         onChange={onChange}
-        min={min}
-        max={max}
+        placeholder={placeholder}
+        required={required}
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${name}-error` : undefined}
-        className={`${INPUT_CLASS} ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-100" : ""}`}
+        aria-describedby={
+          [errorId, helpId].filter(Boolean).join(" ") || undefined
+        }
+        className={`${INPUT_CLASS} ${error ? "border-b-rose-600 focus:border-b-rose-600 focus:ring-0" : ""}`}
+        {...props}
       />
+      {help ? (
+        <p id={helpId} className="mt-1.5 text-xs leading-5 text-slate-500">
+          {help}
+        </p>
+      ) : null}
       {error ? (
-        <p
-          id={`${name}-error`}
-          className="mt-1 text-xs font-medium text-rose-600"
-        >
+        <p id={errorId} className="mt-1.5 text-xs font-medium text-rose-600">
           {error}
         </p>
       ) : null}
     </div>
   );
-};
+}
 
-const SectionCard = ({ title, children, optional = false }) => (
-  <section className="rounded-md border border-slate-200 bg-white p-4 sm:p-5">
-    <div className="mb-4 flex items-center justify-between">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">
-        {title}
-      </h3>
-      {optional ? (
-        <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
-          Optional
-        </span>
+function SelectField({
+  name,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Select an option",
+  required = false,
+  error,
+  help,
+  className = "",
+}) {
+  const errorId = error ? `${name}-error` : undefined;
+  const helpId = help ? `${name}-help` : undefined;
+  const menuId = `${name}-options`;
+  const wrapperRef = useRef(null);
+  const searchRef = useRef(null);
+  const optionRefs = useRef([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const filteredOptions = options.filter((option) =>
+    option.label.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : null;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) setIsOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    searchRef.current?.focus();
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("touchstart", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("touchstart", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    searchRef.current?.focus();
+  }, [isOpen]);
+
+  const selectOption = (option) => {
+    onChange({ target: { name, value: option.value } });
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const handleTriggerKeyDown = (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const initialIndex = selectedIndex >= 0 ? selectedIndex + 1 : 0;
+      setActiveIndex(initialIndex);
+      setIsOpen(true);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (!isOpen) {
+        setActiveIndex(selectedIndex >= 0 ? selectedIndex + 1 : 0);
+      }
+      setIsOpen((open) => !open);
+    }
+  };
+
+  const handleOptionKeyDown = (event, index) => {
+    let nextIndex = index;
+    if (event.key === "ArrowDown") {
+      nextIndex = Math.min(index + 1, filteredOptions.length);
+    }
+    else if (event.key === "ArrowUp") {
+      nextIndex = Math.max(index - 1, 0);
+    } else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = filteredOptions.length;
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+      return;
+    } else if (event.key === "Tab") {
+      setIsOpen(false);
+      return;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    setActiveIndex(nextIndex);
+    optionRefs.current[nextIndex]?.focus();
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "ArrowDown" && filteredOptions.length) {
+      event.preventDefault();
+      setActiveIndex(0);
+      optionRefs.current[0]?.focus();
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      const activeOption =
+        activeIndex === 0
+          ? { value: "", label: placeholder }
+          : filteredOptions[activeIndex - 1];
+      if (activeOption) selectOption(activeOption);
+    }
+  };
+
+  return (
+    <div className={className}>
+      <label id={`${name}-label`} htmlFor={name} className={LABEL_CLASS}>
+        {label}
+        {required ? <span className="ml-1 text-blue-700">*</span> : null}
+      </label>
+      <div ref={wrapperRef} className="relative">
+        <button
+          id={name}
+          type="button"
+          role="combobox"
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-controls={menuId}
+          aria-labelledby={`${name}-label`}
+          aria-required={required}
+          aria-invalid={Boolean(error)}
+          aria-describedby={
+            [errorId, helpId].filter(Boolean).join(" ") || undefined
+          }
+          onClick={() => {
+            if (!isOpen) {
+              setSearch("");
+              setActiveIndex(selectedIndex >= 0 ? selectedIndex + 1 : 0);
+            }
+            setIsOpen((open) => !open);
+          }}
+          onKeyDown={handleTriggerKeyDown}
+          className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-x-0 border-t-0 border-b-2 bg-transparent px-0 py-2.5 text-left text-sm shadow-none outline-none transition-colors focus:ring-0 ${selectedOption ? "border-b-blue-600 text-slate-900" : "border-b-slate-300 text-slate-500 hover:border-b-slate-500"} ${error ? "border-b-rose-600 focus:border-b-rose-600" : ""}`}
+        >
+          <span className="truncate">
+            {selectedOption?.label || placeholder}
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+        {isOpen ? (
+          <div className="absolute z-30 mt-1 w-full border border-slate-200 bg-white shadow-md">
+            <div className="border-b border-slate-200 p-2">
+              <input
+                ref={searchRef}
+                type="search"
+                value={search}
+                aria-label={`Search ${label.toLowerCase()}`}
+                aria-controls={menuId}
+                aria-autocomplete="list"
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setActiveIndex(-1);
+                }}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={`Search ${label.toLowerCase()}...`}
+                className="h-9 w-full border border-violet-400 bg-white px-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+              />
+            </div>
+            <ul
+              id={menuId}
+              role="listbox"
+              aria-labelledby={`${name}-label`}
+              className="max-h-56 overflow-y-auto py-1"
+            >
+              <li role="presentation">
+                <button
+                  ref={(element) => {
+                    optionRefs.current[0] = element;
+                  }}
+                  type="button"
+                  role="option"
+                  aria-selected={!value}
+                  onClick={() =>
+                    selectOption({ value: "", label: placeholder })
+                  }
+                  onKeyDown={(event) => handleOptionKeyDown(event, 0)}
+                  className={`flex min-h-10 w-full items-center px-3 text-left text-sm font-semibold text-blue-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                    activeIndex === 0 || !value
+                      ? "bg-blue-50"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  {placeholder}
+                </button>
+              </li>
+              {filteredOptions.map((option, filteredIndex) => {
+              const index = filteredIndex + 1;
+              const selected = option.value === value;
+              return (
+                <li key={option.value} role="presentation">
+                  <button
+                    ref={(element) => {
+                      optionRefs.current[index] = element;
+                    }}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => selectOption(option)}
+                    onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                    className={`flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                      selected
+                        ? "bg-blue-50 font-semibold text-blue-800"
+                        : activeIndex === index
+                          ? "bg-slate-100 text-slate-900"
+                          : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                  </button>
+                </li>
+              );
+              })}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+      {help ? (
+        <p id={helpId} className="mt-1.5 text-xs leading-5 text-slate-500">
+          {help}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-1.5 text-xs font-medium text-rose-600">
+          {error}
+        </p>
       ) : null}
     </div>
-    {children}
-  </section>
-);
+  );
+}
+
+function TextAreaField({
+  name,
+  label,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  error,
+  help,
+  rows = 4,
+  className = "",
+}) {
+  const errorId = error ? `${name}-error` : undefined;
+  const helpId = help ? `${name}-help` : undefined;
+  return (
+    <div className={className}>
+      <label htmlFor={name} className={LABEL_CLASS}>
+        {label}
+        {required ? <span className="ml-1 text-blue-700">*</span> : null}
+      </label>
+      <textarea
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        rows={rows}
+        aria-invalid={Boolean(error)}
+        aria-describedby={
+          [errorId, helpId].filter(Boolean).join(" ") || undefined
+        }
+        className={`${INPUT_CLASS} min-h-28 resize-y ${error ? "border-b-rose-600 focus:border-b-rose-600 focus:ring-0" : ""}`}
+      />
+      {help ? (
+        <p id={helpId} className="mt-1.5 text-xs leading-5 text-slate-500">
+          {help}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-1.5 text-xs font-medium text-rose-600">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function FormSection({ title, description, children }) {
+  return (
+    <section className="min-w-0 bg-white  p-0">
+      <div className="mb-4 sm:mb-5">
+        <h3 className="text-base font-semibold tracking-tight text-slate-900">
+          {title}
+        </h3>
+        {description ? (
+          <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 const Careers = () => {
   const canonical = toCanonicalPageUrl("/careers");
@@ -983,7 +554,7 @@ const Careers = () => {
     createWebPageSchema({
       name: "Careers at MobilesX",
       description:
-        "Apply for frontend, backend, content developer, and fullstack roles at MobilesX.",
+        "Explore career opportunities at MobilesX and apply to join our technology, product, engineering and editorial teams.",
       url: canonical,
     }),
   );
@@ -997,312 +568,215 @@ const Careers = () => {
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-
-    let nextValue = value;
-    if (type === "checkbox") {
-      nextValue = checked;
-    }
-
-    if (submitError) {
-      setSubmitError("");
-    }
-
+    setFormData((previous) => ({
+      ...previous,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    if (submitError) setSubmitError("");
     if (errors[name]) {
-      setErrors((prev) => {
-        const { [name]: _removed, ...rest } = prev;
+      setErrors((previous) => {
+        const { [name]: _removed, ...rest } = previous;
         return rest;
       });
     }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: nextValue,
-    }));
-  };
-
-  const getError = (field) => errors[field];
-
-  const step0Required = [
-    "role",
-    "gender",
-    "firstName",
-    "lastName",
-    "email",
-    "phone",
-    "dob",
-  ];
-  const step1Required = [
-    "tenthBoard",
-    "tenthStream",
-    "tenthMarks",
-    "tenthYear",
-    "twelfthBoard",
-    "twelfthStream",
-    "twelfthMarks",
-    "twelfthYear",
-    "ugInstitute",
-    "ugStream",
-    "ugMarks",
-    "ugYear",
-  ];
-
-  const getAge = (dateValue) => {
-    const today = new Date();
-    let age = today.getFullYear() - dateValue.getFullYear();
-    const monthDiff = today.getMonth() - dateValue.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < dateValue.getDate())
-    ) {
-      age -= 1;
-    }
-    return age;
   };
 
   const validateStep = (targetStep) => {
     const nextErrors = {};
-    const today = new Date();
-
-    const requireField = (field, message) => {
-      if (!hasValue(formData[field])) {
-        nextErrors[field] = message;
-      }
+    const requireField = (name, label) => {
+      if (!hasValue(formData[name])) nextErrors[name] = `${label} is required.`;
     };
 
     if (targetStep === 0) {
-      step0Required.forEach((field) =>
-        requireField(field, "This field is required."),
-      );
+      [
+        ["role", "Please select a role"],
+        ["firstName", "First name"],
+        ["lastName", "Last name"],
+        ["email", "Email address"],
+        ["phone", "Phone number"],
+        ["country", "Country or region"],
+      ].forEach(([name, label]) => requireField(name, label));
 
-      if (hasValue(formData.firstName) && formData.firstName.length < 2) {
-        nextErrors.firstName = "First name should be at least 2 characters.";
-      }
-
-      if (hasValue(formData.lastName) && formData.lastName.length < 2) {
-        nextErrors.lastName = "Last name should be at least 2 characters.";
-      }
-
-      if (hasValue(formData.email) && !isValidEmail(formData.email)) {
+      if (hasValue(formData.firstName) && formData.firstName.trim().length < 2)
+        nextErrors.firstName = "Enter a first name with at least 2 characters.";
+      if (hasValue(formData.lastName) && formData.lastName.trim().length < 2)
+        nextErrors.lastName = "Enter a last name with at least 2 characters.";
+      if (hasValue(formData.email) && !isValidEmail(formData.email))
         nextErrors.email = "Enter a valid email address.";
-      }
-
-      if (hasValue(formData.phone) && !isValidPhone(formData.phone)) {
-        nextErrors.phone = "Enter a valid Indian mobile number.";
-      }
-
-      if (hasValue(formData.dob)) {
-        const dobDate = parseISODate(formData.dob);
-        if (!dobDate) {
-          nextErrors.dob = "Enter a valid date of birth.";
-        } else if (isAfterDay(dobDate, today)) {
-          nextErrors.dob = "Date of birth cannot be in the future.";
-        } else if (getAge(dobDate) < 18) {
-          nextErrors.dob = "You must be at least 18 years old.";
-        }
-      }
+      if (hasValue(formData.phone) && !isValidPhone(formData.phone))
+        nextErrors.phone =
+          "Include the country calling code and enter 7–15 digits.";
     }
 
     if (targetStep === 1) {
-      step1Required.forEach((field) =>
-        requireField(field, "This field is required."),
-      );
-
-      if (hasValue(formData.tenthMarks)) {
-        const result = parseMarksValue(formData.tenthMarks);
-        if (!result.ok) nextErrors.tenthMarks = result.message;
-      }
-
-      if (hasValue(formData.twelfthMarks)) {
-        const result = parseMarksValue(formData.twelfthMarks);
-        if (!result.ok) nextErrors.twelfthMarks = result.message;
-      }
-
-      if (hasValue(formData.ugMarks)) {
-        const result = parseMarksValue(formData.ugMarks);
-        if (!result.ok) nextErrors.ugMarks = result.message;
-      }
-
-      if (hasValue(formData.tenthYear) && !isValidYear(formData.tenthYear)) {
-        nextErrors.tenthYear = `Enter a year between 1980 and ${currentYear}.`;
-      }
-
+      requireField("highestQualification", "Highest qualification");
+      requireField("fieldOfStudy", "Field of study or professional focus");
       if (
-        hasValue(formData.twelfthYear) &&
-        !isValidYear(formData.twelfthYear)
+        hasValue(formData.graduationYear) &&
+        !isValidYear(formData.graduationYear)
       ) {
-        nextErrors.twelfthYear = `Enter a year between 1980 and ${currentYear}.`;
-      }
-
-      if (hasValue(formData.ugYear) && !isValidYear(formData.ugYear)) {
-        nextErrors.ugYear = `Enter a year between 1980 and ${currentYear}.`;
-      }
-
-      const tenthYearNum = Number(formData.tenthYear);
-      const twelfthYearNum = Number(formData.twelfthYear);
-      const ugYearNum = Number(formData.ugYear);
-
-      if (
-        isValidYear(formData.tenthYear) &&
-        isValidYear(formData.twelfthYear) &&
-        tenthYearNum > twelfthYearNum
-      ) {
-        nextErrors.twelfthYear = "12th year should be after 10th year.";
-      }
-
-      if (
-        isValidYear(formData.twelfthYear) &&
-        isValidYear(formData.ugYear) &&
-        twelfthYearNum > ugYearNum
-      ) {
-        nextErrors.ugYear = "UG year should be after 12th year.";
-      }
-
-      const hasPgData = [
-        formData.pgInstitute,
-        formData.pgStream,
-        formData.pgMarks,
-        formData.pgYear,
-      ].some((value) => hasValue(value));
-
-      if (hasPgData) {
-        requireField("pgInstitute", "PG institute is required.");
-        requireField("pgStream", "PG stream is required.");
-        requireField("pgMarks", "PG marks are required.");
-        requireField("pgYear", "PG year is required.");
-
-        if (hasValue(formData.pgMarks)) {
-          const result = parseMarksValue(formData.pgMarks);
-          if (!result.ok) nextErrors.pgMarks = result.message;
-        }
-
-        if (hasValue(formData.pgYear) && !isValidYear(formData.pgYear)) {
-          nextErrors.pgYear = `Enter a year between 1980 and ${currentYear}.`;
-        }
-
-        if (
-          isValidYear(formData.ugYear) &&
-          isValidYear(formData.pgYear) &&
-          Number(formData.ugYear) > Number(formData.pgYear)
-        ) {
-          nextErrors.pgYear = "PG year should be after UG year.";
-        }
+        nextErrors.graduationYear = `Enter a year between 1950 and ${CURRENT_YEAR + 10}.`;
       }
     }
 
     if (targetStep === 2) {
-      const requiredFields = [
-        "experienceLevel",
-        "employmentStatus",
-        "noticePeriod",
-        "preferredLocation",
-        "skills",
-      ];
+      [
+        ["experienceLevel", "Experience level"],
+        ["employmentStatus", "Employment status"],
+        ["noticePeriod", "Availability"],
+        ["preferredLocation", "Preferred work location"],
+        ["workArrangement", "Work arrangement"],
+        ["workAuthorization", "Work authorization"],
+        ["skills", "Relevant skills"],
+      ].forEach(([name, label]) => requireField(name, label));
 
-      requiredFields.forEach((field) =>
-        requireField(field, "This field is required."),
-      );
-
-      if (formData.experienceLevel !== "fresher") {
-        requireField("currentCompany", "Current company is required.");
-        requireField("currentRole", "Current role is required.");
+      if (["employed", "notice-period"].includes(formData.employmentStatus)) {
+        requireField("currentCompany", "Current company");
+        requireField("currentRole", "Current job title");
       }
 
       if (hasValue(formData.expectedCtc)) {
-        const parsed = toNullableNumber(formData.expectedCtc);
-        if (!parsed || parsed <= 0) {
-          nextErrors.expectedCtc = "Enter a valid expected CTC.";
-        }
+        const compensation = Number(formData.expectedCtc);
+        if (!Number.isFinite(compensation) || compensation <= 0)
+          nextErrors.expectedCtc =
+            "Enter a positive annual compensation amount.";
+        if (!hasValue(formData.expectedCtcCurrency))
+          nextErrors.expectedCtcCurrency = "Select a currency for the amount.";
+        if (
+          formData.expectedCtcCurrency === "Other" &&
+          !/^[A-Za-z]{3}$/.test(formData.expectedCtcOtherCurrency.trim())
+        )
+          nextErrors.expectedCtcOtherCurrency =
+            "Enter the 3-letter currency code, such as CHF.";
       }
     }
 
     if (targetStep === 3) {
-      requireField("applicationPlace", "Application place is required.");
-      requireField("applicationDate", "Application date is required.");
-
-      if (hasValue(formData.applicationDate)) {
-        const appDate = parseISODate(formData.applicationDate);
-        if (!appDate) {
-          nextErrors.applicationDate = "Enter a valid application date.";
-        } else if (isAfterDay(appDate, today)) {
-          nextErrors.applicationDate =
-            "Application date cannot be in the future.";
+      ["resumeUrl", "linkedinUrl", "portfolioUrl"].forEach((name) => {
+        if (hasValue(formData[name]) && !isValidUrl(formData[name])) {
+          nextErrors[name] = "Enter a valid URL, including the website name.";
         }
-      }
-
-      if (!formData.agreeTerms) {
-        nextErrors.agreeTerms = "Please accept the terms to continue.";
-      }
+      });
+      if (!formData.agreeTerms)
+        nextErrors.agreeTerms =
+          "Please confirm your information and consent to recruitment-related contact.";
     }
 
     return nextErrors;
   };
 
-  const validateAll = () => {
-    const allErrors = {
-      ...validateStep(0),
-      ...validateStep(1),
-      ...validateStep(2),
-      ...validateStep(3),
-    };
-    return allErrors;
-  };
+  const validateAll = () => ({
+    ...validateStep(0),
+    ...validateStep(1),
+    ...validateStep(2),
+    ...validateStep(3),
+  });
+
+  const stepFields = [
+    ["role", "firstName", "lastName", "email", "phone", "country"],
+    ["highestQualification", "fieldOfStudy", "graduationYear"],
+    [
+      "experienceLevel",
+      "employmentStatus",
+      "currentCompany",
+      "currentRole",
+      "noticePeriod",
+      "preferredLocation",
+      "workArrangement",
+      "workAuthorization",
+      "expectedCtc",
+      "expectedCtcCurrency",
+      "expectedCtcOtherCurrency",
+      "skills",
+    ],
+    ["resumeUrl", "linkedinUrl", "portfolioUrl", "agreeTerms"],
+  ];
 
   const getFirstErrorStep = (nextErrors) => {
-    const stepFields = [
-      step0Required,
-      [...step1Required, "pgInstitute", "pgStream", "pgMarks", "pgYear"],
-      [
-        "experienceLevel",
-        "employmentStatus",
-        "currentCompany",
-        "currentRole",
-        "noticePeriod",
-        "preferredLocation",
-        "expectedCtc",
-        "skills",
-        "projects",
-        "coverLetter",
-      ],
-      ["applicationPlace", "applicationDate", "agreeTerms"],
-    ];
-
-    for (let i = 0; i < stepFields.length; i += 1) {
-      if (stepFields[i].some((field) => nextErrors[field])) {
-        return i;
-      }
-    }
-
-    return 0;
-  };
-
-  const isStepComplete = () => {
-    return Object.keys(validateStep(step)).length === 0;
+    const foundStep = stepFields.findIndex((fields) =>
+      fields.some((field) => nextErrors[field]),
+    );
+    return foundStep < 0 ? 0 : foundStep;
   };
 
   const goNext = () => {
-    if (step >= STEPS.length - 1 || isSubmitting) return;
-
+    if (isSubmitting) return;
     const nextErrors = validateStep(step);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setErrors({});
-    setStep((prev) => prev + 1);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    setStep((previous) => Math.min(previous + 1, STEPS.length - 1));
   };
 
   const goBack = () => {
-    if (step > 0 && !isSubmitting) {
-      setStep((prev) => prev - 1);
+    if (!isSubmitting) {
+      setErrors({});
+      setStep((previous) => Math.max(0, previous - 1));
     }
   };
 
+  const summaryRows = useMemo(
+    () => [
+      [
+        "Role",
+        ROLE_OPTIONS.find((option) => option.value === formData.role)?.label ||
+          "—",
+      ],
+      ["Applicant", `${formData.firstName} ${formData.lastName}`.trim() || "—"],
+      ["Email", formData.email || "—"],
+      ["Phone", formData.phone || "—"],
+      [
+        "Location",
+        [formData.city, formData.country].filter(Boolean).join(", ") || "—",
+      ],
+      [
+        "Education",
+        [
+          QUALIFICATION_OPTIONS.find(
+            (option) => option.value === formData.highestQualification,
+          )?.label,
+          formData.fieldOfStudy,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "—",
+      ],
+      [
+        "Experience",
+        EXPERIENCE_OPTIONS.find(
+          (option) => option.value === formData.experienceLevel,
+        )?.label || "—",
+      ],
+      [
+        "Work arrangement",
+        WORK_ARRANGEMENT_OPTIONS.find(
+          (option) => option.value === formData.workArrangement,
+        )?.label || "—",
+      ],
+      [
+        "Availability",
+        AVAILABILITY_OPTIONS.find(
+          (option) => option.value === formData.noticePeriod,
+        )?.label || "—",
+      ],
+      [
+        "Preferred location",
+        [formData.preferredLocation, formData.city, formData.country]
+          .filter(Boolean)
+          .join(", ") || "—",
+      ],
+      [
+        "Work authorization",
+        WORK_AUTHORIZATION_OPTIONS.find(
+          (option) => option.value === formData.workAuthorization,
+        )?.label || "—",
+      ],
+    ],
+    [formData],
+  );
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     const nextErrors = validateAll();
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       setStep(getFirstErrorStep(nextErrors));
       return;
@@ -1310,81 +784,92 @@ const Careers = () => {
 
     setIsSubmitting(true);
     setSubmitError("");
+    const compensation = toNullableNumber(formData.expectedCtc);
+    const education = {
+      highest_qualification: formData.highestQualification,
+      field_of_study: formData.fieldOfStudy.trim(),
+      institution: formData.institution.trim(),
+      graduation_year: formData.graduationYear
+        ? Number(formData.graduationYear)
+        : null,
+      // Keep legacy keys present for older admin views, without inventing school marks.
+      tenth: { board: "", stream: "", marks: "", year: "" },
+      twelfth: { board: "", stream: "", marks: "", year: "" },
+      ug: { institute: "", stream: "", marks: "", year: "" },
+      pg: { institute: "", stream: "", marks: "", year: "" },
+    };
 
     const payload = {
       role: formData.role,
-      gender: formData.gender,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      dob: formData.dob,
-
-      education: {
-        tenth: {
-          board: formData.tenthBoard,
-          stream: formData.tenthStream,
-          marks: formData.tenthMarks,
-          year: formData.tenthYear,
-        },
-        twelfth: {
-          board: formData.twelfthBoard,
-          stream: formData.twelfthStream,
-          marks: formData.twelfthMarks,
-          year: formData.twelfthYear,
-        },
-        ug: {
-          institute: formData.ugInstitute,
-          stream: formData.ugStream,
-          marks: formData.ugMarks,
-          year: formData.ugYear,
-        },
-        pg: {
-          institute: formData.pgInstitute,
-          stream: formData.pgStream,
-          marks: formData.pgMarks,
-          year: formData.pgYear,
-        },
-      },
-
+      gender: null,
+      first_name: formData.firstName.trim(),
+      last_name: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      dob: null,
+      education,
       experience_level: formData.experienceLevel,
       employment_status: formData.employmentStatus,
-      current_company: formData.currentCompany,
-      current_role: formData.currentRole,
+      current_company: formData.currentCompany.trim() || null,
+      current_role: formData.currentRole.trim() || null,
       notice_period: formData.noticePeriod,
-      preferred_location: formData.preferredLocation,
-      expected_ctc: toNullableNumber(formData.expectedCtc),
-      skills: formData.skills,
-      projects: formData.projects,
-      cover_letter: formData.coverLetter,
-      application_place: formData.applicationPlace,
+      preferred_location: [
+        formData.preferredLocation.trim(),
+        formData.city.trim(),
+        formData.country.trim(),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      expected_ctc:
+        formData.expectedCtcCurrency === "INR" ? compensation : null,
+      expected_ctc_currency: compensation
+        ? (formData.expectedCtcCurrency === "Other"
+            ? formData.expectedCtcOtherCurrency.trim().toUpperCase()
+            : formData.expectedCtcCurrency) || null
+        : null,
+      expected_compensation: compensation
+        ? {
+            amount: compensation,
+            currency:
+              formData.expectedCtcCurrency === "Other"
+                ? formData.expectedCtcOtherCurrency.trim().toUpperCase()
+                : formData.expectedCtcCurrency,
+            period: "yearly",
+          }
+        : null,
+      skills: formData.skills.trim(),
+      projects: formData.projects.trim() || null,
+      cover_letter: formData.coverLetter.trim() || null,
+      application_place: formData.country.trim(),
       application_date: formData.applicationDate,
       agree_terms: Boolean(formData.agreeTerms),
-      source: "hooks-web-careers",
+      country: formData.country.trim(),
+      city: formData.city.trim() || null,
+      work_arrangement: formData.workArrangement,
+      work_authorization: formData.workAuthorization,
+      resume_url: normalizeUrl(formData.resumeUrl) || null,
+      linkedin_url: normalizeUrl(formData.linkedinUrl) || null,
+      portfolio_url: normalizeUrl(formData.portfolioUrl) || null,
+      source: "mobilesx-web-careers",
     };
 
     try {
       const response = await fetch(CAREERS_API_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to submit application");
-      }
-
-      setFormData(createInitialForm());
-      setStep(0);
+      if (!response.ok)
+        throw new Error(data.message || "Unable to submit your application.");
       setSubmitted(true);
+      setFormData(createInitialForm());
+      setErrors({});
+      setStep(0);
     } catch (error) {
       setSubmitError(
         error?.message ||
-          "Unable to submit application right now. Please try again.",
+          "Unable to submit your application right now. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -1393,603 +878,68 @@ const Careers = () => {
 
   return (
     <>
-      <SEO
-        title="Careers at MobilesX"
-        description="Explore opportunities at MobilesX and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
-        url={canonical}
-        image={{
-          url: CAREERS_OG_IMAGE,
-          width: 1200,
-          height: 630,
-          alt: "Careers at MobilesX preview image",
-        }}
-      >
-        {careersSchemaJson && (
+      <Helmet>
+        <title>Careers at MobilesX | Join Our Team</title>
+        <meta
+          name="description"
+          content="Explore career opportunities at MobilesX across product, engineering and editorial. Apply from anywhere with our accessible global application."
+        />
+        <link rel="canonical" href={canonical} />
+        <meta
+          property="og:title"
+          content="Careers at MobilesX | Join Our Team"
+        />
+        <meta
+          property="og:description"
+          content="Explore career opportunities at MobilesX across product, engineering and editorial."
+        />
+        <meta property="og:url" content={canonical} />
+        <meta
+          property="og:image"
+          content={`${SITE_ORIGIN}/mobilex-favicon.svg`}
+        />
+        <meta name="robots" content="index,follow" />
+        {careersSchemaJson ? (
           <script type="application/ld+json">{careersSchemaJson}</script>
-        )}
-      </SEO>
-      <main className="hooks-company-page hooks-careers-page min-h-screen bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-          <div className="overflow-hidden">
-            <div className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 sm:py-8">
-              <p className="inline-flex rounded-md border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-700">
-                Hiring Process
-              </p>
-              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                Build clearer technology experiences with Hooks
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Build your career with us. Complete the 4-step application form
-                to apply for current openings.
-              </p>
-            </div>
+        ) : null}
+      </Helmet>
 
-            <div className="p-4 sm:p-6">
-              <div className=" bg-white p-4 sm:p-5">
-                <div className="flex items-start justify-between gap-1 sm:gap-2">
-                  {STEPS.map((item, index) => {
-                    const isActive = step === index;
-                    const isDone = step > index;
-                    const labelClass =
-                      isActive || isDone ? "text-blue-700" : "text-slate-400";
-
-                    return (
-                      <div key={item.title} className="flex-1 px-1 text-center">
-                        <p
-                          className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
-                        >
-                          {item.subtitle}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="relative mt-3 flex items-center justify-between">
-                  <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
-                    <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
-                      <div
-                        className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              STEPS.length > 1
-                                ? (step / (STEPS.length - 1)) * 100
-                                : 0,
-                            ),
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {STEPS.map((item, index) => {
-                    const isActive = step === index;
-                    const isDone = step > index;
-
-                    return (
-                      <div
-                        key={item.title}
-                        className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
-                          isDone
-                            ? "border-blue-600 bg-white text-blue-600"
-                            : isActive
-                              ? "border-blue-600 bg-white text-blue-600"
-                              : "border-slate-200 bg-white text-slate-300"
-                        }`}
-                        aria-label={item.title}
-                      >
-                        {isDone ? (
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="h-3 w-3 sm:h-4 sm:w-4"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden="true"
-                          >
-                            <path
-                              d="M5 12.5L9.5 17L19 7.5"
-                              stroke="currentColor"
-                              strokeWidth="2.4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
+      <main className="min-h-screen bg-white text-slate-900">
+        <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <header className="mb-5 pb-1 sm:mb-8 sm:pb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+              MOBILESX · CAREERS
+            </p>
+            <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-3xl">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
+                  Build your future with MobilesX
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                  Tell us about your experience, skills and interests. Our
+                  application is open to candidates across locations and career
+                  stages.
+                </p>
               </div>
-
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                {step === 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionSelect
-                      question="Which role are you applying for?"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      options={ROLE_OPTIONS}
-                      required
-                      placeholder="Select your role"
-                      error={getError("role")}
-                    />
-
-                    <QuestionSelect
-                      question="How do you identify your gender?"
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                      options={GENDER_OPTIONS}
-                      required
-                      placeholder="Select your gender"
-                      error={getError("gender")}
-                    />
-
-                    <QuestionInput
-                      question="What is your first name?"
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      placeholder="Enter first name"
-                      required
-                      error={getError("firstName")}
-                    />
-
-                    <QuestionInput
-                      question="What is your last name?"
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      placeholder="Enter last name"
-                      required
-                      error={getError("lastName")}
-                    />
-
-                    <QuestionInput
-                      question="What is your email address?"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="you@example.com"
-                      required
-                      error={getError("email")}
-                    />
-
-                    <QuestionInput
-                      question="What is your phone number?"
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Enter mobile number"
-                      required
-                      error={getError("phone")}
-                    />
-
-                    <div className="sm:col-span-2">
-                      <QuestionDate
-                        question="What is your date of birth?"
-                        name="dob"
-                        value={formData.dob}
-                        onChange={handleChange}
-                        min="1900-01-01"
-                        max={new Date().toISOString().slice(0, 10)}
-                        error={getError("dob")}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-
-                {step === 1 ? (
-                  <div className="space-y-4">
-                    <SectionCard title="10th education details">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <QuestionInput
-                          question="Which board or school did you complete 10th from?"
-                          type="text"
-                          name="tenthBoard"
-                          value={formData.tenthBoard}
-                          onChange={handleChange}
-                          placeholder="Board or school name"
-                          required
-                          error={getError("tenthBoard")}
-                        />
-                        <QuestionInput
-                          question="What was your stream in 10th?"
-                          type="text"
-                          name="tenthStream"
-                          value={formData.tenthStream}
-                          onChange={handleChange}
-                          placeholder="General / Science / Other"
-                          required
-                          error={getError("tenthStream")}
-                        />
-                        <QuestionInput
-                          question="What were your 10th marks?"
-                          type="text"
-                          name="tenthMarks"
-                          value={formData.tenthMarks}
-                          onChange={handleChange}
-                          placeholder="Example: 89% or 9.1 CGPA"
-                          required
-                          error={getError("tenthMarks")}
-                        />
-                        <QuestionInput
-                          question="In which year did you complete 10th?"
-                          type="number"
-                          name="tenthYear"
-                          value={formData.tenthYear}
-                          onChange={handleChange}
-                          placeholder="Example: 2018"
-                          min="1980"
-                          max="2099"
-                          required
-                          error={getError("tenthYear")}
-                        />
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="12th education details">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <QuestionInput
-                          question="Which board or school did you complete 12th from?"
-                          type="text"
-                          name="twelfthBoard"
-                          value={formData.twelfthBoard}
-                          onChange={handleChange}
-                          placeholder="Board or school name"
-                          required
-                          error={getError("twelfthBoard")}
-                        />
-                        <QuestionInput
-                          question="What was your stream in 12th?"
-                          type="text"
-                          name="twelfthStream"
-                          value={formData.twelfthStream}
-                          onChange={handleChange}
-                          placeholder="Science / Commerce / Arts"
-                          required
-                          error={getError("twelfthStream")}
-                        />
-                        <QuestionInput
-                          question="What were your 12th marks?"
-                          type="text"
-                          name="twelfthMarks"
-                          value={formData.twelfthMarks}
-                          onChange={handleChange}
-                          placeholder="Example: 84% or 8.7 CGPA"
-                          required
-                          error={getError("twelfthMarks")}
-                        />
-                        <QuestionInput
-                          question="In which year did you complete 12th?"
-                          type="number"
-                          name="twelfthYear"
-                          value={formData.twelfthYear}
-                          onChange={handleChange}
-                          placeholder="Example: 2020"
-                          min="1980"
-                          max="2099"
-                          required
-                          error={getError("twelfthYear")}
-                        />
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="UG education details">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <QuestionSearchSelect
-                          question="Which college or university did you complete UG from?"
-                          name="ugInstitute"
-                          value={formData.ugInstitute}
-                          onChange={handleChange}
-                          options={UG_INSTITUTE_OPTIONS}
-                          placeholder="Search institute"
-                          required
-                          error={getError("ugInstitute")}
-                        />
-                        <QuestionSelect
-                          question="What was your UG stream?"
-                          name="ugStream"
-                          value={formData.ugStream}
-                          onChange={handleChange}
-                          options={UG_STREAM_OPTIONS}
-                          placeholder="Select UG stream"
-                          required
-                          error={getError("ugStream")}
-                        />
-                        <QuestionInput
-                          question="What were your UG marks?"
-                          type="text"
-                          name="ugMarks"
-                          value={formData.ugMarks}
-                          onChange={handleChange}
-                          placeholder="Example: 78% or 8.0 CGPA"
-                          required
-                          error={getError("ugMarks")}
-                        />
-                        <QuestionInput
-                          question="In which year did you complete UG?"
-                          type="number"
-                          name="ugYear"
-                          value={formData.ugYear}
-                          onChange={handleChange}
-                          placeholder="Example: 2024"
-                          min="1980"
-                          max="2099"
-                          required
-                          error={getError("ugYear")}
-                        />
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="PG education details" optional>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <QuestionInput
-                          question="If applicable, where did you complete PG?"
-                          type="text"
-                          name="pgInstitute"
-                          value={formData.pgInstitute}
-                          onChange={handleChange}
-                          placeholder="Institute name"
-                          error={getError("pgInstitute")}
-                        />
-                        <QuestionInput
-                          question="If applicable, what was your PG stream?"
-                          type="text"
-                          name="pgStream"
-                          value={formData.pgStream}
-                          onChange={handleChange}
-                          placeholder="Example: M.Tech / MBA"
-                          error={getError("pgStream")}
-                        />
-                        <QuestionInput
-                          question="If applicable, what were your PG marks?"
-                          type="text"
-                          name="pgMarks"
-                          value={formData.pgMarks}
-                          onChange={handleChange}
-                          placeholder="Example: 8.3 CGPA"
-                          error={getError("pgMarks")}
-                        />
-                        <QuestionInput
-                          question="If applicable, in which year did you complete PG?"
-                          type="number"
-                          name="pgYear"
-                          value={formData.pgYear}
-                          onChange={handleChange}
-                          placeholder="Example: 2026"
-                          min="1980"
-                          max="2099"
-                          error={getError("pgYear")}
-                        />
-                      </div>
-                    </SectionCard>
-                  </div>
-                ) : null}
-
-                {step === 2 ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionSelect
-                      question="How much total work experience do you have?"
-                      name="experienceLevel"
-                      value={formData.experienceLevel}
-                      onChange={handleChange}
-                      options={EXPERIENCE_OPTIONS}
-                      required
-                      placeholder="Select experience"
-                      error={getError("experienceLevel")}
-                    />
-
-                    <QuestionSelect
-                      question="What is your current employment status?"
-                      name="employmentStatus"
-                      value={formData.employmentStatus}
-                      onChange={handleChange}
-                      options={EMPLOYMENT_OPTIONS}
-                      required
-                      placeholder="Select employment status"
-                      error={getError("employmentStatus")}
-                    />
-
-                    <QuestionInput
-                      question="Where are you currently working?"
-                      type="text"
-                      name="currentCompany"
-                      value={formData.currentCompany}
-                      onChange={handleChange}
-                      placeholder="Current company name"
-                      required={formData.experienceLevel !== "fresher"}
-                      error={getError("currentCompany")}
-                    />
-
-                    <QuestionInput
-                      question="What is your current role or designation?"
-                      type="text"
-                      name="currentRole"
-                      value={formData.currentRole}
-                      onChange={handleChange}
-                      placeholder="Current role"
-                      required={formData.experienceLevel !== "fresher"}
-                      error={getError("currentRole")}
-                    />
-
-                    <QuestionSelect
-                      question="What is your notice period?"
-                      name="noticePeriod"
-                      value={formData.noticePeriod}
-                      onChange={handleChange}
-                      options={NOTICE_OPTIONS}
-                      required
-                      placeholder="Select notice period"
-                      error={getError("noticePeriod")}
-                    />
-
-                    <QuestionInput
-                      question="Which location do you prefer for work?"
-                      type="text"
-                      name="preferredLocation"
-                      value={formData.preferredLocation}
-                      onChange={handleChange}
-                      placeholder="City or remote"
-                      required
-                      error={getError("preferredLocation")}
-                    />
-
-                    <QuestionInput
-                      question="What is your expected CTC in INR per year?"
-                      type="number"
-                      name="expectedCtc"
-                      value={formData.expectedCtc}
-                      onChange={handleChange}
-                      placeholder="Example: 850000"
-                      min="0"
-                      error={getError("expectedCtc")}
-                    />
-
-                    <div className="sm:col-span-2">
-                      <QuestionTextArea
-                        question="Which skills best represent your profile?"
-                        name="skills"
-                        value={formData.skills}
-                        onChange={handleChange}
-                        rows={4}
-                        placeholder="Example: React, Node.js, SQL, SEO writing, CMS"
-                        required
-                        error={getError("skills")}
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <QuestionTextArea
-                        question="Can you share key project experience or achievements?"
-                        name="projects"
-                        value={formData.projects}
-                        onChange={handleChange}
-                        rows={4}
-                        placeholder="Write short points about your work impact"
-                        error={getError("projects")}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-
-                {step === 3 ? (
-                  <div className="space-y-4">
-                    <QuestionTextArea
-                      question="Why do you want to join Hooks?"
-                      name="coverLetter"
-                      value={formData.coverLetter}
-                      onChange={handleChange}
-                      rows={4}
-                      placeholder="Write a short note about your interest"
-                      error={getError("coverLetter")}
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <QuestionInput
-                        question="From which place are you applying?"
-                        type="text"
-                        name="applicationPlace"
-                        value={formData.applicationPlace}
-                        onChange={handleChange}
-                        placeholder="City"
-                        required
-                        error={getError("applicationPlace")}
-                      />
-
-                      <QuestionDate
-                        question="What is today\'s application date?"
-                        name="applicationDate"
-                        value={formData.applicationDate}
-                        onChange={handleChange}
-                        min="1980-01-01"
-                        max={new Date().toISOString().slice(0, 10)}
-                        error={getError("applicationDate")}
-                      />
-                    </div>
-
-                    <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-4">
-                      <input
-                        type="checkbox"
-                        name="agreeTerms"
-                        checked={formData.agreeTerms}
-                        onChange={handleChange}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        required
-                      />
-                      <span className="text-sm text-slate-700">
-                        I confirm that all details provided in this application
-                        are correct, and I agree to be contacted for hiring
-                        updates.
-                      </span>
-                    </label>
-                    {getError("agreeTerms") ? (
-                      <p className="text-xs font-medium text-red-600">
-                        {getError("agreeTerms")}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  {step > 0 ? (
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      disabled={isSubmitting}
-                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Back
-                    </button>
-                  ) : null}
-
-                  {step < STEPS.length - 1 ? (
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      disabled={!isStepComplete() || isSubmitting}
-                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Continue
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={!isStepComplete() || isSubmitting}
-                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit Application"}
-                    </button>
-                  )}
-                </div>
-
-                {submitError ? (
-                  <p className="rounded-md border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-700">
-                    {submitError}
-                  </p>
-                ) : null}
-              </form>
+              <div className="hidden flex-wrap gap-2 text-xs font-medium text-slate-600 sm:flex sm:text-sm">
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-2 text-slate-600">
+                  4-step application
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
+          </header>
 
-        {submitted ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-            <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-slate-200 bg-white">
+          {submitted ? (
+            <section
+              className="mx-auto max-w-2xl rounded-2xl bg-white p-6 text-center shadow-lg shadow-slate-200/50 ring-1 ring-slate-200 sm:p-10"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-emerald-700 ring-1 ring-emerald-200">
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-7 w-7 text-blue-600"
+                  className="h-7 w-7"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                 >
                   <path
@@ -2001,25 +951,570 @@ const Careers = () => {
                   />
                 </svg>
               </div>
-              <h2 className="text-center text-xl font-bold text-slate-900">
-                Application Submitted
+              <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-950">
+                Application received
               </h2>
-              <p className="mt-2 text-center text-sm text-slate-600">
-                Your form has been submitted successfully. We will review your
-                profile and contact you soon.
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+                Thank you for your interest in MobilesX. Your application has
+                been submitted. We’ll contact you if there is a suitable next
+                step.
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  setSubmitted(false);
-                }}
-                className="mt-5 w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300"
+                onClick={() => setSubmitted(false)}
+                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
-                Close
+                Back to careers
               </button>
+            </section>
+          ) : (
+            <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-8">
+              <aside className="hidden rounded-2xl bg-white p-5  lg:sticky lg:top-6 lg:block lg:p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Application overview
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-slate-950">
+                  A few details to get started
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Share the information most relevant to the role. You can move
+                  back through the steps to make changes before submitting.
+                </p>
+                <div className="mt-6 space-y-4">
+                  {STEPS.map((item, index) => {
+                    const isActive = step === index;
+                    const isDone = step > index;
+                    return (
+                      <div key={item.title} className="flex items-start gap-3">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isDone ? "bg-blue-600 text-white" : isActive ? "bg-white text-blue-700 ring-2 ring-blue-100" : "bg-white text-slate-400 ring-1 ring-slate-200"}`}
+                        >
+                          {isDone ? "✓" : index + 1}
+                        </div>
+                        <div className="min-w-0 pt-0.5">
+                          <p
+                            className={`text-sm font-semibold ${isActive ? "text-blue-700" : isDone ? "text-slate-900" : "text-slate-600"}`}
+                          >
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-7 pt-1">
+                  <p className="text-sm font-semibold text-slate-800">
+                    Before you submit
+                  </p>
+                  <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                    <li className="flex gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>Use an email address you check regularly.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>
+                        Include your international calling code in your phone
+                        number.
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>
+                        Profile and portfolio links are optional, but helpful.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </aside>
+
+              <section className="min-w-0 bg-white shadow-md">
+                <div className="px-4 py-4 sm:px-7 sm:py-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+                        Step {step + 1} of {STEPS.length}
+                      </p>
+                      <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                        {STEPS[step].title}
+                      </h2>
+                      <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                        {STEPS[step].description}
+                      </p>
+                    </div>
+                    <span className="hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 sm:inline-flex">
+                      * Required
+                    </span>
+                  </div>
+                  <div
+                    className="mt-5 grid grid-cols-4 gap-2"
+                    aria-label={`Step ${step + 1} of ${STEPS.length}`}
+                  >
+                    {STEPS.map((item, index) => (
+                      <div
+                        key={item.title}
+                        className={`h-1.5 rounded-full ${index <= step ? "bg-blue-600" : "bg-white ring-1 ring-slate-200"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={handleSubmit}
+                  noValidate
+                  className="space-y-5 px-4 py-4 sm:space-y-6 sm:px-7 sm:py-7"
+                >
+                  {step === 0 ? (
+                    <div className="space-y-6">
+                      <FormSection
+                        title="Contact information"
+                        description="Use the details where we can reach you about this application."
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <SelectField
+                            label="Role you’re applying for"
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            options={ROLE_OPTIONS}
+                            placeholder="Select a role"
+                            required
+                            error={errors.role}
+                          />
+                          <Field
+                            label="First name"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            placeholder="First name"
+                            autoComplete="given-name"
+                            required
+                            error={errors.firstName}
+                          />
+                          <Field
+                            label="Last name"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            placeholder="Last name"
+                            autoComplete="family-name"
+                            required
+                            error={errors.lastName}
+                          />
+                          <Field
+                            label="Work or personal email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                            required
+                            error={errors.email}
+                          />
+                          <Field
+                            label="Phone number"
+                            name="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="+1 202 555 0123"
+                            autoComplete="tel"
+                            required
+                            error={errors.phone}
+                            help="Include your country calling code, for example +1 or +44."
+                          />
+                          <Field
+                            label="Country or region"
+                            name="country"
+                            value={formData.country}
+                            onChange={handleChange}
+                            placeholder="Country or region of residence"
+                            autoComplete="country-name"
+                            required
+                            error={errors.country}
+                          />
+                          <Field
+                            label="City (optional)"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleChange}
+                            placeholder="City or nearest major city"
+                            autoComplete="address-level2"
+                            className="sm:col-span-2"
+                          />
+                        </div>
+                      </FormSection>
+                    </div>
+                  ) : null}
+
+                  {step === 1 ? (
+                    <FormSection
+                      title="Education and professional learning"
+                      description="Formal degrees are not the only path. Include equivalent training or self-directed learning if that best represents your background."
+                    >
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <SelectField
+                          label="Highest qualification"
+                          name="highestQualification"
+                          value={formData.highestQualification}
+                          onChange={handleChange}
+                          options={QUALIFICATION_OPTIONS}
+                          placeholder="Select a qualification"
+                          required
+                          error={errors.highestQualification}
+                        />
+                        <Field
+                          label="Field of study or professional focus"
+                          name="fieldOfStudy"
+                          value={formData.fieldOfStudy}
+                          onChange={handleChange}
+                          placeholder="e.g. Computer Science, Design, Editorial"
+                          required
+                          error={errors.fieldOfStudy}
+                        />
+                        <Field
+                          label="Institution or training provider (optional)"
+                          name="institution"
+                          value={formData.institution}
+                          onChange={handleChange}
+                          placeholder="School, college, university or course provider"
+                          error={errors.institution}
+                        />
+                        <Field
+                          label="Graduation / completion year (optional)"
+                          name="graduationYear"
+                          type="number"
+                          value={formData.graduationYear}
+                          onChange={handleChange}
+                          placeholder={`${CURRENT_YEAR}`}
+                          min="1950"
+                          max={CURRENT_YEAR + 10}
+                          error={errors.graduationYear}
+                        />
+                      </div>
+                      <p className="mt-4 border-l-2 border-blue-200 pl-3 text-xs leading-5 text-slate-600">
+                        If you learned through work, projects or independent
+                        study, select “Self-taught / equivalent experience” and
+                        describe your focus.
+                      </p>
+                    </FormSection>
+                  ) : null}
+
+                  {step === 2 ? (
+                    <div className="space-y-6">
+                      <FormSection
+                        title="Experience and availability"
+                        description="Help us understand your background and when you could start."
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <SelectField
+                            label="Professional experience"
+                            name="experienceLevel"
+                            value={formData.experienceLevel}
+                            onChange={handleChange}
+                            options={EXPERIENCE_OPTIONS}
+                            placeholder="Select experience level"
+                            required
+                            error={errors.experienceLevel}
+                          />
+                          <SelectField
+                            label="Current employment status"
+                            name="employmentStatus"
+                            value={formData.employmentStatus}
+                            onChange={handleChange}
+                            options={EMPLOYMENT_OPTIONS}
+                            placeholder="Select employment status"
+                            required
+                            error={errors.employmentStatus}
+                          />
+                          {["employed", "notice-period"].includes(
+                            formData.employmentStatus,
+                          ) ? (
+                            <>
+                              <Field
+                                label="Current company"
+                                name="currentCompany"
+                                value={formData.currentCompany}
+                                onChange={handleChange}
+                                placeholder="Company name"
+                                autoComplete="organization"
+                                required
+                                error={errors.currentCompany}
+                              />
+                              <Field
+                                label="Current job title"
+                                name="currentRole"
+                                value={formData.currentRole}
+                                onChange={handleChange}
+                                placeholder="Job title"
+                                required
+                                error={errors.currentRole}
+                              />
+                            </>
+                          ) : null}
+                          <SelectField
+                            label="Availability / notice period"
+                            name="noticePeriod"
+                            value={formData.noticePeriod}
+                            onChange={handleChange}
+                            options={AVAILABILITY_OPTIONS}
+                            placeholder="Select availability"
+                            required
+                            error={errors.noticePeriod}
+                          />
+                          <Field
+                            label="Preferred work location"
+                            name="preferredLocation"
+                            value={formData.preferredLocation}
+                            onChange={handleChange}
+                            placeholder="e.g. Remote worldwide, Berlin, Toronto"
+                            required
+                            error={errors.preferredLocation}
+                            help="A city, country, remote, or a region where you can work."
+                          />
+                          <SelectField
+                            label="Work arrangement"
+                            name="workArrangement"
+                            value={formData.workArrangement}
+                            onChange={handleChange}
+                            options={WORK_ARRANGEMENT_OPTIONS}
+                            placeholder="Select work arrangement"
+                            required
+                            error={errors.workArrangement}
+                          />
+                          <SelectField
+                            label="Work authorization"
+                            name="workAuthorization"
+                            value={formData.workAuthorization}
+                            onChange={handleChange}
+                            options={WORK_AUTHORIZATION_OPTIONS}
+                            placeholder="Select an option"
+                            required
+                            error={errors.workAuthorization}
+                            help="This helps us understand location and sponsorship requirements."
+                          />
+                        </div>
+                      </FormSection>
+                      <FormSection
+                        title="Skills and compensation"
+                        description="Focus on skills relevant to the role. Compensation is optional and can be provided in your local currency."
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <TextAreaField
+                            label="Relevant skills"
+                            name="skills"
+                            value={formData.skills}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="e.g. React, Node.js, SQL, technical writing, editing"
+                            required
+                            error={errors.skills}
+                            className="sm:col-span-2"
+                            help="Use a concise list of technologies, tools or role-specific skills."
+                          />
+                          <TextAreaField
+                            label="Relevant projects or achievements (optional)"
+                            name="projects"
+                            value={formData.projects}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="Share a project, outcome or achievement relevant to this role."
+                            className="sm:col-span-2"
+                          />
+                          <Field
+                            label="Expected annual compensation (optional)"
+                            name="expectedCtc"
+                            type="number"
+                            value={formData.expectedCtc}
+                            onChange={handleChange}
+                            placeholder="Amount before tax"
+                            min="0"
+                            step="any"
+                            error={errors.expectedCtc}
+                          />
+                          <SelectField
+                            label="Currency"
+                            name="expectedCtcCurrency"
+                            value={formData.expectedCtcCurrency}
+                            onChange={handleChange}
+                            options={CURRENCY_OPTIONS}
+                            placeholder="Select currency"
+                            error={errors.expectedCtcCurrency}
+                          />
+                          {formData.expectedCtcCurrency === "Other" ? (
+                            <Field
+                              label="3-letter currency code"
+                              name="expectedCtcOtherCurrency"
+                              value={formData.expectedCtcOtherCurrency}
+                              onChange={handleChange}
+                              placeholder="e.g. CHF"
+                              maxLength={3}
+                              error={errors.expectedCtcOtherCurrency}
+                              help="Use the ISO currency code for your currency."
+                            />
+                          ) : null}
+                        </div>
+                      </FormSection>
+                    </div>
+                  ) : null}
+
+                  {step === 3 ? (
+                    <div className="space-y-6">
+                      <FormSection
+                        title="Application summary"
+                        description="Check these details before submitting. Use Back to change anything."
+                      >
+                        <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                          {summaryRows.map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="min-w-0 rounded-lg bg-white px-3 py-3 shadow-sm shadow-slate-200/30 ring-1 ring-slate-100"
+                            >
+                              <dt className="text-xs font-medium text-slate-500">
+                                {label}
+                              </dt>
+                              <dd className="mt-1 break-words text-sm font-medium text-slate-900">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </FormSection>
+                      <FormSection
+                        title="Professional links"
+                        description="Optional, but useful when they show work relevant to the role. Use public links that hiring reviewers can open."
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <Field
+                            label="Resume / CV link (optional)"
+                            name="resumeUrl"
+                            type="url"
+                            value={formData.resumeUrl}
+                            onChange={handleChange}
+                            placeholder="https://..."
+                            error={errors.resumeUrl}
+                            help="A public link to your CV or resume."
+                          />
+                          <Field
+                            label="LinkedIn profile (optional)"
+                            name="linkedinUrl"
+                            type="url"
+                            value={formData.linkedinUrl}
+                            onChange={handleChange}
+                            placeholder="https://linkedin.com/in/..."
+                            error={errors.linkedinUrl}
+                          />
+                          <Field
+                            label="Portfolio / GitHub / work samples (optional)"
+                            name="portfolioUrl"
+                            type="url"
+                            value={formData.portfolioUrl}
+                            onChange={handleChange}
+                            placeholder="https://..."
+                            error={errors.portfolioUrl}
+                            className="sm:col-span-2"
+                          />
+                          <TextAreaField
+                            label="Cover letter or note (optional)"
+                            name="coverLetter"
+                            value={formData.coverLetter}
+                            onChange={handleChange}
+                            rows={4}
+                            placeholder="What would you like us to know about your interest in MobilesX?"
+                            className="sm:col-span-2"
+                          />
+                        </div>
+                      </FormSection>
+                      <label
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${errors.agreeTerms ? "border-rose-300 bg-white" : "border-slate-200 bg-white"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          name="agreeTerms"
+                          checked={formData.agreeTerms}
+                          onChange={handleChange}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+                          aria-invalid={Boolean(errors.agreeTerms)}
+                          aria-describedby={
+                            errors.agreeTerms ? "agreeTerms-error" : undefined
+                          }
+                        />
+                        <span className="text-sm leading-6 text-slate-700">
+                          I confirm that the information provided is accurate
+                          and consent to MobilesX using it to assess this
+                          application and contact me about recruitment.
+                        </span>
+                      </label>
+                      {errors.agreeTerms ? (
+                        <p
+                          id="agreeTerms-error"
+                          className="-mt-4 text-xs font-medium text-rose-600"
+                        >
+                          {errors.agreeTerms}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {submitError ? (
+                    <div
+                      className="rounded-lg border border-rose-200 bg-white px-4 py-3 text-sm text-rose-700"
+                      role="alert"
+                    >
+                      {submitError}
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-xs leading-5 text-slate-500">
+                      Fields marked{" "}
+                      <span className="font-semibold text-blue-700">*</span> are
+                      required.
+                    </div>
+                    <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+                      {step > 0 ? (
+                        <button
+                          type="button"
+                          onClick={goBack}
+                          disabled={isSubmitting}
+                          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Back
+                        </button>
+                      ) : null}
+                      {step < STEPS.length - 1 ? (
+                        <button
+                          type="button"
+                          onClick={goNext}
+                          disabled={isSubmitting}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Continue <span aria-hidden="true">→</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isSubmitting ? "Submitting…" : "Submit application"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </form>
+              </section>
             </div>
-          </div>
-        ) : null}
+          )}
+          <footer className="mt-8 pt-2 text-xs leading-5 text-slate-500">
+            Please provide only information relevant to your application. Do not
+            include sensitive personal data in free-text fields.
+          </footer>
+        </div>
       </main>
     </>
   );
