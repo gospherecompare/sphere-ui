@@ -12,7 +12,6 @@ import { Link } from "react-router-dom";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 
 import MobilesXLogo from "../ui/MobileX";
-import NotificationSignup from "../ui/NotificationSignup";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 
@@ -129,8 +128,6 @@ const Footer = () => (
           ))}
         </div>
       </div>
-
-      <NotificationSignup />
 
       <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <p>
