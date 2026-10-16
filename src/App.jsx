@@ -14,7 +14,6 @@ import {
   useParams,
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
-import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import RouteExperience from "./components/ui/RouteExperience";
 import { useDevice } from "./hooks/useDevice";
 import {
@@ -242,7 +241,6 @@ function App() {
       <RouteExperience />
       <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
-        <AppPushOptInPrompt />
 
         <ScrollToTop />
         <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
