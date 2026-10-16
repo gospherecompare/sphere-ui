@@ -1,193 +1,80 @@
 /* global importScripts, firebase */
+importScripts(
+  "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-compat.js",
+);
 
-const isRecord = (value) => value && typeof value === "object";
+const configValue = new URL(self.location.href).searchParams.get(
+  "firebaseConfig",
+);
+let firebaseConfig = null;
+try {
+  firebaseConfig = configValue ? JSON.parse(configValue) : null;
+} catch (error) {
+  console.error("Invalid Firebase configuration in the notification worker URL:", error);
+}
 
-const toAbsoluteUrl = (value) => {
-  const rawValue = String(value || "").trim();
-  if (!rawValue) return "";
-
-  try {
-    const parsed = new URL(rawValue, self.location.origin);
-    if (!/^https?:$/i.test(parsed.protocol)) return "";
-    return parsed.href;
-  } catch {
-    return "";
-  }
-};
-
-const normalizeSlugPath = (value = "") =>
-  String(value || "")
-    .trim()
-    .replace(/^\/+/, "")
-    .replace(/\/+$/, "");
-
-const encodeSlugPath = (value = "") =>
-  normalizeSlugPath(value)
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-
-const resolveRoutePrefix = (value = "") => {
-  const hint = String(value || "").trim().toLowerCase();
-
-  if (!hint) return "";
-  if (
-    /^(?:news|article|story|blog|journal)$/.test(hint) ||
-    hint.includes("news")
-  ) {
-    return "/news";
-  }
-  if (
-    /(?:smartphone|mobile|phone|handset|android|iphone)/.test(hint)
-  ) {
-    return "/smartphones";
-  }
-  if (/(?:tv|television|vision|appliance)/.test(hint)) {
-    return "/tvs";
-  }
-  if (/(?:network|router|wifi)/.test(hint)) {
-    return "/networking";
-  }
-  if (/(?:compare|comparison)/.test(hint)) {
-    return "/compare";
-  }
-
-  return "";
-};
-
-const buildUrlFromSlug = (value, routeHint = "") => {
-  const slugPath = encodeSlugPath(value);
-  if (!slugPath) return "";
-
-  const routePrefix = resolveRoutePrefix(routeHint) || "/news";
-  return toAbsoluteUrl(`${routePrefix}/${slugPath}`);
-};
-
-const resolveNotificationTargetUrl = (notification) => {
-  const queue = [notification?.data];
-  const seen = new Set();
-
-  while (queue.length) {
-    const current = queue.shift();
-    if (!isRecord(current) || seen.has(current)) continue;
-    seen.add(current);
-
-    const candidateUrl =
-      toAbsoluteUrl(current.url) ||
-      toAbsoluteUrl(current.targetUrl) ||
-      toAbsoluteUrl(current.canonicalUrl) ||
-      toAbsoluteUrl(current.link) ||
-      toAbsoluteUrl(current.href) ||
-      toAbsoluteUrl(current.route) ||
-      toAbsoluteUrl(current.path) ||
-      toAbsoluteUrl(current.targetPath) ||
-      toAbsoluteUrl(current.canonicalPath) ||
-      toAbsoluteUrl(current.pathname) ||
-      toAbsoluteUrl(current.deepLink) ||
-      toAbsoluteUrl(current.click_action) ||
-      buildUrlFromSlug(
-        current.slug,
-        current.routeBase ||
-          current.basePath ||
-          current.section ||
-          current.category ||
-          current.type ||
-          current.productType ||
-          current.entityType,
-      );
-
-    if (candidateUrl) return candidateUrl;
-
-    [
-      current.FCM_MSG,
-      current.data,
-      current.fcmOptions,
-      current.notification,
-      current.webpush,
-    ].forEach((value) => {
-      if (isRecord(value)) queue.push(value);
-    });
-  }
-
-  return `${self.location.origin}/`;
-};
-
-const urlsMatch = (left, right) => {
-  try {
-    const leftUrl = new URL(left);
-    const rightUrl = new URL(right);
-    return (
-      leftUrl.origin === rightUrl.origin &&
-      leftUrl.pathname === rightUrl.pathname &&
-      leftUrl.search === rightUrl.search
-    );
-  } catch {
-    return left === right;
-  }
-};
-
-const initializeFirebaseMessaging = () => {
-  const params = new URLSearchParams(self.location.search);
-  const config = Object.fromEntries(params.entries());
-  const requiredFields = [
-    "apiKey",
-    "authDomain",
-    "projectId",
-    "storageBucket",
-    "messagingSenderId",
-    "appId",
-  ];
-  if (!requiredFields.every((field) => config[field])) return;
-
-  try {
-    importScripts(
-      "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js",
-      "https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-compat.js",
-    );
-    firebase.initializeApp(config);
-    const messaging = firebase.messaging();
-    messaging.onBackgroundMessage((payload) => {
-      const notification = payload.notification || {};
+if (!firebaseConfig?.projectId || !firebaseConfig?.messagingSenderId) {
+  console.error("The MobilesX notification worker is missing Firebase configuration.");
+} else {
+  firebase.initializeApp(firebaseConfig);
+  firebase
+    .messaging()
+    .onBackgroundMessage((payload) => {
       const data = payload.data || {};
-      const title = notification.title || "MobilesX price alert";
-      const options = {
-        body: notification.body || "A tracked smartphone price has dropped.",
-        data: { ...data, url: resolveNotificationTargetUrl(payload) },
-        icon: "/favicon.ico",
-      };
-      self.registration.showNotification(title, options);
-    });
-  } catch (error) {
-    console.error("Firebase messaging service worker setup failed:", error);
-  }
-};
+      const title = String(data.title || "MobilesX update");
+      const body = String(data.body || "There is a new update on MobilesX.");
+      let targetUrl = "/";
+      try {
+        const candidate = new URL(data.url || "/", self.location.origin);
+        if (candidate.origin === self.location.origin) {
+          targetUrl = candidate.href;
+        }
+      } catch (error) {
+        console.error("Invalid MobilesX notification link:", error);
+      }
 
-initializeFirebaseMessaging();
+      return self.registration.showNotification(title, {
+        body,
+        icon: "/mobilex-favicon.svg",
+        badge: "/mobilex-favicon.svg",
+        tag: `mobilesx-${data.topic || "update"}-${data.eventId || Date.now()}`,
+        data: { url: targetUrl },
+      });
+    });
+}
 
 self.addEventListener("notificationclick", (event) => {
-  const targetUrl = resolveNotificationTargetUrl(event.notification);
-
-  event.notification?.close();
+  event.notification.close();
+  const requestedUrl = event.notification.data?.url || "/";
+  let target;
+  try {
+    target = new URL(requestedUrl, self.location.origin);
+    if (target.origin !== self.location.origin) {
+      target = new URL("/", self.location.origin);
+    }
+  } catch {
+    target = new URL("/", self.location.origin);
+  }
 
   event.waitUntil(
-    (async () => {
-      const windowClients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      });
-
-      for (const client of windowClients) {
-        if (urlsMatch(client.url, targetUrl) && "focus" in client) {
-          return client.focus();
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(
+      (windows) => {
+        const sameOriginWindow = windows.find(
+          (client) => new URL(client.url).origin === self.location.origin,
+        );
+        if (sameOriginWindow) {
+          return sameOriginWindow
+            .navigate(target.href)
+            .then(() => sameOriginWindow.focus());
         }
-      }
-
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
-      }
-
-      return undefined;
-    })(),
+        return self.clients.openWindow(target.href);
+      },
+    ),
   );
+});
+
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
 });
