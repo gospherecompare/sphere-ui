@@ -15,6 +15,7 @@ import {
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import RouteExperience from "./components/ui/RouteExperience";
+import NewsPushRegistration from "./components/ui/NewsPushRegistration";
 import { useDevice } from "./hooks/useDevice";
 import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
@@ -238,6 +239,7 @@ function App() {
 
   return (
     <Router>
+      <NewsPushRegistration />
       <RouteExperience />
       <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
