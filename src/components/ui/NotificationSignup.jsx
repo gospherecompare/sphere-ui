@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getApps, initializeApp } from "firebase/app";
 import {
   deleteToken,
@@ -16,7 +16,6 @@ const TOPICS = [
 ];
 const STORAGE_KEY = "mobilesx-fcm-token";
 const TOPICS_KEY = "mobilesx-fcm-topics";
-let unsubscribeForegroundMessages = null;
 
 const requestJson = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -76,6 +75,54 @@ export default function NotificationSignup() {
   const [error, setError] = useState("");
   const selectedTopics = getSelectedTopics(topics);
 
+  useEffect(() => {
+    if (!pushToken) return undefined;
+
+    let active = true;
+    let unsubscribe;
+    const attachForegroundHandler = async () => {
+      try {
+        const configResult = await requestJson(
+          buildApiUrl("/notifications/config"),
+        );
+        if (!configResult.firebase || !configResult.webConfigReady) {
+          throw new Error("Firebase browser notification settings are incomplete.");
+        }
+        const messaging = getNotificationMessaging(configResult.firebase);
+        unsubscribe = onMessage(messaging, (payload) => {
+          if (Notification.permission !== "granted") return;
+          const data = payload.data || {};
+          const notification = new Notification(
+            String(data.title || "MobilesX update"),
+            {
+              body: String(data.body || "There is a new update on MobilesX."),
+              icon: "/mobilex-favicon.svg",
+              data: { url: data.url || "/" },
+            },
+          );
+          notification.onclick = () => {
+            const target = new URL(
+              String(data.url || "/"),
+              window.location.origin,
+            );
+            if (target.origin === window.location.origin) {
+              window.location.assign(target.href);
+            }
+            notification.close();
+          };
+        });
+      } catch (requestError) {
+        if (active) setError(requestError.message);
+      }
+    };
+
+    void attachForegroundHandler();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [pushToken]);
+
   const handleEnablePush = async () => {
     setBusy(true);
     setMessage("");
@@ -133,30 +180,6 @@ export default function NotificationSignup() {
       );
       const registration = await navigator.serviceWorker.register(workerUrl);
       const messaging = getNotificationMessaging(configResult.firebase);
-      if (unsubscribeForegroundMessages) {
-        unsubscribeForegroundMessages();
-      }
-      unsubscribeForegroundMessages = onMessage(messaging, (payload) => {
-        const data = payload.data || {};
-        const notification = new Notification(
-          String(data.title || "MobilesX update"),
-          {
-            body: String(data.body || "There is a new update on MobilesX."),
-            icon: "/mobilex-favicon.svg",
-            data: { url: data.url || "/" },
-          },
-        );
-        notification.onclick = () => {
-          const target = new URL(
-            String(data.url || "/"),
-            window.location.origin,
-          );
-          if (target.origin === window.location.origin) {
-            window.location.assign(target.href);
-          }
-          notification.close();
-        };
-      });
       const token = await getToken(messaging, {
         vapidKey: configResult.firebase.vapidKey,
         serviceWorkerRegistration: registration,
