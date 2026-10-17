@@ -273,15 +273,17 @@ const AppPushOptInPrompt = ({ children }) => {
                 id="notification-gate-title"
                 className="mt-1 text-xl font-bold leading-tight text-slate-950 sm:text-2xl"
               >
-                {isBlocked ? "Notifications are blocked" : "Get notifications?"}
+                {isBlocked
+                  ? "Notifications are blocked"
+                  : "Enable notifications to continue"}
               </h1>
             </div>
           </div>
 
           <p className="mt-5 text-sm leading-6 text-slate-600">
             {isBlocked
-              ? "Your browser has blocked MobilesX notifications. Change this site's notification permission in browser settings to enable product launches, technology news, and price-drop alerts."
-              : "Get timely alerts for product launches, technology news, and price drops. Choose Allow or Block in your browser prompt to continue to MobilesX."}
+              ? "Your browser has blocked MobilesX notifications. Change this site's notification permission in browser settings to enable product launch, technology news, and price-drop alerts."
+              : "Get timely alerts when products launch, technology news is published, or prices drop. Your browser will ask you to allow MobilesX notifications."}
           </p>
 
           {error ? (
@@ -320,14 +322,16 @@ const AppPushOptInPrompt = ({ children }) => {
               className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
             >
               <FaCheck aria-hidden="true" />
-              {busy ? "Opening browser prompt..." : "Enable notifications"}
+              {busy
+                ? "Opening browser prompt..."
+                : "Allow notifications & continue"}
             </button>
           )}
 
           <p className="mt-4 text-center text-xs leading-5 text-slate-500">
             {isBlocked
               ? "We'll ask again in 12 hours if you continue without notifications."
-              : "MobilesX opens the app after you choose Allow or Block."}
+              : "Choose Allow or Block in your browser prompt. If you block, we'll ask again in 12 hours."}
           </p>
         </section>
       </div>
