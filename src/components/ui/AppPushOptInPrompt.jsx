@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FaBell, FaCheck } from "react-icons/fa";
+import { FaArrowRight, FaBell } from "react-icons/fa";
 import {
   DEFAULT_PUBLIC_PUSH_TOPICS,
   removePublicPushSubscription,
@@ -7,7 +7,9 @@ import {
   subscribeToPublicPush,
 } from "../../lib/publicPushNotifications";
 
-const DENIED_AT_KEY = "mobilesx-notification-denied-at";
+// Keep the existing key so people who already deferred or blocked retain
+// their current 12-hour cooldown.
+const PROMPT_DEFERRED_AT_KEY = "mobilesx-notification-denied-at";
 const DENIED_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 const getBrowserNotificationPermission = () => {
@@ -21,18 +23,18 @@ const getBrowserNotificationPermission = () => {
   return Notification.permission;
 };
 
-const readDeniedAt = () => {
+const readPromptDeferredAt = () => {
   try {
-    const value = Number(window.localStorage.getItem(DENIED_AT_KEY));
+    const value = Number(window.localStorage.getItem(PROMPT_DEFERRED_AT_KEY));
     return Number.isFinite(value) && value > 0 ? value : 0;
   } catch {
     return 0;
   }
 };
 
-const writeDeniedAt = (timestamp) => {
+const deferPromptUntil = (timestamp) => {
   try {
-    window.localStorage.setItem(DENIED_AT_KEY, String(timestamp));
+    window.localStorage.setItem(PROMPT_DEFERRED_AT_KEY, String(timestamp));
   } catch {
     // The permission choice still applies if browser storage is unavailable.
   }
@@ -40,7 +42,7 @@ const writeDeniedAt = (timestamp) => {
 
 const clearDeniedAt = () => {
   try {
-    window.localStorage.removeItem(DENIED_AT_KEY);
+    window.localStorage.removeItem(PROMPT_DEFERRED_AT_KEY);
   } catch {
     // Push registration does not depend on browser storage.
   }
@@ -48,12 +50,10 @@ const clearDeniedAt = () => {
 
 const shouldShowInitialGate = () => {
   const permission = getBrowserNotificationPermission();
-  if (permission === "default") return true;
-  if (permission !== "denied") return false;
+  if (permission !== "default" && permission !== "denied") return false;
 
-  const deniedAt = readDeniedAt();
-  if (!deniedAt) return false;
-  return Date.now() - deniedAt >= DENIED_COOLDOWN_MS;
+  const deferredAt = readPromptDeferredAt();
+  return !deferredAt || Date.now() - deferredAt >= DENIED_COOLDOWN_MS;
 };
 
 const AppPushOptInPrompt = ({ children }) => {
@@ -115,14 +115,19 @@ const AppPushOptInPrompt = ({ children }) => {
   }, [acceptGrantedPermission]);
 
   useEffect(() => {
-    if (permission !== "denied" || gateVisible) return undefined;
-
-    let deniedAt = readDeniedAt();
-    if (!deniedAt) {
-      deniedAt = Date.now();
-      writeDeniedAt(deniedAt);
+    if (
+      (permission !== "denied" && permission !== "default") ||
+      gateVisible
+    ) {
+      return undefined;
     }
-    const remainingMs = deniedAt + DENIED_COOLDOWN_MS - Date.now();
+
+    let deferredAt = readPromptDeferredAt();
+    if (!deferredAt) {
+      deferredAt = Date.now();
+      deferPromptUntil(deferredAt);
+    }
+    const remainingMs = deferredAt + DENIED_COOLDOWN_MS - Date.now();
     if (remainingMs <= 0) {
       setGateVisible(true);
       return undefined;
@@ -244,8 +249,8 @@ const AppPushOptInPrompt = ({ children }) => {
     }
   };
 
-  const handleContinueBlocked = () => {
-    writeDeniedAt(Date.now());
+  const handleNotNow = () => {
+    deferPromptUntil(Date.now());
     setGateVisible(false);
     setError("");
   };
@@ -254,85 +259,68 @@ const AppPushOptInPrompt = ({ children }) => {
     const isBlocked = permission === "denied";
 
     return (
-      <div className="fixed inset-0 z-[100] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-slate-950/55 px-4 py-6 backdrop-blur-sm sm:px-6">
+      <div className="fixed inset-0 z-[100] flex min-h-[100dvh] items-end justify-center overflow-y-auto bg-slate-950/55 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md sm:px-6 sm:pb-6">
         <section
           role="dialog"
           aria-modal="true"
           aria-labelledby="notification-gate-title"
-          className="my-auto w-full max-w-md rounded-[28px] border border-white/70 bg-white p-5 shadow-[0_30px_100px_rgba(2,6,23,0.35)] sm:p-8"
+          className="flex w-full max-w-[2000px] flex-col gap-5 rounded-2xl border border-slate-300 bg-white p-4 shadow-[0_24px_80px_rgba(2,6,23,0.28)] sm:gap-6 sm:p-6 md:flex-row md:items-center md:justify-between md:gap-8 md:p-7"
         >
-          <div className="flex items-start gap-4">
-            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-700">
+          <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6">
+            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[27px] text-blue-700 sm:h-16 sm:w-16 sm:text-3xl">
               <FaBell aria-hidden="true" />
             </span>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
-                MobilesX updates
+            <div className="min-w-0">
+              <p className="text-2xl font-extrabold leading-none tracking-tight text-slate-950 sm:text-3xl">
+                Mobiles<span className="text-sky-500">X</span>
               </p>
               <h1
                 id="notification-gate-title"
-                className="mt-1 text-xl font-bold leading-tight text-slate-950 sm:text-2xl"
+                className="mt-2 text-lg font-bold leading-tight text-slate-950 sm:text-2xl"
               >
-                {isBlocked
-                  ? "Notifications are blocked"
-                  : "Enable notifications to continue"}
+                Enable notifications to continue
               </h1>
+              <p className="mt-1.5 text-xs leading-5 text-slate-600 sm:text-sm">
+                Get product launch, technology news, and price-drop alerts.
+              </p>
+              {error ? (
+                <p
+                  role="alert"
+                  className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-800 sm:text-sm"
+                >
+                  {error}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            {isBlocked
-              ? "Your browser has blocked MobilesX notifications. Change this site's notification permission in browser settings to enable product launch, technology news, and price-drop alerts."
-              : "Get timely alerts when products launch, technology news is published, or prices drop. Your browser will ask you to allow MobilesX notifications."}
-          </p>
-
-          {error ? (
-            <p
-              role="alert"
-              className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-800"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          {isBlocked ? (
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleRetryAfterSettingsChange}
-                disabled={busy}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
-              >
-                {busy ? "Checking settings..." : "Retry after settings change"}
-              </button>
-              <button
-                type="button"
-                onClick={handleContinueBlocked}
-                disabled={busy}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-              >
-                Continue with notifications blocked
-              </button>
-            </div>
-          ) : (
+          <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row md:border-l md:border-t-0 md:pl-6 md:pt-0">
             <button
               type="button"
-              onClick={handleRequestPermission}
+              onClick={
+                isBlocked
+                  ? handleRetryAfterSettingsChange
+                  : handleRequestPermission
+              }
               disabled={busy}
-              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex min-h-14 w-full items-center justify-center gap-4 rounded-lg bg-blue-700 px-8 py-3 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60 sm:min-w-44 sm:text-xl md:min-h-16 md:px-10 md:w-auto"
             >
-              <FaCheck aria-hidden="true" />
               {busy
-                ? "Opening browser prompt..."
-                : "Allow notifications & continue"}
+                ? isBlocked
+                  ? "Checking..."
+                  : "Opening..."
+                : "Allow"}
+              <FaArrowRight aria-hidden="true" />
             </button>
-          )}
-
-          <p className="mt-4 text-center text-xs leading-5 text-slate-500">
-            {isBlocked
-              ? "We'll ask again in 12 hours if you continue without notifications."
-              : "Choose Allow or Block in your browser prompt. If you block, we'll ask again in 12 hours."}
-          </p>
+            <button
+              type="button"
+              onClick={handleNotNow}
+              disabled={busy}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-slate-100 px-7 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 disabled:opacity-60 sm:min-w-36 md:min-h-14 md:w-auto md:text-base"
+            >
+              Not now
+            </button>
+          </div>
         </section>
       </div>
     );
