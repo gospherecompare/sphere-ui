@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { FaBell, FaTimes } from "react-icons/fa";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { FaBell, FaCheck } from "react-icons/fa";
 import {
   DEFAULT_PUBLIC_PUSH_TOPICS,
   removePublicPushSubscription,
@@ -7,96 +7,133 @@ import {
   subscribeToPublicPush,
 } from "../../lib/publicPushNotifications";
 
-const DISMISSED_PROMPT_KEY = "mobilesx-notification-prompt-dismissed";
+const DENIED_AT_KEY = "mobilesx-notification-denied-at";
+const DENIED_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
-const getBrowserNotificationPermission = () =>
-  typeof window !== "undefined" && "Notification" in window
-    ? Notification.permission
-    : "unsupported";
+const getBrowserNotificationPermission = () => {
+  if (
+    typeof window === "undefined" ||
+    !window.isSecureContext ||
+    !("Notification" in window)
+  ) {
+    return "unsupported";
+  }
+  return Notification.permission;
+};
 
-const hasDismissedPrompt = () => {
+const readDeniedAt = () => {
   try {
-    return window.localStorage.getItem(DISMISSED_PROMPT_KEY) === "true";
+    const value = Number(window.localStorage.getItem(DENIED_AT_KEY));
+    return Number.isFinite(value) && value > 0 ? value : 0;
   } catch {
-    return false;
+    return 0;
   }
 };
 
-const rememberPromptDismissal = () => {
+const writeDeniedAt = (timestamp) => {
   try {
-    window.localStorage.setItem(DISMISSED_PROMPT_KEY, "true");
+    window.localStorage.setItem(DENIED_AT_KEY, String(timestamp));
   } catch {
-    // The prompt remains dismissible even when browser storage is unavailable.
+    // The permission choice still applies if browser storage is unavailable.
   }
 };
 
-const clearPromptDismissal = () => {
+const clearDeniedAt = () => {
   try {
-    window.localStorage.removeItem(DISMISSED_PROMPT_KEY);
+    window.localStorage.removeItem(DENIED_AT_KEY);
   } catch {
-    // Subscription setup does not depend on local browser storage.
+    // Push registration does not depend on browser storage.
   }
+};
+
+const shouldShowInitialGate = () => {
+  const permission = getBrowserNotificationPermission();
+  if (permission === "default") return true;
+  if (permission !== "denied") return false;
+
+  const deniedAt = readDeniedAt();
+  if (!deniedAt) return false;
+  return Date.now() - deniedAt >= DENIED_COOLDOWN_MS;
 };
 
 const AppPushOptInPrompt = ({ children }) => {
-  const [permission, setPermission] = useState("default");
+  const [permission, setPermission] = useState(getBrowserNotificationPermission);
+  const [gateVisible, setGateVisible] = useState(shouldShowInitialGate);
   const [messaging, setMessaging] = useState(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [promptOpen, setPromptOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const registrationInFlight = useRef(null);
 
   const registerSubscription = useCallback(async () => {
-    const subscription = await subscribeToPublicPush({
-      topics: DEFAULT_PUBLIC_PUSH_TOPICS,
-    });
-    setMessaging(subscription.messaging);
-    setIsSubscribed(true);
+    if (!registrationInFlight.current) {
+      registrationInFlight.current = subscribeToPublicPush({
+        topics: DEFAULT_PUBLIC_PUSH_TOPICS,
+      }).then((subscription) => {
+        setMessaging(subscription.messaging);
+        return subscription;
+      }).finally(() => {
+        registrationInFlight.current = null;
+      });
+    }
+    return registrationInFlight.current;
+  }, []);
+
+  const acceptGrantedPermission = useCallback(() => {
     setPermission("granted");
+    setGateVisible(false);
     setError("");
-    clearPromptDismissal();
+    clearDeniedAt();
+    void registerSubscription().catch((registrationError) => {
+      // Permission has already been granted, so let the visitor continue while
+      // recording setup failures for server-side troubleshooting.
+      console.error("Could not register MobilesX browser notifications:", registrationError);
+    });
+  }, [registerSubscription]);
+
+  const acceptBlockedPermission = useCallback(() => {
+    setPermission("denied");
+    setGateVisible(false);
+    setError("");
+    writeDeniedAt(Date.now());
+    setMessaging(null);
+    void removePublicPushSubscription().catch((removeError) =>
+      console.error("Could not remove the blocked push subscription:", removeError),
+    );
   }, []);
 
   useEffect(() => {
-    let active = true;
-    let promptTimer;
-
-    if (
-      typeof window === "undefined" ||
-      !window.isSecureContext ||
-      !("Notification" in window)
-    ) {
-      setPermission("unsupported");
-      return () => {
-        active = false;
-      };
-    }
-
-    const currentPermission = Notification.permission;
+    const currentPermission = getBrowserNotificationPermission();
     setPermission(currentPermission);
 
     if (currentPermission === "granted") {
-      void registerSubscription().catch((registrationError) => {
-        if (!active) return;
-        console.error("Could not restore MobilesX push registration:", registrationError);
-        setError("Notifications are allowed, but setup could not finish. Try again.");
-        setPromptOpen(true);
-      });
+      acceptGrantedPermission();
     } else if (currentPermission === "denied") {
       void removePublicPushSubscription().catch((removeError) =>
         console.error("Could not remove the blocked push subscription:", removeError),
       );
-    } else if (!hasDismissedPrompt()) {
-      promptTimer = window.setTimeout(() => {
-        if (active) setPromptOpen(true);
-      }, 900);
+    }
+  }, [acceptGrantedPermission]);
+
+  useEffect(() => {
+    if (permission !== "denied" || gateVisible) return undefined;
+
+    let deniedAt = readDeniedAt();
+    if (!deniedAt) {
+      deniedAt = Date.now();
+      writeDeniedAt(deniedAt);
+    }
+    const remainingMs = deniedAt + DENIED_COOLDOWN_MS - Date.now();
+    if (remainingMs <= 0) {
+      setGateVisible(true);
+      return undefined;
     }
 
-    return () => {
-      active = false;
-      if (promptTimer) window.clearTimeout(promptTimer);
-    };
-  }, [registerSubscription]);
+    const timeout = window.setTimeout(
+      () => setGateVisible(true),
+      remainingMs,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [permission, gateVisible]);
 
   useEffect(() => {
     if (!messaging) return undefined;
@@ -131,65 +168,47 @@ const AppPushOptInPrompt = ({ children }) => {
   }, [messaging]);
 
   useEffect(() => {
-    if (!isSubscribed) return undefined;
-    const checkPermission = () => {
-      const nextPermission = getBrowserNotificationPermission();
-      if (nextPermission === "granted") return;
-      setPermission(nextPermission);
-      setMessaging(null);
-      setIsSubscribed(false);
-      void removePublicPushSubscription().catch((removeError) =>
-        console.error("Could not remove the revoked push subscription:", removeError),
-      );
+    const refreshPermission = () => {
+      const currentPermission = getBrowserNotificationPermission();
+      if (currentPermission === permission) return;
+
+      if (currentPermission === "granted") {
+        acceptGrantedPermission();
+      } else if (currentPermission === "denied") {
+        acceptBlockedPermission();
+      } else {
+        setPermission(currentPermission);
+        setMessaging(null);
+        setError("");
+        setGateVisible(currentPermission === "default");
+        void removePublicPushSubscription().catch((removeError) =>
+          console.error("Could not remove the reset push subscription:", removeError),
+        );
+      }
     };
-    document.addEventListener("visibilitychange", checkPermission);
+
+    document.addEventListener("visibilitychange", refreshPermission);
     return () =>
-      document.removeEventListener("visibilitychange", checkPermission);
-  }, [isSubscribed]);
+      document.removeEventListener("visibilitychange", refreshPermission);
+  }, [acceptBlockedPermission, acceptGrantedPermission, permission]);
 
-  const handleDismiss = () => {
-    setPromptOpen(false);
-    setError("");
-    rememberPromptDismissal();
-  };
-
-  const handleEnable = async () => {
+  const handleRequestPermission = async () => {
     setBusy(true);
     setError("");
     try {
-      if (!("Notification" in window)) {
-        throw new Error("This browser does not support notifications.");
-      }
-
-      // Request permission synchronously from this button click. Chrome owns
-      // the native prompt shown to the visitor.
-      const permissionRequest =
-        Notification.permission === "default"
-          ? Notification.requestPermission()
-          : Promise.resolve(Notification.permission);
+      // Call from this button's click so the browser controls the native prompt.
+      const permissionRequest = Notification.requestPermission();
       const result = await permissionRequest;
-      setPermission(result);
-
-      if (result !== "granted") {
-        setPromptOpen(false);
-        rememberPromptDismissal();
-        if (result === "denied") {
-          void removePublicPushSubscription().catch((removeError) =>
-            console.error("Could not remove the denied push subscription:", removeError),
-          );
-        }
-        return;
+      if (result === "granted") {
+        acceptGrantedPermission();
+      } else if (result === "denied") {
+        acceptBlockedPermission();
+      } else {
+        setError("Choose Allow or Block in the browser prompt to continue.");
       }
-
-      await registerSubscription();
-      setPromptOpen(false);
-    } catch (enableError) {
-      console.error("Could not enable MobilesX browser notifications:", enableError);
-      setError(
-        enableError?.message ||
-          "Notifications could not be set up. Please try again.",
-      );
-      setPromptOpen(true);
+    } catch (requestError) {
+      console.error("The browser notification request failed:", requestError);
+      setError("The browser could not open its notification prompt. Please retry.");
     } finally {
       setBusy(false);
     }
@@ -200,132 +219,122 @@ const AppPushOptInPrompt = ({ children }) => {
     setError("");
     try {
       const currentPermission = getBrowserNotificationPermission();
-      setPermission(currentPermission);
-
       if (currentPermission === "granted") {
-        await registerSubscription();
-        setPromptOpen(false);
+        acceptGrantedPermission();
       } else if (currentPermission === "default") {
         const result = await Notification.requestPermission();
         setPermission(result);
         if (result === "granted") {
-          await registerSubscription();
-          setPromptOpen(false);
+          acceptGrantedPermission();
         } else if (result === "denied") {
-          setError(
-            "Notifications are still blocked. Allow them in this site's browser settings, then retry.",
-          );
+          acceptBlockedPermission();
         } else {
-          setPromptOpen(false);
-          rememberPromptDismissal();
+          setError("Choose Allow or Block in the browser prompt to continue.");
         }
       } else {
         setError(
-          "Notifications are still blocked. Allow them in this site's browser settings, then retry.",
+          "Notifications are still blocked. Change this site's notification permission in your browser settings, then retry or continue without notifications.",
         );
       }
     } catch (retryError) {
       console.error("Could not restore MobilesX browser notifications:", retryError);
-      setError(
-        retryError?.message || "Notifications could not be set up. Please try again.",
-      );
+      setError("The browser permission could not be checked. Please retry.");
     } finally {
       setBusy(false);
     }
   };
 
-  const isBlocked = permission === "denied";
-  const showLauncher =
-    permission !== "unsupported" && !isSubscribed && !promptOpen;
+  const handleContinueBlocked = () => {
+    writeDeniedAt(Date.now());
+    setGateVisible(false);
+    setError("");
+  };
 
-  return (
-    <>
-      {children}
+  if (gateVisible) {
+    const isBlocked = permission === "denied";
 
-      {showLauncher ? (
-        <button
-          type="button"
-          onClick={() => {
-            setError("");
-            setPermission(getBrowserNotificationPermission());
-            setPromptOpen(true);
-          }}
-          aria-label="Enable MobilesX notifications"
-          title="Enable notifications"
-          className="fixed bottom-[calc(82px+env(safe-area-inset-bottom))] right-4 z-[70] inline-flex h-12 w-12 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-700 shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-blue-50 lg:bottom-5 lg:right-5"
+    return (
+      <div className="fixed inset-0 z-[100] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-slate-950/55 px-4 py-6 backdrop-blur-sm sm:px-6">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="notification-gate-title"
+          className="my-auto w-full max-w-md rounded-[28px] border border-white/70 bg-white p-5 shadow-[0_30px_100px_rgba(2,6,23,0.35)] sm:p-8"
         >
-          <FaBell aria-hidden="true" />
-        </button>
-      ) : null}
-
-      {promptOpen ? (
-        <aside
-          aria-label="MobilesX notification prompt"
-          className="fixed inset-x-4 bottom-[calc(82px+env(safe-area-inset-bottom))] z-[90] rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.24)] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[370px] sm:p-6"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg text-blue-700">
-                <FaBell aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">
-                  MobilesX updates
-                </p>
-                <h2 className="mt-1 text-lg font-bold leading-tight text-slate-950">
-                  {isBlocked
-                    ? "Turn on notifications"
-                    : permission === "granted"
-                      ? "Finish setting up notifications"
-                      : "Get notifications?"}
-                </h2>
-              </div>
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-700">
+              <FaBell aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
+                MobilesX updates
+              </p>
+              <h1
+                id="notification-gate-title"
+                className="mt-1 text-xl font-bold leading-tight text-slate-950 sm:text-2xl"
+              >
+                {isBlocked ? "Notifications are blocked" : "Get notifications?"}
+              </h1>
             </div>
-            <button
-              type="button"
-              onClick={handleDismiss}
-              aria-label="Dismiss notification prompt"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
-            >
-              <FaTimes aria-hidden="true" />
-            </button>
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-slate-600">
+          <p className="mt-5 text-sm leading-6 text-slate-600">
             {isBlocked
-              ? "Notifications are blocked for MobilesX. If you want to enable them, open this site's browser settings, allow notifications, then come back and try again."
-              : permission === "granted"
-                ? "Your browser allows notifications, but MobilesX could not finish push setup. Retry to complete setup."
-                : "Get product launch alerts, technology news, and price-drop updates from MobilesX."}
+              ? "Your browser has blocked MobilesX notifications. Change this site's notification permission in browser settings to enable product launches, technology news, and price-drop alerts."
+              : "Get timely alerts for product launches, technology news, and price drops. Choose Allow or Block in your browser prompt to continue to MobilesX."}
           </p>
 
           {error ? (
             <p
               role="alert"
-              className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm leading-5 text-rose-800"
+              className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-800"
             >
               {error}
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={isBlocked ? handleRetryAfterSettingsChange : handleEnable}
-            disabled={busy}
-            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
-          >
-            {busy
-              ? "Enabling notifications..."
-              : isBlocked
-                ? "I've updated settings — retry"
-                : permission === "granted"
-                  ? "Retry setup"
-                  : "Enable notifications"}
-          </button>
-        </aside>
-      ) : null}
-    </>
-  );
+          {isBlocked ? (
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleRetryAfterSettingsChange}
+                disabled={busy}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
+              >
+                {busy ? "Checking settings..." : "Retry after settings change"}
+              </button>
+              <button
+                type="button"
+                onClick={handleContinueBlocked}
+                disabled={busy}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Continue with notifications blocked
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleRequestPermission}
+              disabled={busy}
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
+            >
+              <FaCheck aria-hidden="true" />
+              {busy ? "Opening browser prompt..." : "Enable notifications"}
+            </button>
+          )}
+
+          <p className="mt-4 text-center text-xs leading-5 text-slate-500">
+            {isBlocked
+              ? "We'll ask again in 12 hours if you continue without notifications."
+              : "MobilesX opens the app after you choose Allow or Block."}
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  return children;
 };
 
 export default AppPushOptInPrompt;
