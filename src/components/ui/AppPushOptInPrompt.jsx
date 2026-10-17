@@ -259,28 +259,28 @@ const AppPushOptInPrompt = ({ children }) => {
     const isBlocked = permission === "denied";
 
     return (
-      <div className="fixed inset-0 z-[100] flex min-h-[100dvh] items-end justify-center overflow-y-auto bg-slate-950/55 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md sm:px-6 sm:pb-6">
+      <div className="fixed inset-0 z-[100] flex min-h-[100dvh] items-end justify-center overflow-y-auto bg-slate-950/55 px-2 pb-0 pt-4 backdrop-blur-md sm:px-4 sm:py-6">
         <section
           role="dialog"
           aria-modal="true"
           aria-labelledby="notification-gate-title"
-          className="flex w-full max-w-[2000px] flex-col gap-5 rounded-2xl border border-slate-300 bg-white p-4 shadow-[0_24px_80px_rgba(2,6,23,0.28)] sm:gap-6 sm:p-6 md:flex-row md:items-center md:justify-between md:gap-8 md:p-7"
+          className="flex w-full max-w-[2000px] flex-col gap-4 rounded-t-2xl rounded-b-none border border-b-0 border-slate-300 bg-white px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(2,6,23,0.2)] sm:gap-5 sm:rounded-2xl sm:border-b sm:p-5 sm:shadow-[0_18px_60px_rgba(5,18,42,0.22)] lg:flex-row lg:items-center lg:justify-between lg:gap-8 lg:p-7"
         >
-          <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6">
-            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[27px] text-blue-700 sm:h-16 sm:w-16 sm:text-3xl">
+          <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-5">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700 sm:h-14 sm:w-14 sm:text-2xl lg:h-16 lg:w-16 lg:text-3xl">
               <FaBell aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-2xl font-extrabold leading-none tracking-tight text-slate-950 sm:text-3xl">
+              <p className="text-xl font-extrabold leading-none tracking-tight text-slate-950 sm:text-2xl lg:text-3xl">
                 Mobiles<span className="text-sky-500">X</span>
               </p>
               <h1
                 id="notification-gate-title"
-                className="mt-2 text-lg font-bold leading-tight text-slate-950 sm:text-2xl"
+                className="mt-1.5 text-base font-bold leading-tight text-slate-950 sm:mt-2 sm:text-lg lg:text-2xl"
               >
                 Enable notifications to continue
               </h1>
-              <p className="mt-1.5 text-xs leading-5 text-slate-600 sm:text-sm">
+              <p className="mt-1.5 text-xs leading-[1.45] text-slate-600 sm:text-sm sm:leading-5">
                 Get product launch, technology news, and price-drop alerts.
               </p>
               {error ? (
@@ -294,7 +294,7 @@ const AppPushOptInPrompt = ({ children }) => {
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row md:border-l md:border-t-0 md:pl-6 md:pt-0">
+          <div className="flex w-full shrink-0 flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row lg:w-auto lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <button
               type="button"
               onClick={
@@ -303,7 +303,7 @@ const AppPushOptInPrompt = ({ children }) => {
                   : handleRequestPermission
               }
               disabled={busy}
-              className="inline-flex min-h-14 w-full items-center justify-center gap-4 rounded-lg bg-blue-700 px-8 py-3 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60 sm:min-w-44 sm:text-xl md:min-h-16 md:px-10 md:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-lg bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 disabled:cursor-wait disabled:opacity-60 sm:min-h-14 sm:min-w-44 sm:px-8 sm:text-base lg:min-h-16 lg:w-auto lg:px-10 lg:text-xl"
             >
               {busy
                 ? isBlocked
@@ -316,7 +316,7 @@ const AppPushOptInPrompt = ({ children }) => {
               type="button"
               onClick={handleNotNow}
               disabled={busy}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-slate-100 px-7 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 disabled:opacity-60 sm:min-w-36 md:min-h-14 md:w-auto md:text-base"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 disabled:opacity-60 sm:min-h-14 sm:min-w-36 sm:px-7 lg:w-auto lg:text-base"
             >
               Not now
             </button>
