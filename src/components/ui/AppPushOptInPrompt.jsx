@@ -238,7 +238,7 @@ const AppPushOptInPrompt = ({ children }) => {
         }
       } else {
         setError(
-          "Notifications are still blocked. Change this site's notification permission in your browser settings, then retry or continue without notifications.",
+          "Still blocked. Allow notifications for this site in your browser settings, then tap Check again.",
         );
       }
     } catch (retryError) {
@@ -283,7 +283,15 @@ const AppPushOptInPrompt = ({ children }) => {
               <p className="mt-1.5 text-xs leading-[1.45] text-slate-600 sm:text-sm sm:leading-5">
                 Get product launch, technology news, and price-drop alerts.
               </p>
-              {error ? (
+              {isBlocked ? (
+                <p
+                  role="status"
+                  className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-900 sm:text-sm"
+                >
+                  {error ||
+                    "Notifications are blocked for this site. Allow them in your browser settings, then tap Check again."}
+                </p>
+              ) : error ? (
                 <p
                   role="alert"
                   className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-800 sm:text-sm"
@@ -309,7 +317,9 @@ const AppPushOptInPrompt = ({ children }) => {
                 ? isBlocked
                   ? "Checking..."
                   : "Opening..."
-                : "Allow"}
+                : isBlocked
+                  ? "Check again"
+                  : "Allow"}
               <FaArrowRight aria-hidden="true" />
             </button>
             <button
