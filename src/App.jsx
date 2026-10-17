@@ -15,7 +15,7 @@ import {
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import RouteExperience from "./components/ui/RouteExperience";
-import NewsPushRegistration from "./components/ui/NewsPushRegistration";
+import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import { useDevice } from "./hooks/useDevice";
 import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
@@ -50,6 +50,7 @@ const Home = React.lazy(() => import("./components/Home/Home"));
 const Smartphones = React.lazy(
   () => import("./components/Product/Smartphones"),
 );
+const Laptops = React.lazy(() => import("./components/Product/Laptops"));
 const UpcomingSmartphonesList = React.lazy(
   () => import("./components/Product/UpcomingSmartphonesList"),
 );
@@ -239,18 +240,18 @@ function App() {
 
   return (
     <Router>
-      <NewsPushRegistration />
-      <RouteExperience />
-      <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
-        <Header />
+      <AppPushOptInPrompt>
+        <RouteExperience />
+        <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
+          <Header />
 
-        <ScrollToTop />
-        <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
-          {/* BannerSlot disabled (incomplete). */}
-        </aside>
-        <React.Suspense fallback={null}>
-          <RouteBreadcrumbs />
-          <Routes>
+          <ScrollToTop />
+          <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
+            {/* BannerSlot disabled (incomplete). */}
+          </aside>
+          <React.Suspense fallback={null}>
+            <RouteBreadcrumbs />
+            <Routes>
             {/* Home */}
             <Route path="/" element={<Home />} />
 
@@ -260,6 +261,7 @@ function App() {
             <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
             <Route path="/phone-finder" element={<PhoneFinderPage />} />
             <Route path="/smartphones" element={<Smartphones />} />
+            <Route path="/laptops/*" element={<Laptops />} />
             <Route path="/smartphone" element={<Smartphones />} />
             <Route
               path="/smartphones/feature/:featureSlug/brand/:brandSlug"
@@ -392,14 +394,15 @@ function App() {
 
             {/* 404 Fallback */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </React.Suspense>
+            </Routes>
+          </React.Suspense>
 
-        {/* BannerSlot disabled (incomplete). */}
-        <Footer />
-        <MobileBottomNavigation />
-        {/* BannerSlot disabled (incomplete). */}
-      </div>
+          {/* BannerSlot disabled (incomplete). */}
+          <Footer />
+          <MobileBottomNavigation />
+          {/* BannerSlot disabled (incomplete). */}
+        </div>
+      </AppPushOptInPrompt>
     </Router>
   );
 }
