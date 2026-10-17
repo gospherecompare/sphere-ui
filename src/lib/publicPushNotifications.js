@@ -124,7 +124,7 @@ export const checkPublicPushAvailability = async () => {
 
 const registerPublicPush = async ({ topics, forceSync = false }) => {
   if (Notification.permission !== "granted") {
-    throw new Error("Allow notifications in your browser to continue.");
+    throw new Error("Browser notification permission has not been granted.");
   }
 
   await assertPushSupport();
@@ -218,7 +218,7 @@ export const subscribeToPublicPush = async ({ topics }) => {
     throw new Error(
       permission === "denied"
         ? "Notifications are blocked. Allow them in your browser site settings, then retry."
-        : "Allow notifications in your browser to continue.",
+        : "Browser notification permission was not granted.",
     );
   }
 
