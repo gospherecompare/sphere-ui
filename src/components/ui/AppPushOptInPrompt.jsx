@@ -197,6 +197,12 @@ const AppPushOptInPrompt = ({ children }) => {
       document.removeEventListener("visibilitychange", refreshPermission);
   }, [acceptBlockedPermission, acceptGrantedPermission, permission]);
 
+  const handleNotNow = () => {
+    deferPromptUntil(Date.now());
+    setGateVisible(false);
+    setError("");
+  };
+
   const handleRequestPermission = async () => {
     setBusy(true);
     setError("");
@@ -209,7 +215,7 @@ const AppPushOptInPrompt = ({ children }) => {
       } else if (result === "denied") {
         acceptBlockedPermission();
       } else {
-        setError("Choose Allow or Block in the browser prompt to continue.");
+        handleNotNow();
       }
     } catch (requestError) {
       console.error("The browser notification request failed:", requestError);
@@ -234,7 +240,7 @@ const AppPushOptInPrompt = ({ children }) => {
         } else if (result === "denied") {
           acceptBlockedPermission();
         } else {
-          setError("Choose Allow or Block in the browser prompt to continue.");
+          handleNotNow();
         }
       } else {
         setError(
@@ -247,12 +253,6 @@ const AppPushOptInPrompt = ({ children }) => {
     } finally {
       setBusy(false);
     }
-  };
-
-  const handleNotNow = () => {
-    deferPromptUntil(Date.now());
-    setGateVisible(false);
-    setError("");
   };
 
   if (gateVisible) {
