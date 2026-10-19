@@ -264,7 +264,7 @@ const AppPushOptInPrompt = ({ children }) => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="notification-gate-title"
-          className="flex w-full max-w-[2000px] flex-col gap-4 rounded-t-2xl rounded-b-none border border-b-0 border-slate-300 bg-white px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(2,6,23,0.2)] sm:gap-5 sm:rounded-2xl sm:border-b sm:p-5 sm:shadow-[0_18px_60px_rgba(5,18,42,0.22)] lg:flex-row lg:items-center lg:justify-between lg:gap-8 lg:p-7"
+          className="flex w-full max-w-5xl flex-col gap-4 rounded-t-2xl rounded-b-none border border-b-0 border-slate-300 bg-white px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(2,6,23,0.2)] sm:gap-5 sm:rounded-2xl sm:border-b sm:p-5 sm:shadow-[0_18px_60px_rgba(5,18,42,0.22)] lg:flex-row lg:items-center lg:justify-between lg:gap-8 lg:p-8"
         >
           <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-5">
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700 sm:h-14 sm:w-14 sm:text-2xl lg:h-16 lg:w-16 lg:text-3xl">
