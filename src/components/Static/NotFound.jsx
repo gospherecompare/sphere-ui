@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 const NotFound = () => {

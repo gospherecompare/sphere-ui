@@ -381,7 +381,11 @@ function App() {
               element={<PopularComparisonsPage />}
             />
 
-            <Route path="/career" element={<Careers />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route
+              path="/career"
+              element={<Navigate to="/careers" replace />}
+            />
 
             {/* Placeholder routes for footer links (can be implemented later) */}
             <Route path="/about" element={<About />} />
