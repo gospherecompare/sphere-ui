@@ -858,6 +858,7 @@ const routesFromSitemap = () => {
       })
       .filter(Boolean)
       .filter((routePath) => {
+        if (routePath.startsWith("/news/")) return false;
         if (!routePath.startsWith("/smartphones/")) return true;
         return (
           routePath === "/smartphones/upcoming" ||
@@ -1470,6 +1471,52 @@ const getNewsSlugFromPath = (canonicalPath = "") => {
 const buildNewsStoryEndpoint = (slug = "") =>
   `${API_BASE_URL}/public/blogs/${encodeURIComponent(String(slug || "").trim())}`;
 
+const fetchNewsArticleBodyForValidation = async (routePath) => {
+  const slug = getNewsSlugFromPath(routePath);
+  const endpoint = buildNewsStoryEndpoint(slug);
+  if (!slug) return null;
+  if (apiBodyCache.has(endpoint)) return apiBodyCache.get(endpoint);
+
+  const request = (async () => {
+    const response = await fetch(endpoint);
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  })();
+
+  apiBodyCache.set(endpoint, request);
+  try {
+    return await request;
+  } catch (error) {
+    apiBodyCache.delete(endpoint);
+    throw new Error(
+      `[news-prerender] Unable to validate ${routePath} from ${endpoint}: ${error?.message || error}`,
+    );
+  }
+};
+
+const getNewsRouteMetadata = (routePath, body) => {
+  const endpoint = buildNewsStoryEndpoint(getNewsSlugFromPath(routePath));
+  const payload = body ? { byUrl: { [endpoint]: body } } : null;
+  const articleSeo = getNewsArticleSeo(routePath, payload);
+  if (!articleSeo?.blog || !articleSeo.headline) return null;
+
+  const articleHtml = sanitizeNewsArticleHtml(
+    articleSeo.blog.content_rendered || "",
+  );
+  if (!stripNewsMarkup(articleHtml)) return null;
+
+  return {
+    title: articleSeo.headline,
+    publishedAt:
+      articleSeo.blog.published_at || articleSeo.blog.updated_at || null,
+    updatedAt:
+      articleSeo.blog.updated_at || articleSeo.blog.published_at || null,
+  };
+};
+
 const fetchNewsRoutesFromSitemap = async () => {
   const endpoint = `${API_BASE_URL}/sitemap.xml`;
   let response;
@@ -1537,6 +1584,7 @@ const fetchNewsRoutesFromApi = async () => {
   }
 
   const sitemapEntries = await fetchNewsRoutesFromSitemap();
+  const routeMetadata = new Map();
   const routes = [];
 
   for (const row of rows) {
@@ -1551,7 +1599,7 @@ const fetchNewsRoutesFromApi = async () => {
       publishedAt,
       row?.updated_at || publishedAt,
     );
-    publishedNewsRouteMeta.set(routePath, {
+    routeMetadata.set(routePath, {
       title: String(row?.title || row?.meta_title || "").trim(),
       publishedAt,
       updatedAt,
@@ -1561,8 +1609,8 @@ const fetchNewsRoutesFromApi = async () => {
 
   for (const entry of sitemapEntries) {
     if (routes.length >= MAX_NEWS_ROUTES) break;
-    if (!publishedNewsRouteMeta.has(entry.routePath)) {
-      publishedNewsRouteMeta.set(entry.routePath, {
+    if (!routeMetadata.has(entry.routePath)) {
+      routeMetadata.set(entry.routePath, {
         title: "",
         publishedAt: null,
         updatedAt: entry.lastmod,
@@ -1571,7 +1619,43 @@ const fetchNewsRoutesFromApi = async () => {
     routes.push(entry.routePath);
   }
 
-  return [...new Set(routes)];
+  const candidates = [...new Set(routes)].slice(0, MAX_NEWS_ROUTES);
+  const validRoutes = [];
+  const validationBatchSize = 12;
+
+  for (
+    let offset = 0;
+    offset < candidates.length;
+    offset += validationBatchSize
+  ) {
+    const batch = candidates.slice(offset, offset + validationBatchSize);
+    const results = await Promise.all(
+      batch.map(async (routePath) => {
+        const body = await fetchNewsArticleBodyForValidation(routePath);
+        return {
+          routePath,
+          metadata: getNewsRouteMetadata(routePath, body),
+        };
+      }),
+    );
+
+    for (const { routePath, metadata } of results) {
+      if (!metadata) {
+        console.warn(
+          `[news-prerender] Skipping ${routePath}: the article is missing or has no indexable content.`,
+        );
+        continue;
+      }
+
+      publishedNewsRouteMeta.set(routePath, {
+        ...routeMetadata.get(routePath),
+        ...metadata,
+      });
+      validRoutes.push(routePath);
+    }
+  }
+
+  return validRoutes;
 };
 
 const fetchSmartphoneListingRoutesFromApi = async () => {
@@ -3038,7 +3122,10 @@ const buildNewsListingPrerenderMarkup = (preloadedApiPayload) => {
     preloadedApiPayload,
     `${API_BASE_URL}/public/blogs?limit=50`,
     ["blogs"],
-  );
+  ).filter((blog) => {
+    const slug = String(blog?.slug || "").trim().toLowerCase();
+    return slug && publishedNewsRouteMeta.has(normalizePath(`/news/${slug}`));
+  });
 
   if (!blogs.length) {
     throw new Error(
@@ -3117,7 +3204,14 @@ const buildNewsArticlePrerenderMarkup = (
     `${API_BASE_URL}/public/blogs?limit=18`,
     ["blogs"],
   )
-    .filter((item) => item?.slug && item.slug !== blog.slug)
+    .filter((item) => {
+      const slug = String(item?.slug || "").trim().toLowerCase();
+      return (
+        slug &&
+        slug !== blog.slug &&
+        publishedNewsRouteMeta.has(normalizePath(`/news/${slug}`))
+      );
+    })
     .slice(0, 6);
   const relatedLinks = relatedBlogs
     .map((item) => {
