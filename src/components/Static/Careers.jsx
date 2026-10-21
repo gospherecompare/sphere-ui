@@ -5,10 +5,12 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import { buildApiUrl } from "../../utils/apiUrl";
 
 const SITE_ORIGIN = "https://mobilesx.in";
-const CAREERS_API_URL = buildApiUrl("/careers");
+const CAREERS_API_URL = buildApiUrl("/career-submissions");
 const CURRENT_YEAR = new Date().getFullYear();
 
-const ROLE_OPTIONS = [{ value: "fullstack", label: "Full-Stack Developer" }];
+const ROLE_OPTIONS = [
+  { value: "SDE", label: "Software Development Engineer(SDE 1)" },
+];
 
 const EXPERIENCE_OPTIONS = [
   { value: "fresher", label: "Entry level — no professional experience" },
@@ -312,8 +314,7 @@ function SelectField({
     let nextIndex = index;
     if (event.key === "ArrowDown") {
       nextIndex = Math.min(index + 1, filteredOptions.length);
-    }
-    else if (event.key === "ArrowUp") {
+    } else if (event.key === "ArrowUp") {
       nextIndex = Math.max(index - 1, 0);
     } else if (event.key === "Home") nextIndex = 0;
     else if (event.key === "End") nextIndex = filteredOptions.length;
@@ -440,31 +441,31 @@ function SelectField({
                 </button>
               </li>
               {filteredOptions.map((option, filteredIndex) => {
-              const index = filteredIndex + 1;
-              const selected = option.value === value;
-              return (
-                <li key={option.value} role="presentation">
-                  <button
-                    ref={(element) => {
-                      optionRefs.current[index] = element;
-                    }}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => selectOption(option)}
-                    onKeyDown={(event) => handleOptionKeyDown(event, index)}
-                    className={`flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
-                      selected
-                        ? "bg-blue-50 font-semibold text-blue-800"
-                        : activeIndex === index
-                          ? "bg-slate-100 text-slate-900"
-                          : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                  </button>
-                </li>
-              );
+                const index = filteredIndex + 1;
+                const selected = option.value === value;
+                return (
+                  <li key={option.value} role="presentation">
+                    <button
+                      ref={(element) => {
+                        optionRefs.current[index] = element;
+                      }}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => selectOption(option)}
+                      onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                      className={`flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                        selected
+                          ? "bg-blue-50 font-semibold text-blue-800"
+                          : activeIndex === index
+                            ? "bg-slate-100 text-slate-900"
+                            : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                    </button>
+                  </li>
+                );
               })}
             </ul>
           </div>
