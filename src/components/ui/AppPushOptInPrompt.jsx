@@ -147,6 +147,14 @@ const AppPushOptInPrompt = ({ children }) => {
       if (Notification.permission !== "granted") return;
       const data = payload?.data || {};
       const topic = String(data.topic || "");
+      const type = String(
+        data.type ||
+          (topic === "deals"
+            ? "price_drop"
+            : topic === "launches"
+              ? "launch"
+              : "news"),
+      );
 
       let targetUrl = "/";
       try {
@@ -158,16 +166,51 @@ const AppPushOptInPrompt = ({ children }) => {
         targetUrl = "/";
       }
 
+      let imageUrl = "";
+      try {
+        const imageCandidate = String(data.imageUrl || "").trim();
+        if (imageCandidate) {
+          const candidate = new URL(imageCandidate, window.location.origin);
+          if (
+            candidate.protocol === "https:" ||
+            candidate.origin === window.location.origin
+          ) {
+            imageUrl = candidate.href;
+          }
+        }
+      } catch {
+        // Keep the text notification if the optional image URL is invalid.
+      }
+
+      const actionTitle =
+        type === "price_drop"
+          ? "View deal"
+          : type === "launch"
+            ? "View product"
+            : "Read article";
+      const options = {
+        body: String(data.body || "There is a new update on MobilesX."),
+        icon: "/mobilex-favicon.svg",
+        badge: "/mobilex-favicon.svg",
+        ...(imageUrl ? { image: imageUrl } : {}),
+        tag: `mobilesx-${topic || "update"}-${data.eventId || Date.now()}`,
+        data: {
+          url: targetUrl,
+          type,
+          actionUrls: { open: targetUrl },
+        },
+      };
+      const supportedActionCount = Number(Notification.maxActions) || 0;
+      if (supportedActionCount > 0) {
+        options.actions = [
+          { action: "open", title: actionTitle },
+        ].slice(0, supportedActionCount);
+      }
+
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification(
         String(data.title || "MobilesX update"),
-        {
-          body: String(data.body || "There is a new update on MobilesX."),
-          icon: "/mobilex-favicon.svg",
-          badge: "/mobilex-favicon.svg",
-          tag: `mobilesx-${topic || "update"}-${data.eventId || Date.now()}`,
-          data: { url: targetUrl },
-        },
+        options,
       );
     });
   }, [messaging]);
