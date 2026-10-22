@@ -18,6 +18,12 @@ const getNotificationMessage = (item) => {
   };
 };
 
+const getPushCategoryLabel = (type) => {
+  if (type === "price_drop") return "Price drop";
+  if (type === "launch") return "New launch";
+  return "Technology news";
+};
+
 const PriceNotificationCenter = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -49,10 +55,21 @@ const PriceNotificationCenter = () => {
       .then((messaging) => {
         if (!active || !messaging) return;
         unsubscribe = onMessage(messaging, (payload) => {
+          const data = payload?.data || {};
+          const type = String(
+            data.type ||
+              (data.topic === "deals"
+                ? "price_drop"
+                : data.topic === "launches"
+                  ? "launch"
+                  : "news"),
+          );
           const nextNotice = {
-            title: String(payload?.notification?.title || payload?.data?.title || "Price update"),
-            message: String(payload?.notification?.body || payload?.data?.message || "A tracked price has changed."),
-            url: String(payload?.data?.url || ""),
+            title: String(payload?.notification?.title || data.title || "MobilesX update"),
+            message: String(payload?.notification?.body || data.body || data.message || "There is a new update on MobilesX."),
+            url: String(data.url || ""),
+            imageUrl: String(data.imageUrl || ""),
+            type,
           };
           setForegroundNotice(nextNotice);
           setUnreadCount((count) => count + 1);
@@ -119,18 +136,49 @@ const PriceNotificationCenter = () => {
         <button
           type="button"
           onClick={() => {
-            if (foregroundNotice.url.startsWith("/")) navigate(foregroundNotice.url);
+            if (
+              foregroundNotice.url.startsWith("/") &&
+              !foregroundNotice.url.startsWith("//")
+            ) {
+              navigate(foregroundNotice.url);
+            }
             setForegroundNotice(null);
             setOpen(true);
             void refresh();
           }}
-          className="mb-3 block w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-blue-100 bg-white p-4 text-left shadow-xl"
+          className="mb-3 block w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-xl transition hover:border-blue-200 hover:shadow-2xl"
         >
-          <span className="block text-sm font-bold text-slate-900">
-            {foregroundNotice.title}
-          </span>
-          <span className="mt-1 block text-xs leading-5 text-slate-600">
-            {foregroundNotice.message}
+          <span className="flex items-start gap-3">
+            {foregroundNotice.imageUrl ? (
+              <img
+                src={foregroundNotice.imageUrl}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-extrabold text-white">
+                MX
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">
+                MobilesX · {getPushCategoryLabel(foregroundNotice.type)}
+              </span>
+              <span className="block text-sm font-bold leading-5 text-slate-950">
+                {foregroundNotice.title}
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-600">
+                {foregroundNotice.message}
+              </span>
+              <span className="mt-2 block text-xs font-semibold text-blue-700">
+                {foregroundNotice.type === "price_drop"
+                  ? "View deal"
+                  : foregroundNotice.type === "launch"
+                    ? "View product"
+                    : "Read article"}
+              </span>
+            </span>
           </span>
         </button>
       )}

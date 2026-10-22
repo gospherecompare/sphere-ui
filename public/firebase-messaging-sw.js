@@ -24,6 +24,14 @@ if (!firebaseConfig?.projectId || !firebaseConfig?.messagingSenderId) {
       const data = payload.data || {};
       const title = String(data.title || "MobilesX update");
       const body = String(data.body || "There is a new update on MobilesX.");
+      const type = String(
+        data.type ||
+          (data.topic === "deals"
+            ? "price_drop"
+            : data.topic === "launches"
+              ? "launch"
+              : "news"),
+      );
       let targetUrl = "/";
       try {
         const candidate = new URL(data.url || "/", self.location.origin);
@@ -34,19 +42,56 @@ if (!firebaseConfig?.projectId || !firebaseConfig?.messagingSenderId) {
         console.error("Invalid MobilesX notification link:", error);
       }
 
-      return self.registration.showNotification(title, {
+      let imageUrl = "";
+      try {
+        const imageCandidate = String(data.imageUrl || "").trim();
+        if (imageCandidate) {
+          const candidate = new URL(imageCandidate, self.location.origin);
+          if (
+            candidate.protocol === "https:" ||
+            candidate.origin === self.location.origin
+          ) {
+            imageUrl = candidate.href;
+          }
+        }
+      } catch {
+        // An image is optional; keep the text notification if its URL is invalid.
+      }
+
+      const actionTitle =
+        type === "price_drop"
+          ? "View deal"
+          : type === "launch"
+            ? "View product"
+            : "Read article";
+      const options = {
         body,
         icon: "/mobilex-favicon.svg",
         badge: "/mobilex-favicon.svg",
+        ...(imageUrl ? { image: imageUrl } : {}),
         tag: `mobilesx-${data.topic || "update"}-${data.eventId || Date.now()}`,
-        data: { url: targetUrl },
-      });
+        data: {
+          url: targetUrl,
+          type,
+          actionUrls: { open: targetUrl },
+        },
+      };
+      const supportedActionCount = Number(self.Notification?.maxActions) || 0;
+      if (supportedActionCount > 0) {
+        options.actions = [
+          { action: "open", title: actionTitle },
+        ].slice(0, supportedActionCount);
+      }
+
+      return self.registration.showNotification(title, options);
     });
 }
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const requestedUrl = event.notification.data?.url || "/";
+  const notificationData = event.notification.data || {};
+  const requestedUrl =
+    notificationData.actionUrls?.[event.action] || notificationData.url || "/";
   let target;
   try {
     target = new URL(requestedUrl, self.location.origin);
