@@ -11,7 +11,7 @@ import { buildApiUrl } from "../utils/apiUrl";
 export const PUBLIC_PUSH_TOPICS = Object.freeze({
   launches: "Product launches",
   news: "Technology news",
-  deals: "Price drops and deals",
+  deals: "Deals",
 });
 
 export const DEFAULT_PUBLIC_PUSH_TOPICS = Object.freeze({
@@ -136,6 +136,10 @@ const registerPublicPush = async ({ topics, forceSync = false }) => {
   workerUrl.searchParams.set("firebaseConfig", JSON.stringify(workerConfig));
   const registration = await navigator.serviceWorker.register(workerUrl, {
     scope: "/",
+    updateViaCache: "none",
+  });
+  await registration.update().catch((updateError) => {
+    console.warn("Could not check for a MobilesX notification worker update:", updateError);
   });
   await navigator.serviceWorker.ready;
 

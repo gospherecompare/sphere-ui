@@ -58,7 +58,6 @@ const sections = [
       "Usage information such as pages viewed, searches, comparison interactions, clicks and session timing",
       "The notification categories selected for your browser push token. Browser permission is checked locally by your browser and is not sent to MobilesX",
       "A browser push token and selected notification categories after you allow notifications; Firebase Cloud Messaging processes the token and notification content to deliver updates",
-      "A pseudonymous Firebase user identifier when you create individual price alerts; those alerts do not require an email address or password",
       "Diagnostic information used to detect errors, abuse, performance issues and security incidents",
     ],
   },
@@ -90,7 +89,7 @@ const sections = [
     title: "When information may be shared",
     paragraphs: [
       "MobilesX does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
-      "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets. Firebase Cloud Messaging processes browser push tokens and notification content to deliver the update categories selected in MobilesX settings. Firebase may also process the pseudonymous account identifier used for individual price alerts, under Google's applicable terms and privacy policy.",
+      "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets. Firebase Cloud Messaging processes browser push tokens and notification content to deliver the update categories selected in MobilesX settings.",
     ],
   },
 

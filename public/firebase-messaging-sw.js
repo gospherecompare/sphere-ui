@@ -27,7 +27,7 @@ if (!firebaseConfig?.projectId || !firebaseConfig?.messagingSenderId) {
       const type = String(
         data.type ||
           (data.topic === "deals"
-            ? "price_drop"
+            ? "deal"
             : data.topic === "launches"
               ? "launch"
               : "news"),
@@ -59,7 +59,7 @@ if (!firebaseConfig?.projectId || !firebaseConfig?.messagingSenderId) {
       }
 
       const actionTitle =
-        type === "price_drop"
+        type === "deal"
           ? "View deal"
           : type === "launch"
             ? "View product"

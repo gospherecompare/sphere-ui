@@ -14,6 +14,7 @@ import {
   useParams,
 } from "react-router-dom";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
+import AiChat from "./components/AiChat";
 import RouteExperience from "./components/ui/RouteExperience";
 import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import { useDevice } from "./hooks/useDevice";
@@ -406,6 +407,7 @@ function App() {
           <MobileBottomNavigation />
           {/* BannerSlot disabled (incomplete). */}
         </div>
+        <AiChat />
       </AppPushOptInPrompt>
     </Router>
   );
