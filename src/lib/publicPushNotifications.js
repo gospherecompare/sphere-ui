@@ -11,7 +11,7 @@ import { buildApiUrl } from "../utils/apiUrl";
 export const PUBLIC_PUSH_TOPICS = Object.freeze({
   launches: "Product launches",
   news: "Technology news",
-  deals: "Price drops and deals",
+  deals: "Deals",
 });
 
 export const DEFAULT_PUBLIC_PUSH_TOPICS = Object.freeze({

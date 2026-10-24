@@ -150,7 +150,7 @@ const AppPushOptInPrompt = ({ children }) => {
       const type = String(
         data.type ||
           (topic === "deals"
-            ? "price_drop"
+            ? "deal"
             : topic === "launches"
               ? "launch"
               : "news"),
@@ -183,7 +183,7 @@ const AppPushOptInPrompt = ({ children }) => {
       }
 
       const actionTitle =
-        type === "price_drop"
+        type === "deal"
           ? "View deal"
           : type === "launch"
             ? "View product"
