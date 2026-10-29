@@ -1187,7 +1187,7 @@ const MobileCompare = () => {
   };
 
   return (
-    <main className="min-h-screen min-w-0 bg-slate-50 font-sans text-slate-900">
+    <main className="mx-compare-page min-h-screen min-w-0 bg-slate-50 font-sans text-slate-900">
       <style>{`
         .compare-hidden-scrollbar { scrollbar-width: none !important; -ms-overflow-style: none !important; }
         .compare-hidden-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
@@ -1219,7 +1219,7 @@ const MobileCompare = () => {
                 setSearch("");
               }}
               disabled={selectedDevices.length >= MAX_COMPARE_DEVICES}
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-11 sm:px-5"
+              className="mx-primary-button inline-flex min-h-10 shrink-0 items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-11 sm:px-5"
             >
               <span aria-hidden="true" className="text-lg leading-none">
                 +

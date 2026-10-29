@@ -1829,3 +1829,176 @@ html[data-route-group="company"] h1 {
   line-height: 1.25;
   white-space: nowrap;
 }
+
+/* Shared MobilesX storefront design tokens and component styling */
+:root {
+  --mx-primary: #0866ff;
+  --mx-primary-hover: #0055e8;
+  --mx-primary-soft: #eef5ff;
+  --mx-navy: #0b1635;
+  --mx-bg: #f4f8ff;
+  --mx-surface: #ffffff;
+  --mx-border: #e2eaf5;
+  --mx-text: #0b1635;
+  --mx-text-secondary: #5c6f8d;
+  --mx-text-muted: #8493aa;
+  --mx-success: #009f6b;
+  --mx-space-1: 4px;
+  --mx-space-2: 8px;
+  --mx-space-3: 12px;
+  --mx-space-4: 16px;
+  --mx-space-5: 20px;
+  --mx-space-6: 24px;
+  --mx-space-8: 32px;
+  --mx-radius-sm: 8px;
+  --mx-radius-md: 12px;
+  --mx-radius-card: 18px;
+  --mx-radius-pill: 999px;
+  --mx-shadow-card: 0 4px 20px rgba(15, 35, 75, 0.04);
+  --mx-shadow-popup: 0 12px 36px rgba(15, 35, 75, 0.12);
+  --mx-content-width: 1440px;
+  --mx-header-height: 76px;
+  --mx-transition: 180ms ease;
+}
+
+.mx-primary-button {
+  min-height: 48px;
+  border: 1px solid var(--mx-primary) !important;
+  border-radius: var(--mx-radius-md) !important;
+  background: var(--mx-primary) !important;
+  color: var(--mx-surface) !important;
+  font-weight: 600;
+  transition: background var(--mx-transition), box-shadow var(--mx-transition);
+}
+
+.mx-primary-button:hover:not(:disabled) {
+  background: var(--mx-primary-hover) !important;
+  box-shadow: 0 4px 12px rgba(8, 102, 255, 0.18);
+}
+
+.mx-secondary-button {
+  min-height: 44px;
+  border: 1px solid var(--mx-primary) !important;
+  border-radius: var(--mx-radius-pill) !important;
+  background: var(--mx-surface) !important;
+  color: var(--mx-primary) !important;
+  font-weight: 600;
+}
+
+.mx-search-panel {
+  border: 1px solid var(--mx-border) !important;
+  border-radius: var(--mx-radius-card) !important;
+  background: var(--mx-surface);
+  box-shadow: var(--mx-shadow-popup) !important;
+}
+
+.mx-product-detail {
+  color: var(--mx-text);
+}
+
+.mx-product-detail .hooks-spec-card {
+  border-color: var(--mx-border) !important;
+  border-radius: 13px !important;
+  background: var(--mx-surface) !important;
+  box-shadow: none !important;
+}
+
+.mx-product-detail .mx-product-summary-card {
+  border: 1px solid var(--mx-border);
+  border-radius: var(--mx-radius-card);
+  background: var(--mx-bg);
+  box-shadow: none;
+}
+
+.mx-product-detail #spec-specifications section[id^="spec-"] {
+  border-color: var(--mx-border);
+  border-radius: 14px;
+  background: var(--mx-surface);
+  box-shadow: var(--mx-shadow-card);
+}
+
+.mx-product-detail #spec-specifications section[id^="spec-"] > div:first-child {
+  background: var(--mx-primary-soft);
+}
+
+.mx-compare-page {
+  background: var(--mx-bg) !important;
+  color: var(--mx-text);
+}
+
+.mx-compare-page [role="dialog"] {
+  border-color: var(--mx-border);
+  border-radius: 18px 18px 0 0;
+  box-shadow: var(--mx-shadow-popup);
+}
+
+.mx-compare-page [role="listbox"] {
+  background: var(--mx-surface);
+}
+
+.mx-compare-page [aria-label="Device comparison table"] {
+  overflow: hidden;
+  border: 1px solid var(--mx-border);
+  border-radius: var(--mx-radius-card);
+  background: var(--mx-surface);
+  box-shadow: var(--mx-shadow-card);
+}
+
+.mx-compare-page [aria-label="Device comparison table"] section > div:first-child {
+  background: var(--mx-primary-soft);
+}
+
+.mx-assistant-panel {
+  border-color: var(--mx-border);
+  box-shadow: var(--mx-shadow-popup);
+}
+
+.mx-assistant-panel .mx-assistant-messages {
+  background: linear-gradient(180deg, var(--mx-bg), #ffffff 76%);
+}
+
+.ai-summary-trigger {
+  border-color: var(--mx-primary);
+  color: var(--mx-primary);
+}
+
+.ai-summary-trigger:hover {
+  background: var(--mx-primary-soft);
+  color: var(--mx-primary-hover);
+}
+
+@media (min-width: 640px) {
+  .mx-compare-page [role="dialog"] {
+    border-radius: var(--mx-radius-card);
+  }
+}
+.mx-primary-button:disabled {
+  border-color: #b8cdf0 !important;
+  background: #b8cdf0 !important;
+}
+
+.ai-summary-trigger {
+  min-height: 44px;
+  border-color: var(--mx-primary);
+  border-radius: var(--mx-radius-pill);
+  color: var(--mx-primary);
+}
+.mx-product-detail,
+.mx-compare-page,
+.mx-assistant-panel,
+.mx-search-panel,
+.mx-search-modal {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mx-product-detail main {
+  background: var(--mx-bg) !important;
+}
+
+@media (min-width: 1024px) {
+  .mx-search-modal {
+    border: 1px solid var(--mx-border) !important;
+    border-radius: var(--mx-radius-card) !important;
+    box-shadow: var(--mx-shadow-popup) !important;
+  }
+}

@@ -3981,7 +3981,7 @@ Price: ${price}
             "N/A",
         };
         const sectionCardClass =
-          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl border border-blue-200 ";
+          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-[18px] border border-[#e2eaf5] shadow-[0_4px_20px_rgba(15,35,75,0.04)] ";
         const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
           style: "long",
           type: "conjunction",
@@ -5231,7 +5231,7 @@ Price: ${price}
   }
 
   return (
-    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950  ">
+    <div className="hooks-product-detail mx-product-detail m-0 w-full bg-white text-slate-950">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5323,11 +5323,11 @@ Price: ${price}
 
           <div className="mx-auto w-full max-w-[1440px] px-3 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-7 lg:px-8">
             <div className="relative mx-auto w-full max-w-7xl bg-transparent ">
-              <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
+              <div className="mx-product-hero grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
                 <div className="rounded-[24px] bg-transparent p-3  sm:p-5 lg:p-6">
                   <div className="grid gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
                     {carouselImages.length > 1 ? (
-                      <div className="no-scrollbar order-2 flex snap-x snap-mandatory scroll-px-1 gap-2 overflow-x-auto px-1 py-1 sm:order-1 sm:flex-col sm:overflow-visible">
+                      <div className="no-scrollbar hidden snap-x snap-mandatory scroll-px-1 gap-2 overflow-x-auto px-1 py-1 sm:order-1 sm:flex sm:flex-col sm:overflow-visible">
                         {carouselImages.slice(0, 6).map((image, index) => (
                           <button
                             key={`${image}-${index}`}
@@ -5352,7 +5352,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6   sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[18px] bg-[#f4f8ff] p-4 sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
@@ -5384,7 +5384,7 @@ Price: ${price}
                           alt={`${headerTitle} product image`}
                           loading="eager"
                           fetchPriority="high"
-                          className="relative z-[1] max-h-[300px] w-full max-w-[330px] object-contain sm:max-h-[390px]"
+                          className="relative z-[1] max-h-[240px] w-full max-w-[260px] object-contain sm:max-h-[390px] sm:max-w-[330px]"
                           onError={(event) => {
                             event.currentTarget.src =
                               "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Crect width='360' height='360' rx='28' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-size='18' fill='%2394a3b8'%3EPhone image%3C/text%3E%3C/svg%3E";
@@ -5448,7 +5448,7 @@ Price: ${price}
                       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600 ">
                         {mobileData?.brand || metaBrand || "Smartphone"}
                       </p>
-                      <h1 className="mt-1 text-3xl font-black leading-tight tracking-tight text-slate-950  sm:text-4xl">
+                      <h1 className="mt-1 text-[1.3rem] font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
                         {headerTitle}
                       </h1>
                     </div>
@@ -5461,21 +5461,6 @@ Price: ${price}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700   "
                       >
                         <FaShareAlt className="text-sm" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={compareDisabled}
-                        onClick={() => {
-                          if (compareTarget) {
-                            handlePopularCompare(compareTarget);
-                            return;
-                          }
-                          navigate("/compare");
-                        }}
-                        className="hidden h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40   sm:inline-flex"
-                      >
-                        <FaPlus className="text-xs" />
-                        Compare
                       </button>
                     </div>
                   </div>
@@ -5503,15 +5488,32 @@ Price: ${price}
                     </div>
                   ) : null}
 
-                  {mobileData?.aiSummary ? (
-                    <div className="relative z-[1] mt-4">
+                  <div
+                    className={`relative z-[1] mt-4 grid gap-3 ${mobileData?.aiSummary ? "grid-cols-2" : "grid-cols-1"}`}
+                  >
+                    {mobileData?.aiSummary ? (
                       <ProductAiSummary summary={mobileData.aiSummary} />
-                    </div>
-                  ) : null}
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={compareDisabled}
+                      onClick={() => {
+                        if (compareTarget) {
+                          handlePopularCompare(compareTarget);
+                          return;
+                        }
+                        navigate("/compare");
+                      }}
+                      className="mx-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <FaPlus className="text-xs" aria-hidden="true" />
+                      Compare
+                    </button>
+                  </div>
 
-                  <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="mx-product-summary-card relative z-[1] mt-5 grid grid-cols-2 gap-2 rounded-[18px] p-3 sm:gap-3 sm:p-4 lg:grid-cols-3">
                     {headerSpecScoreValue != null ? (
-                      <div className="flex items-center gap-3 rounded-2xl  p-4    ">
+                      <div className="order-1 flex min-w-0 items-center gap-2 rounded-xl bg-white/75 p-3 sm:gap-3 sm:p-4">
                         <MobilesXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
@@ -5532,91 +5534,107 @@ Price: ${price}
                       </div>
                     ) : null}
 
-                    <div className=" p-4   ">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
-                            Market status
-                          </p>
-                          <p
-                            className={`mt-1 text-base font-black ${displayState.isUpcoming ? "text-violet-600 " : "text-emerald-600 "}`}
-                          >
-                            {heroMarketLabel}
-                          </p>
-                        </div>
-                        <span className="text-right text-xs leading-5 text-slate-500 ">
-                          {heroDateLabel}
-                          <br />
-                          <strong className="text-slate-800 ">
-                            {heroDateText}
-                          </strong>
-                        </span>
-                      </div>
-                      <div className="mt-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
-                          {displayState.isUpcoming
-                            ? "Expected price"
-                            : "Starting price"}
-                        </p>
-                        <p className="mt-1 text-2xl font-black tracking-tight text-slate-950 ">
-                          {currentPriceDisplay || "Price not announced"}
-                        </p>
-                      </div>
+                    <div className="order-2 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Market status
+                      </p>
+                      <p
+                        className={`mt-1 truncate text-base font-black ${displayState.isUpcoming ? "text-violet-600" : "text-emerald-600"}`}
+                      >
+                        {heroMarketLabel}
+                      </p>
+                    </div>
+
+                    <div className="order-4 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4 lg:order-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        {heroDateLabel}
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800 sm:text-base">
+                        {heroDateText}
+                      </p>
+                    </div>
+
+                    <div className="order-3 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4 lg:order-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        {displayState.isUpcoming
+                          ? "Expected price"
+                          : "Starting price"}
+                      </p>
+                      <p className="mt-1 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+                        {currentPriceDisplay || "Price not announced"}
+                      </p>
                     </div>
                   </div>
 
-                  <div
-                    id="detail-highlights"
-                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1 p-1 sm:scroll-mt-[148px] sm:grid-cols-3"
-                  >
-                    {heroQuickSpecs.slice(0, 6).map((item, index) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() =>
-                          handleTabClick(
-                            item.key === "memory" || item.key === "os"
-                              ? "specifications"
-                              : item.key,
-                          )
-                        }
-                        className="group min-w-0 rounded-xl px-3 py-4 text-left transition hover:bg-white/80 "
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600  ">
-                            <item.Icon className="text-xs" />
-                          </span>
-                          <span className="truncate text-xs font-semibold text-slate-500 ">
-                            {item.label}
-                          </span>
-                        </div>
-                        <p className="mt-2 line-clamp-2 text-[15px] font-black leading-5 text-slate-900  sm:text-base">
-                          {formatSpecValue(item.value, item.label)}
-                        </p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500 ">
-                          {formatSpecValue(item.sub, item.label)}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={compareDisabled}
-                    onClick={() => {
-                      if (compareTarget) {
-                        handlePopularCompare(compareTarget);
-                        return;
-                      }
-                      navigate("/compare");
-                    }}
-                    className="relative z-10 mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 sm:hidden"
-                  >
-                    <FaBalanceScale className="text-sm" />
-                    Compare with another phone
-                  </button>
                 </div>
               </div>
+
+              <section
+                id="detail-highlights"
+                className="scroll-mt-[136px] mt-5 rounded-2xl border border-slate-200 bg-white p-3 sm:scroll-mt-[148px] sm:p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-black tracking-tight text-slate-950">
+                    Key Specifications
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => handleTabClick("specifications")}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-700 sm:text-sm"
+                  >
+                    View full specifications
+                    <FaArrowRight className="text-[10px]" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+                  {heroQuickSpecs.slice(0, 6).map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() =>
+                        handleTabClick(
+                          item.key === "memory" || item.key === "os"
+                            ? "specifications"
+                            : item.key,
+                        )
+                      }
+                      className="group flex min-h-[76px] min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-blue-200 hover:bg-blue-50/30 sm:min-h-[86px] sm:p-4"
+                    >
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:h-10 sm:w-10">
+                        <item.Icon className="text-sm" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[11px] font-semibold text-slate-500 sm:text-xs">
+                          {item.label}
+                        </span>
+                        <span className="mt-1 block truncate text-sm font-black text-slate-950 sm:text-base">
+                          {formatSpecValue(item.value, item.label)}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[10px] text-slate-500 sm:text-[11px]">
+                          {formatSpecValue(item.sub, item.label)}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={compareDisabled}
+                  onClick={() => {
+                    if (compareTarget) {
+                      handlePopularCompare(compareTarget);
+                      return;
+                    }
+                    navigate("/compare");
+                  }}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <FaBalanceScale className="text-sm" />
+                  Compare with another phone
+                </button>
+              </section>
 
               <div className="mx-0 mb-4 mt-5   sm:mb-6">
                 <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.12fr)_minmax(330px,0.88fr)] lg:divide-x lg:divide-slate-200/80 ">
