@@ -98,6 +98,9 @@ import {
   FaBriefcase,
   FaTimes,
   FaCompass,
+  FaHistory,
+  FaFire,
+  FaNewspaper,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop", darkBackground = false }) => {
@@ -197,16 +200,44 @@ const MOBILE_HEADER_SHOW_SCROLL_DELTA = 6;
 const DESKTOP_HEADER_SHOW_TOP_OFFSET = 110;
 const DESKTOP_HEADER_HIDE_SCROLL_DELTA = 14;
 const DESKTOP_HEADER_SHOW_SCROLL_DELTA = 8;
+const SEARCH_RECENTS_STORAGE_KEY = "mobilesx-search-recents";
+const DEFAULT_RECENT_SEARCHES = ["Samsung Galaxy F70 Pro", "iPhone 17"];
+const SEARCH_RESULT_CATEGORIES = [
+  "All",
+  "Smartphones",
+  "Brands",
+  "News",
+  "TVs",
+];
+const TRENDING_SEARCHES = [
+  "Latest Samsung phones",
+  "Best phones under ₹20,000",
+  "Best 5G phones",
+  "iPhone 17",
+];
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        window.localStorage.getItem(SEARCH_RECENTS_STORAGE_KEY) || "null",
+      );
+      return Array.isArray(saved) && saved.length
+        ? saved.filter((item) => typeof item === "string").slice(0, 5)
+        : DEFAULT_RECENT_SEARCHES;
+    } catch {
+      return DEFAULT_RECENT_SEARCHES;
+    }
+  });
   const [isSearching, setIsSearching] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
+  const [activeSearchCategory, setActiveSearchCategory] = useState("All");
   const [activeDesktopMenu, setActiveDesktopMenu] = useState("");
   const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
   const [isDesktopHeaderVisible, setIsDesktopHeaderVisible] = useState(true);
@@ -232,6 +263,28 @@ const Header = () => {
   const suppressRestoreRef = useRef(false);
   const deviceCtx = useDevice({ resources: ["brands"] });
   const brands = (deviceCtx && deviceCtx.brands) || [];
+
+  const rememberSearchTerm = (value) => {
+    const term = String(value || "").trim().replace(/\s+/g, " ");
+    if (!term) return;
+    setRecentSearches((current) => [
+      term,
+      ...current.filter(
+        (item) => String(item).toLowerCase() !== term.toLowerCase(),
+      ),
+    ].slice(0, 5));
+  };
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        SEARCH_RECENTS_STORAGE_KEY,
+        JSON.stringify(recentSearches),
+      );
+    } catch {
+      // Search suggestions still work when browser storage is unavailable.
+    }
+  }, [recentSearches]);
 
   const isSmartphoneDetailRoute = /^\/smartphones\/[^/]+$/i.test(currentPath);
 
@@ -513,15 +566,19 @@ const Header = () => {
   // Close mega menu on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close search suggestions on outside click
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowSearchSuggestions(false);
-        setIsSearchOpen(false);
+        if (isDesktopSearchOpen) {
+          setIsDesktopSearchOpen(false);
+          setSearchQuery("");
+          setSearchSuggestions([]);
+          setSelectedSuggestionIndex(-1);
+        }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isDesktopSearchOpen]);
 
   // Auto-focus search input when opened
   useEffect(() => {
@@ -540,9 +597,9 @@ const Header = () => {
     }
   }, [isDesktopSearchOpen]);
 
-  // Lock body scroll while a mobile navigation surface is open.
+  // Keep the page behind an active search or navigation surface stationary.
   useEffect(() => {
-    if (isSearchOpen || isMenuOpen) {
+    if (isSearchOpen || isDesktopSearchOpen || isMenuOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -550,7 +607,7 @@ const Header = () => {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isSearchOpen, isMenuOpen]);
+  }, [isSearchOpen, isDesktopSearchOpen, isMenuOpen]);
 
   // Debounce / abort helpers for live suggestions
   const debounceRef = useRef(null);
@@ -655,6 +712,25 @@ const Header = () => {
     sugg?.product_image ||
     sugg?.imageUrl ||
     null;
+
+  const getSuggestionPriceLabel = (suggestion) => {
+    const rawPrice =
+      suggestion?.min_price ??
+      suggestion?.minPrice ??
+      suggestion?.starting_price ??
+      suggestion?.startingPrice ??
+      suggestion?.price ??
+      suggestion?.price_min ??
+      suggestion?.priceMin;
+    const numericPrice =
+      typeof rawPrice === "number"
+        ? rawPrice
+        : Number(String(rawPrice || "").replace(/[^\d.]/g, ""));
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) return "";
+    return `From ₹${new Intl.NumberFormat("en-IN", {
+      maximumFractionDigits: 0,
+    }).format(numericPrice)}`;
+  };
 
   const getSuggestionVariantTypes = (sugg) => {
     const raw = sugg?.variant_types || sugg?.variantTypes;
@@ -923,6 +999,10 @@ const Header = () => {
       return;
     }
 
+    setSearchSuggestions([]);
+    setShowSearchSuggestions(true);
+    setIsSearching(true);
+
     debounceRef.current = setTimeout(async () => {
       const q = value.trim();
       const qLower = q.toLowerCase();
@@ -982,6 +1062,11 @@ const Header = () => {
     }, 250);
   };
 
+  const searchForTerm = (term) => {
+    handleSearchInputChange(term);
+    setShowSearchSuggestions(true);
+  };
+
   const trackSearchInterest = (payload) => {
     if (isLocalDevHost) return;
     try {
@@ -1017,6 +1102,7 @@ const Header = () => {
 
   const handleSuggestionClick = (item) => {
     if (!item) return;
+    rememberSearchTerm(searchQuery || item.name || item.model);
     // prevent focus restoration while we're intentionally navigating
     suppressRestoreRef.current = true;
 
@@ -1047,6 +1133,20 @@ const Header = () => {
           item.name,
           item.category || item.product_type || item.productType,
         ),
+      );
+    } else if (/news|article|guide|story/.test(normalizeText(item.type))) {
+      const articlePath = readFirstText(
+        item.route_path,
+        item.routePath,
+        item.canonical_path,
+        item.canonicalPath,
+        item.path,
+        item.href,
+      );
+      navigate(
+        articlePath && articlePath.startsWith("/")
+          ? toCanonicalPagePath(articlePath)
+          : buildKeywordSearchPath(item.name || item),
       );
     } else {
       navigate(
@@ -1547,6 +1647,7 @@ const Header = () => {
     e.preventDefault();
     const query = String(searchQuery || "").trim();
     if (query) {
+      rememberSearchTerm(query);
       const suggestionIndex =
         selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
       const activeSuggestion =
@@ -1559,7 +1660,10 @@ const Header = () => {
         return;
       }
 
-      navigate(buildKeywordSearchPath(query));
+      const resultType = searchSuggestions.find(
+        (item) => normalizeText(item?.type) !== "brand",
+      )?.product_type;
+      navigate(buildKeywordSearchPath(query, resultType));
       setSearchQuery("");
       setShowSearchSuggestions(false);
       setSelectedSuggestionIndex(-1);
@@ -1571,13 +1675,14 @@ const Header = () => {
     setIsDesktopSearchOpen(false);
     setShowSearchSuggestions(false);
     setSelectedSuggestionIndex(-1);
+    setActiveSearchCategory("All");
     setIsSearchOpen(true);
   };
 
   const openDesktopSearch = () => {
     setActiveDesktopMenu("");
     setIsDesktopSearchOpen(true);
-    setShowSearchSuggestions(Boolean(String(searchQuery || "").trim()));
+    setShowSearchSuggestions(true);
   };
 
   const closeDesktopSearch = () => {
@@ -1587,6 +1692,25 @@ const Header = () => {
     setShowSearchSuggestions(false);
     setSelectedSuggestionIndex(-1);
   };
+
+  useEffect(() => {
+    if (!isSearchOpen && !isDesktopSearchOpen) return undefined;
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (isDesktopSearchOpen) {
+        closeDesktopSearch();
+      } else {
+        setIsSearchOpen(false);
+        setSearchQuery("");
+        setSearchSuggestions([]);
+        setShowSearchSuggestions(false);
+        setActiveSearchCategory("All");
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isSearchOpen, isDesktopSearchOpen]);
 
   useEffect(() => {
     const handleOpenSearch = () => openSearchOverlay();
@@ -1876,6 +2000,47 @@ const Header = () => {
     </div>
   );
 
+  const SearchTermSection = ({ title, terms, icon: SectionIcon, onSelect }) => (
+    <section className="min-w-0">
+      <h3 className="mb-1 flex items-center gap-2 px-3 pt-3 text-sm font-bold text-slate-900">
+        <SectionIcon className="h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
+        {title}
+      </h3>
+      <div className="px-2 pb-2">
+        {terms.map((term) => (
+          <button
+            key={`${title}-${term}`}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onSelect(term)}
+            className="flex min-h-10 w-full items-center gap-3 rounded-lg px-2.5 text-left text-[13px] font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+          >
+            <FaSearch className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">{term}</span>
+            <FaArrowRight className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+
+  const SearchStartingPoints = () => (
+    <div className="grid divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0">
+      <SearchTermSection
+        title="Recent searches"
+        terms={recentSearches.slice(0, 5)}
+        icon={FaHistory}
+        onSelect={searchForTerm}
+      />
+      <SearchTermSection
+        title="Trending searches"
+        terms={TRENDING_SEARCHES}
+        icon={FaFire}
+        onSelect={searchForTerm}
+      />
+    </div>
+  );
+
   const HighlightText = ({ text }) => text || "";
 
   const getSuggestionBrandAndModel = (suggestion) => {
@@ -1887,12 +2052,48 @@ const Header = () => {
       suggestion?.model_name,
       suggestion?.modelName,
     );
-    const brand = readFirstText(
+    const explicitBrand = readFirstText(
       suggestion?.brand,
       suggestion?.brand_name,
       suggestion?.brandName,
       suggestion?.manufacturer,
     );
+    const knownBrands = [
+      ...(Array.isArray(brands)
+        ? brands.map((item) =>
+            typeof item === "string"
+              ? item
+              : readFirstText(item?.name, item?.brand, item?.brand_name),
+          )
+        : []),
+      "Samsung",
+      "Apple",
+      "Xiaomi",
+      "Redmi",
+      "POCO",
+      "Motorola",
+      "OnePlus",
+      "vivo",
+      "OPPO",
+      "realme",
+      "Nothing",
+      "Google",
+      "ASUS",
+      "Nokia",
+      "Tecno",
+      "Infinix",
+      "iQOO",
+    ]
+      .filter(Boolean)
+      .sort((a, b) => String(b).length - String(a).length);
+    const brand =
+      explicitBrand ||
+      knownBrands.find((candidate) =>
+        String(rawName || "")
+          .toLowerCase()
+          .startsWith(`${String(candidate).toLowerCase()} `),
+      ) ||
+      "";
 
     if (brand && rawName) {
       const normalizedBrand = String(brand).trim();
@@ -1944,14 +2145,15 @@ const Header = () => {
     const imageUrl = getSuggestionImage(suggestion);
     const { brand, model } = getSuggestionBrandAndModel(suggestion);
     const typeLabel = getSuggestionTypeLabel(suggestion);
+    const priceLabel = getSuggestionPriceLabel(suggestion);
     const modelText =
       model || brand || readFirstText(suggestion?.name, suggestion?.model);
 
     const buttonClasses = isMobileVariant
-      ? `group flex w-full items-center gap-3 px-2 py-3 text-left transition-colors duration-200 border-b border-slate-200 bg-transparent last:border-b-0 ${
+      ? `group flex min-h-[60px] w-full items-center gap-3 px-2 py-2.5 text-left transition-colors duration-200 border-b border-slate-200 bg-transparent last:border-b-0 ${
           selected ? "bg-blue-50/40" : "hover:bg-slate-50 focus:bg-blue-50/40"
         } focus:outline-none`
-      : `group relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-200 border-b border-slate-200 last:border-b-0 ${
+      : `group relative flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-200 border-b border-slate-200 last:border-b-0 ${
           selected
             ? "border-blue-500 bg-blue-50/50"
             : "bg-white hover:border-blue-300 hover:bg-blue-50/20 active:bg-blue-50/30"
@@ -1983,7 +2185,7 @@ const Header = () => {
 
         <div
           className={`relative grid shrink-0 place-items-center overflow-hidden bg-slate-50 ${
-            isMobileVariant ? "h-11 w-11 rounded-lg" : "h-12 w-12 rounded-lg"
+            isMobileVariant ? "h-10 w-10 rounded-lg" : "h-10 w-10 rounded-lg"
           }`}
         >
           {imageUrl ? (
@@ -2015,54 +2217,317 @@ const Header = () => {
             <HighlightText text={modelText} query={query} />
           </p>
         </div>
+        {priceLabel ? (
+          <span className="max-w-[96px] shrink-0 truncate whitespace-nowrap text-[11px] font-semibold text-blue-600 sm:text-xs">
+            {priceLabel}
+          </span>
+        ) : null}
+        <FaChevronRight
+          className="h-3 w-3 shrink-0 text-slate-400"
+          aria-hidden="true"
+        />
+      </button>
+    );
+  };
+
+  const getBrandAliases = (name) => {
+    const normalizedName = normalizeText(name);
+    if (normalizedName === "apple") return ["iphone", "ip"];
+    if (normalizedName === "samsung") return ["galaxy"];
+    if (normalizedName === "xiaomi") return ["mi", "redmi", "poco"];
+    if (normalizedName === "oneplus") return ["one plus"];
+    return [];
+  };
+
+  const brandNameMatchesQuery = (name, query) => {
+    const queryKey = normalizeText(query).replace(/[^a-z0-9]/g, "");
+    if (queryKey.length < 2) return false;
+    const brandKey = normalizeText(name).replace(/[^a-z0-9]/g, "");
+    return (
+      brandKey.includes(queryKey) ||
+      queryKey.startsWith(brandKey) ||
+      getBrandAliases(name).some((alias) => {
+        const aliasKey = normalizeText(alias).replace(/[^a-z0-9]/g, "");
+        return aliasKey.startsWith(queryKey) || queryKey.startsWith(aliasKey);
+      })
+    );
+  };
+
+  const getSearchBrandSuggestions = (query, items = searchSuggestions) => {
+    const apiBrands = items.filter(
+      (item) => normalizeText(item?.type) === "brand",
+    );
+    const matchedProductBrands = items
+      .filter((item) => normalizeText(item?.type) !== "brand")
+      .map((item) => getSuggestionBrandAndModel(item).brand)
+      .filter(Boolean);
+    const catalogNames = desktopBrandMenuItems.map((item) => item.label);
+    const candidateNames = [
+      ...apiBrands.map((item) => readFirstText(item.name, item.brand_name)),
+      ...matchedProductBrands,
+      ...catalogNames.filter(
+        (name) => !String(query || "").trim() || brandNameMatchesQuery(name, query),
+      ),
+      ...catalogNames,
+    ].filter(Boolean);
+    const uniqueNames = Array.from(
+      new Map(
+        candidateNames.map((name) => [normalizeText(name), name]),
+      ).values(),
+    );
+    const brandCatalog = Array.isArray(brands) ? brands : [];
+
+    return uniqueNames.slice(0, 6).map((name) => {
+      const apiResult = apiBrands.find(
+        (item) =>
+          normalizeText(item.name || item.brand_name) === normalizeText(name),
+      );
+      const brandRecord = brandCatalog.find(
+        (item) => normalizeText(item?.name) === normalizeText(name),
+      );
+      const logo = readFirstText(
+        brandRecord?.logo_url,
+        brandRecord?.logo,
+        brandRecord?.image_url,
+        brandRecord?.image,
+        apiResult?.logo_url,
+        apiResult?.logo,
+        apiResult?.image_url,
+      );
+      return {
+        ...(apiResult || {}),
+        id: apiResult?.id || `header-brand-${normalizeText(name)}`,
+        name,
+        brand: name,
+        brand_name: name,
+        type: "brand",
+        product_type: "smartphones",
+        image: logo || apiResult?.image || null,
+      };
+    });
+  };
+
+  const getContextualSearchTerms = (query, items = searchSuggestions) => {
+    const cleanQuery = String(query || "").trim().replace(/\s+/g, " ");
+    if (!cleanQuery) return TRENDING_SEARCHES.slice(0, 5);
+
+    const products = items.filter(
+      (item) => normalizeText(item?.type) !== "brand",
+    );
+    const matchingBrand = desktopBrandMenuItems.find((item) =>
+      brandNameMatchesQuery(item.label, cleanQuery),
+    );
+
+    if (matchingBrand?.label.toLowerCase() === "apple") {
+      const modelTerms = products
+        .map((item) => getSuggestionBrandAndModel(item).model)
+        .filter((term) => term && normalizeText(term) !== "apple");
+      if (modelTerms.length) {
+        return [
+          "Latest iPhone models",
+          "Apple phones",
+          ...Array.from(new Set(modelTerms)).slice(1, 4),
+        ].slice(0, 5);
+      }
+    }
+
+    if (matchingBrand) {
+      const brandName = matchingBrand.label;
+      const series = products
+        .map((item) => getSuggestionBrandAndModel(item).model)
+        .map((model) => model.match(/\b([A-Z])\s?\d{2,}\b/i)?.[1])
+        .find(Boolean);
+      return [
+        `${brandName} phones`,
+        `${brandName} upcoming phones`,
+        `${brandName} under ₹20,000`,
+        `${brandName} 5G phones`,
+        series ? `${brandName} ${series.toUpperCase()} series` : `${brandName} latest phones`,
+      ];
+    }
+
+    const productTerms = products
+      .map((item) => getSuggestionBrandAndModel(item).model)
+      .filter(Boolean);
+    if (productTerms.length) return Array.from(new Set(productTerms)).slice(0, 5);
+
+    const base = cleanQuery.replace(/\s+(phones?|mobiles?)$/i, "") || cleanQuery;
+    return [
+      `${base} phones`,
+      `${base} upcoming phones`,
+      `${base} under ₹20,000`,
+      `${base} 5G phones`,
+      `${base} latest models`,
+    ];
+  };
+
+  const getResultsForSearchCategory = (category, query = searchQuery) => {
+    if (category === "Brands") return getSearchBrandSuggestions(query);
+    if (category === "All") {
+      return searchSuggestions.filter(
+        (item) => normalizeText(item?.type) !== "brand",
+      );
+    }
+
+    return searchSuggestions.filter((item) => {
+      const itemType = normalizeText(item?.type);
+      const productType = normalizeText(
+        item?.product_type || item?.productType || item?.category,
+      );
+      if (category === "News") {
+        return /news|article|guide|story/.test(`${itemType} ${productType}`);
+      }
+      if (category === "TVs") {
+        return /tv|television/.test(`${itemType} ${productType}`);
+      }
+      if (category === "Smartphones") {
+        return (
+          /phone|smartphone|mobile/.test(`${itemType} ${productType}`) ||
+          (!productType && itemType === "product")
+        );
+      }
+      return true;
+    });
+  };
+
+  const SearchCategoryTabs = () => (
+    <nav
+      aria-label="Search categories"
+      className="flex min-h-[48px] shrink-0 gap-4 overflow-x-auto border-b border-slate-200 px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center sm:gap-8"
+    >
+      {SEARCH_RESULT_CATEGORIES.map((category) => (
+        <button
+          key={category}
+          type="button"
+          onClick={() => setActiveSearchCategory(category)}
+          aria-current={activeSearchCategory === category ? "page" : undefined}
+          className={`relative inline-flex shrink-0 items-center px-1 text-[13px] font-semibold transition-colors ${
+            activeSearchCategory === category
+              ? "text-blue-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          {category}
+          {activeSearchCategory === category ? (
+            <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-blue-600" />
+          ) : null}
+        </button>
+      ))}
+    </nav>
+  );
+
+  const SearchBrandRow = ({ brand }) => {
+    const imageUrl = getSuggestionImage(brand);
+    return (
+      <button
+        type="button"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => handleSuggestionClick(brand)}
+        className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2.5 text-left text-sm font-medium text-slate-800 transition-colors hover:bg-blue-50"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-blue-50 text-[11px] font-extrabold text-blue-700">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt=""
+              className="h-full w-full object-contain p-1"
+              loading="lazy"
+            />
+          ) : (
+            String(brand.name || "").slice(0, 2).toUpperCase()
+          )}
+        </span>
+        <span className="min-w-0 flex-1 truncate">{brand.name}</span>
+        <FaChevronRight className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />
       </button>
     );
   };
 
   const DesktopSearchSuggestionPanel = () => {
-    if (
-      !isDesktopSearchOpen ||
-      !(showSearchSuggestions || searchQuery.trim())
-    ) {
-      return null;
-    }
+    if (!isDesktopSearchOpen) return null;
+
+    const query = String(searchQuery || "").trim();
+    const topResults = searchSuggestions.filter(
+      (item) => normalizeText(item?.type) !== "brand",
+    );
+    const refinementTerms = getContextualSearchTerms(query, searchSuggestions);
+    const brandSuggestions = getSearchBrandSuggestions(query, searchSuggestions);
 
     return (
-      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(440px,calc(100vw-48px))] overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="max-h-[420px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {!searchSuggestions || searchSuggestions.length === 0 ? (
-            searchQuery.trim() ? (
-              <>
-                {isSearching &&
-                  [...Array(3)].map((_, index) => (
-                    <SkeletonSuggestion
-                      key={`desktop-inline-skeleton-${index}`}
-                    />
-                  ))}
-                {!isSearching &&
-                  searchSuggestions &&
-                  searchSuggestions.length === 0 && (
-                    <SuggestionEmptyState
-                      query={searchQuery}
-                      variant="desktop"
-                    />
-                  )}
-              </>
-            ) : null
+      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(680px,calc(100vw-2rem))] overflow-hidden rounded-[18px] border border-[#e2eaf5] bg-white shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-panel">
+        <div className="max-h-[min(640px,calc(100dvh-7rem))] overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {!query ? (
+            <SearchStartingPoints />
           ) : (
-            searchSuggestions
-              .slice(0, SEARCH_SUGGESTION_LIMIT)
-              .map((sugg, index) => (
-                <SuggestionRow
-                  key={`${sugg.id || sugg.name || index}-desktop-inline`}
-                  suggestion={sugg}
-                  query={searchQuery}
-                  selected={selectedSuggestionIndex === index}
-                  variant="desktop"
-                  onActivate={handleSuggestionClick}
-                  onMouseEnter={() => setSelectedSuggestionIndex(index)}
+            <div className="grid divide-y divide-slate-100 lg:grid-cols-[minmax(210px,0.82fr)_minmax(0,1.18fr)] lg:divide-x lg:divide-y-0">
+              <aside className="min-w-0 bg-slate-50/60">
+                <SearchTermSection
+                  title="Suggestions"
+                  terms={refinementTerms}
+                  icon={FaSearch}
+                  onSelect={searchForTerm}
                 />
-              ))
+                {brandSuggestions.length ? (
+                  <section className="border-t border-slate-100 px-2 pb-2">
+                    <h3 className="px-3 pt-3 text-sm font-bold text-slate-900">
+                      Brands
+                    </h3>
+                    {brandSuggestions.slice(0, 5).map((brand) => (
+                      <SearchBrandRow
+                        key={`${brand.id || brand.name}-desktop-brand`}
+                        brand={brand}
+                      />
+                    ))}
+                  </section>
+                ) : null}
+              </aside>
+              <section className="min-w-0">
+                <h3 className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
+                  Top results
+                </h3>
+                {topResults.length ? (
+                  topResults.slice(0, SEARCH_SUGGESTION_LIMIT).map((suggestion, index) => (
+                    <SuggestionRow
+                      key={`${suggestion.id || suggestion.name || index}-desktop-result`}
+                      suggestion={suggestion}
+                      query={query}
+                      selected={selectedSuggestionIndex === index}
+                      variant="desktop"
+                      onActivate={handleSuggestionClick}
+                      onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                    />
+                  ))
+                ) : isSearching ? (
+                  [...Array(3)].map((_, index) => (
+                    <SkeletonSuggestion key={`desktop-result-skeleton-${index}`} />
+                  ))
+                ) : brandSuggestions.length ? (
+                  <p className="px-4 py-5 text-sm text-slate-500">
+                    Matching brands are listed beside these suggestions.
+                  </p>
+                ) : (
+                  <SuggestionEmptyState query={query} variant="desktop" />
+                )}
+                {!isSearching ? (
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      rememberSearchTerm(query);
+                      const resultType = searchSuggestions.find(
+                        (item) => normalizeText(item?.type) !== "brand",
+                      )?.product_type;
+                      navigate(buildKeywordSearchPath(query, resultType));
+                      closeDesktopSearch();
+                    }}
+                    className="flex min-h-11 w-full items-center gap-2 border-t border-slate-100 px-4 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  >
+                    View all results for “{query}”
+                    <FaArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                ) : null}
+              </section>
+            </div>
           )}
         </div>
       </div>
@@ -2071,42 +2536,54 @@ const Header = () => {
 
   // Flipkart-Style Search Modal - Mobile Optimized
   const SearchModal = () => {
+    const query = String(searchQuery || "").trim();
+    const categoryResults = getResultsForSearchCategory(activeSearchCategory, query);
+    const relatedSearches = getContextualSearchTerms(query, searchSuggestions);
+    const brandResults = getSearchBrandSuggestions(query, searchSuggestions);
+    const startSearchesByCategory = {
+      Smartphones: ["Latest Samsung phones", "Best 5G phones", "Phones under ₹20,000"],
+      News: ["Latest smartphone news", "Upcoming phone launches", "New phone reviews"],
+      TVs: ["Best smart TVs", "4K TVs", "Samsung TVs"],
+    };
+    const closeSearchModal = () => {
+      setIsSearchOpen(false);
+      setSearchQuery("");
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      setActiveSearchCategory("All");
+    };
+
     return (
       <>
         {isSearchOpen && (
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-[70] bg-black bg-opacity-50"
+              className="fixed inset-0 z-[90] bg-black/40"
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
-                  setIsSearchOpen(false);
-                  setSearchQuery("");
-                  setShowSearchSuggestions(false);
+                  closeSearchModal();
                 }
               }}
             />
 
             {/* Search Modal - Full screen on mobile using 100dvh */}
             <div
-              className="fixed inset-0 z-[80] flex flex-col overflow-hidden bg-white lg:inset-auto lg:left-0 lg:right-0 lg:top-16"
+              className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-white lg:inset-auto lg:left-1/2 lg:top-16 lg:h-[calc(100dvh-5rem)] lg:max-h-[calc(100dvh-5rem)] lg:w-[min(720px,calc(100vw-2rem))] lg:-translate-x-1/2 lg:rounded-[18px] lg:border lg:border-[#e2eaf5] lg:shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Search MobilesX"
               style={{
-                height: "100dvh",
-                maxHeight: "100dvh",
                 WebkitOverflowScrolling: "touch",
               }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Search Input Section - Sticky */}
-              <div className="w-full px-2 sm:px-4 py-3 sm:py-4 bg-white sticky top-0 z-10 border-b border-slate-200 flex-shrink-0">
+              <div className="sticky top-0 z-10 w-full flex-shrink-0 border-b border-slate-200 bg-white px-2 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4 sm:py-4">
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* Back Button */}
                   <button
-                    onClick={() => {
-                      setIsSearchOpen(false);
-                      setSearchQuery("");
-                      setShowSearchSuggestions(false);
-                    }}
+                    onClick={closeSearchModal}
                     className="p-1.5 sm:p-2 hover:bg-slate-50 rounded-lg transition-colors flex-shrink-0 text-slate-700"
                     aria-label="Go back"
                   >
@@ -2114,12 +2591,12 @@ const Header = () => {
                   </button>
 
                   {/* Search Input */}
-                  <div className="flex-1 relative ">
+                  <div className="relative min-w-0 flex-1">
                     <input
                       ref={searchInputRef}
                       autoFocus
                       type="text"
-                      placeholder="Search products, brands..."
+                      placeholder="Search phones, brands, specifications..."
                       value={searchQuery}
                       onChange={(e) => handleSearchInputChange(e.target.value)}
                       onKeyDown={(e) => {
@@ -2130,98 +2607,78 @@ const Header = () => {
                         }
                         handleSearchKeyDown(e);
                       }}
-                      className="h-11 w-full rounded-xl border border-blue-600 bg-white px-4 text-[14px] font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0 focus:shadow-none"
+                      className="h-11 w-full rounded-xl border border-blue-600 bg-white pl-10 pr-11 text-[14px] font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0 focus:shadow-none"
                     />
-
-                    {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
-                    {(showSearchSuggestions || searchQuery.trim()) && (
-                      <div className="hidden md:block absolute top-full left-0 right-0 mt-2 max-h-96 overflow-hidden overflow-y-auto rounded-xl border border-slate-200 bg-white z-50 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        {/* Loading / Empty State */}
-                        {!searchSuggestions ||
-                        searchSuggestions.length === 0 ? (
-                          searchQuery.trim() ? (
-                            <>
-                              {/* Show skeleton loaders while fetching */}
-                              {isSearching &&
-                                [...Array(3)].map((_, i) => (
-                                  <SkeletonSuggestion
-                                    key={`desktop-skeleton-${i}`}
-                                  />
-                                ))}
-                              {/* No Results - only show after loaded */}
-                              {!isSearching &&
-                                searchSuggestions &&
-                                searchSuggestions.length === 0 && (
-                                  <SuggestionEmptyState
-                                    query={searchQuery}
-                                    variant="desktop"
-                                  />
-                                )}
-                            </>
-                          ) : null
-                        ) : (
-                          /* Suggestions List */
-                          <>
-                            {searchSuggestions
-                              .slice(0, SEARCH_SUGGESTION_LIMIT)
-                              .map((sugg, index) => (
-                                <SuggestionRow
-                                  key={`${sugg.id || sugg.name || index}-desktop`}
-                                  suggestion={sugg}
-                                  query={searchQuery}
-                                  selected={selectedSuggestionIndex === index}
-                                  variant="desktop"
-                                  onActivate={handleSuggestionClick}
-                                  onMouseEnter={() =>
-                                    setSelectedSuggestionIndex(index)
-                                  }
-                                />
-                              ))}
-                          </>
-                        )}
-                      </div>
-                    )}
+                    <FaSearch
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-600"
+                      aria-hidden="true"
+                    />
+                    {query ? (
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleSearchInputChange("")}
+                        aria-label="Clear search"
+                        className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
+                      >
+                        <FaTimes className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
 
+              <SearchCategoryTabs />
+
               {/* Scrollable Content Area */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Mobile Search Suggestions - Display in Scrollable Area */}
-                {searchQuery.trim() && (
-                  <div className="px-2.5 py-3 sm:px-6 sm:py-6">
-                    {/* Loading State */}
-                    {!searchSuggestions || searchSuggestions.length === 0 ? (
-                      <>
-                        {/* Show skeleton loaders while fetching */}
-                        {isSearching &&
-                          [...Array(3)].map((_, i) => (
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+                <div className="min-h-full px-2.5 py-3 sm:px-6 sm:py-5">
+                  {query ? (
+                    <>
+                      {activeSearchCategory === "All" ? (
+                        <SearchTermSection
+                          title="Suggestions"
+                          terms={relatedSearches}
+                          icon={FaSearch}
+                          onSelect={searchForTerm}
+                        />
+                      ) : null}
+
+                      <h2 className="mb-1 mt-3 border-t border-slate-100 px-3 pt-4 text-sm font-bold text-slate-900">
+                        {activeSearchCategory === "All"
+                          ? "Products"
+                          : activeSearchCategory}
+                      </h2>
+
+                      {activeSearchCategory === "Brands" ? (
+                        brandResults.length ? (
+                          <div className="divide-y divide-slate-100 px-2">
+                            {brandResults.map((brand) => (
+                              <SearchBrandRow
+                                key={`${brand.id || brand.name}-mobile-brand`}
+                                brand={brand}
+                              />
+                            ))}
+                          </div>
+                        ) : isSearching ? (
+                          [...Array(3)].map((_, index) => (
                             <SkeletonSuggestion
-                              key={`mobile-skeleton-${i}`}
+                              key={`mobile-brand-skeleton-${index}`}
                               variant="mobile"
                             />
-                          ))}
-                        {/* No Results - only show after loaded */}
-                        {!isSearching &&
-                          searchSuggestions &&
-                          searchSuggestions.length === 0 && (
-                            <SuggestionEmptyState
-                              query={searchQuery}
-                              variant="mobile"
-                            />
-                          )}
-                      </>
-                    ) : (
-                      /* Suggestions List for Mobile */
-                      <div className="bg-white px-2 sm:px-3">
-                        <div className="divide-y divide-slate-200">
-                          {searchSuggestions
+                          ))
+                        ) : (
+                          <SuggestionEmptyState query={query} variant="mobile" />
+                        )
+                      ) : categoryResults.length ? (
+                        <div className="divide-y divide-slate-100 px-2">
+                          {categoryResults
                             .slice(0, SEARCH_SUGGESTION_LIMIT)
-                            .map((sugg, index) => (
+                            .map((suggestion, index) => (
                               <SuggestionRow
-                                key={`${sugg.id || sugg.name || index}-mobile`}
-                                suggestion={sugg}
-                                query={searchQuery}
+                                key={`${suggestion.id || suggestion.name || index}-mobile`}
+                                suggestion={suggestion}
+                                query={query}
                                 selected={selectedSuggestionIndex === index}
                                 variant="mobile"
                                 onActivate={handleSuggestionClick}
@@ -2231,10 +2688,73 @@ const Header = () => {
                               />
                             ))}
                         </div>
+                      ) : isSearching ? (
+                        [...Array(3)].map((_, index) => (
+                          <SkeletonSuggestion
+                            key={`mobile-result-skeleton-${index}`}
+                            variant="mobile"
+                          />
+                        ))
+                      ) : (
+                        <SuggestionEmptyState query={query} variant="mobile" />
+                      )}
+
+                      {!isSearching && activeSearchCategory === "All" ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            rememberSearchTerm(query);
+                            const resultType = searchSuggestions.find(
+                              (item) => normalizeText(item?.type) !== "brand",
+                            )?.product_type;
+                            navigate(buildKeywordSearchPath(query, resultType));
+                            closeSearchModal();
+                          }}
+                          className="mt-2 flex min-h-12 w-full items-center gap-2 border-t border-slate-200 px-3 text-left text-sm font-semibold text-blue-600"
+                        >
+                          View all results for “{query}”
+                          <FaArrowRight className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      ) : null}
+
+                      {!isSearching &&
+                      activeSearchCategory !== "All" &&
+                      categoryResults.length <= 2 ? (
+                        <div className="mt-3 border-t border-slate-200 pt-1">
+                          <SearchTermSection
+                            title="Related searches"
+                            terms={relatedSearches.slice(0, 4)}
+                            icon={FaFire}
+                            onSelect={searchForTerm}
+                          />
+                        </div>
+                      ) : null}
+                    </>
+                  ) : activeSearchCategory === "All" ? (
+                    <SearchStartingPoints />
+                  ) : activeSearchCategory === "Brands" ? (
+                    <>
+                      <h2 className="mb-2 px-3 text-sm font-bold text-slate-900">
+                        Popular brands
+                      </h2>
+                      <div className="divide-y divide-slate-100 px-2">
+                        {brandResults.map((brand) => (
+                          <SearchBrandRow
+                            key={`${brand.id || brand.name}-mobile-popular-brand`}
+                            brand={brand}
+                          />
+                        ))}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </>
+                  ) : (
+                    <SearchTermSection
+                      title={`Popular ${activeSearchCategory.toLowerCase()} searches`}
+                      terms={startSearchesByCategory[activeSearchCategory] || TRENDING_SEARCHES}
+                      icon={activeSearchCategory === "News" ? FaNewspaper : FaFire}
+                      onSelect={searchForTerm}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </>
@@ -2271,7 +2791,7 @@ const Header = () => {
           <div className="flex items-center gap-[0.45rem]">
             <button
               type="button"
-              onClick={() => setIsSearchOpen(true)}
+                  onClick={openSearchOverlay}
               className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--hooks-brand)_40%,var(--hooks-line))] hover:text-[var(--hooks-brand)]"
               aria-label="Search MobilesX"
             >
@@ -2374,17 +2894,15 @@ const Header = () => {
                 onSubmit={handleSearch}
                 className="relative grid w-[min(36vw,430px)] min-w-[300px] grid-cols-[42px_minmax(0,1fr)_42px] items-center rounded-[15px] border border-slate-200 bg-white"
               >
-                <button
-                  type="button"
-                  onClick={closeDesktopSearch}
+                <span
                   className="inline-flex h-[42px] w-[42px] items-center justify-center border-0 bg-transparent text-[var(--hooks-text-soft)] transition-all hover:-translate-y-px hover:text-[var(--hooks-brand)]"
-                  aria-label="Close search"
+                  aria-hidden="true"
                 >
-                  <FaTimes aria-hidden="true" />
-                </button>
+                  <FaSearch aria-hidden="true" />
+                </span>
                 <input
                   ref={searchInputRef}
-                  type="search"
+                  type="text"
                   value={searchQuery}
                   onChange={(event) =>
                     handleSearchInputChange(event.target.value)
@@ -2393,16 +2911,25 @@ const Header = () => {
                     if (searchQuery.trim()) setShowSearchSuggestions(true);
                   }}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search devices, brands or specifications"
+                  placeholder="Search phones, brands, specifications..."
                   aria-label="Search MobilesX"
                   className="w-full border-0 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (searchQuery.trim()) {
+                      handleSearchInputChange("");
+                      searchInputRef.current?.focus();
+                    } else {
+                      closeDesktopSearch();
+                    }
+                  }}
                   className="inline-flex h-[42px] w-[42px] items-center justify-center border-0 bg-transparent text-[var(--hooks-text-soft)] transition-all hover:-translate-y-px hover:text-[var(--hooks-brand)]"
-                  aria-label="Search"
+                  aria-label={searchQuery.trim() ? "Clear search" : "Close search"}
                 >
-                  <FaSearch aria-hidden="true" />
+                  <FaTimes aria-hidden="true" />
                 </button>
                 <DesktopSearchSuggestionPanel />
               </form>
@@ -2639,7 +3166,7 @@ const Header = () => {
                   className="relative z-[2] mt-[0.8rem] grid min-h-[46px] w-full grid-cols-[20px_minmax(0,1fr)_16px] items-center gap-[0.65rem] rounded-[13px] border border-[color-mix(in_srgb,var(--hooks-brand)_28%,var(--hooks-line))] bg-[var(--hooks-brand-soft)] px-[0.85rem] text-left text-[var(--hooks-brand)] [&_span]:text-[0.68rem] [&_span]:text-[var(--hooks-text-soft)] [&_svg]:h-[13px] [&_svg]:w-[13px]"
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setIsSearchOpen(true);
+                    openSearchOverlay();
                   }}
                 >
                   <FaSearch aria-hidden="true" />
@@ -2786,6 +3313,15 @@ const Header = () => {
   return (
     <>
       <SearchModal />
+
+      {isDesktopSearchOpen ? (
+        <button
+          type="button"
+          aria-label="Close search"
+          onClick={closeDesktopSearch}
+          className="fixed inset-0 z-[55] hidden bg-slate-950/10 lg:block"
+        />
+      ) : null}
 
       <header
         ref={headerRef}

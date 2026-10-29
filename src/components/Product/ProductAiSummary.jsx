@@ -86,7 +86,7 @@ const ProductAiSummary = ({ summary = "" }) => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="ai-summary-trigger"
+        className="ai-summary-trigger mx-secondary-button"
       >
         AI Summary
       </button>
