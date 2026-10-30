@@ -11,6 +11,7 @@ import { FaChartBar, FaChevronRight, FaListUl, FaSearch } from "react-icons/fa";
 import MobilesXLogo from "./ui/MobileX";
 import { buildApiUrl } from "../utils/apiUrl";
 import { createProductPath } from "../utils/slugGenerator";
+import { MOBILE_OPEN_ASSISTANT_EVENT } from "../utils/mobileNavigation";
 
 const WELCOME_MESSAGE = {
   id: "welcome",
@@ -334,6 +335,19 @@ const AiChat = () => {
   const inputRef = useRef(null);
   const sessionExpiryTimerRef = useRef(null);
   const productNavigationTimerRef = useRef(null);
+  useEffect(() => {
+    const openAssistant = () => {
+      if (productNavigationTimerRef.current) {
+        window.clearTimeout(productNavigationTimerRef.current);
+        productNavigationTimerRef.current = null;
+      }
+      setIsClosing(false);
+      setIsOpen(true);
+    };
+
+    window.addEventListener(MOBILE_OPEN_ASSISTANT_EVENT, openAssistant);
+    return () => window.removeEventListener(MOBILE_OPEN_ASSISTANT_EVENT, openAssistant);
+  }, []);
 
   useEffect(() => () => {
     if (productNavigationTimerRef.current) window.clearTimeout(productNavigationTimerRef.current);

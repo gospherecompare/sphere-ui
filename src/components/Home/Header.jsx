@@ -54,6 +54,7 @@ import { isPublishedProduct } from "../../utils/publishedProducts";
 import {
   MOBILE_OPEN_EXPLORE_EVENT,
   MOBILE_OPEN_SEARCH_EVENT,
+  MOBILE_OPEN_ASSISTANT_EVENT,
 } from "../../utils/mobileNavigation";
 import "./header-redesign.css";
 
@@ -101,6 +102,7 @@ import {
   FaHistory,
   FaFire,
   FaNewspaper,
+  FaComments,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop", darkBackground = false }) => {
@@ -2952,362 +2954,249 @@ const Header = () => {
     </>
   );
 
-  // Mobile Menu Drawer
+  // Full-screen mobile explore menu
   const MobileMenuDrawer = () => {
-    const [openSection, setOpenSection] = useState("");
-    const smartphoneCategory =
-      categoriesWithBrands.find(
-        (category) => String(category.id || "").toLowerCase() === "smartphones",
-      ) ||
-      categoriesWithBrands[0] ||
-      null;
-    const fallbackBrands = [
-      "Samsung",
-      "OnePlus",
-      "Vivo",
-      "Realme",
-      "Oppo",
-      "Apple",
-    ];
-
-    const normalizeName = (value) =>
-      String(value || "")
-        .trim()
-        .replace(/\s+/g, " ");
-
-    const brandNames = [
-      ...(Array.isArray(smartphoneCategory?.topBrands)
-        ? smartphoneCategory.topBrands
-            .map((brand) => normalizeName(brand?.name || brand))
-            .filter(Boolean)
-        : []),
-      ...fallbackBrands,
-    ];
-
-    const brandItems = Array.from(new Set(brandNames))
-      .slice(0, 6)
-      .map((name) => ({
-        label: name,
-        href: buildBrandListingPath(name, "smartphones"),
-      }));
-
-    const priceItems = [
+    const categoryCards = [
       {
-        label: "Best Phones Under 10,000",
-        href: buildSmartphoneFilterPath("under-10000"),
-      },
-      {
-        label: "Best Phones Under 15,000",
-        href: buildSmartphoneFilterPath("under-15000"),
-      },
-      {
-        label: "Best Phones Under 20,000",
-        href: buildSmartphoneFilterPath("under-20000"),
-      },
-      {
-        label: "Best Phones Under 25,000",
-        href: buildSmartphoneFilterPath("under-25000"),
-      },
-      {
-        label: "Best Phones Under 30,000",
-        href: buildSmartphoneFilterPath("under-30000"),
-      },
-      {
-        label: "Best Phones Under 40,000",
-        href: buildSmartphoneFilterPath("under-40000"),
-      },
-      {
-        label: "Best Phones Under 50,000",
-        href: buildSmartphoneFilterPath("under-50000"),
-      },
-      {
-        label: "Best Phones Under 60,000",
-        href: buildSmartphoneFilterPath("under-60000"),
-      },
-    ];
-
-    const featureItems = [
-      { label: "5G Phones", href: buildFeatureListingPath("5g") },
-      { label: "AMOLED", href: buildFeatureListingPath("amoled") },
-      {
-        label: "120Hz+",
-        href: buildFeatureListingPath("high-refresh-rate"),
-      },
-      {
-        label: "Long Battery",
-        href: buildFeatureListingPath("long-battery"),
-      },
-      {
-        label: "Fast Charge",
-        href: buildFeatureListingPath("fast-charging"),
-      },
-      { label: "Gaming", href: buildFeatureListingPath("gaming") },
-    ];
-
-    const smartphoneItems = [
-      { label: "All Smartphones", href: "/smartphones" },
-      { label: "Latest Smartphones", href: "/smartphones/filter/new" },
-      { label: "Upcoming Smartphones", href: "/smartphones/upcoming" },
-      { label: "Trending Smartphones", href: "/trending/smartphones" },
-    ];
-
-    const tvItems = [
-      { label: "Best TVs", href: "/tvs" },
-      { label: "4K Ultra HD TVs", href: "/tvs/features/ultra-hd-4k" },
-      { label: "OLED/QLED TVs", href: "/tvs/features/oled-qled" },
-      { label: "Gaming TVs", href: "/tvs/features/gaming" },
-    ];
-
-    const drawerItems = [
-      {
-        id: "price",
         title: "Best Phones by Price",
+        description: "Shortlists for every budget",
         icon: FaTag,
-        kind: "accordion",
-        items: priceItems,
+        href: buildSmartphoneFilterPath("under-20000"),
+        surface: "bg-amber-50",
+        color: "text-amber-600",
+        iconSurface: "bg-amber-100",
       },
       {
-        id: "brands",
         title: "Popular Brands",
+        description: "Jump to a trusted phone maker",
         icon: FaStore,
-        kind: "accordion",
-        items: brandItems,
-        footer: { label: "All Brands", href: "/smartphones" },
+        href: "/brands",
+        surface: "bg-rose-50",
+        color: "text-rose-600",
+        iconSurface: "bg-rose-100",
       },
       {
-        id: "features",
         title: "Browse by Feature",
+        description: "5G, AMOLED, gaming and more",
         icon: FaBolt,
-        kind: "accordion",
-        items: featureItems,
+        href: buildFeatureListingPath("5g"),
+        surface: "bg-violet-50",
+        color: "text-violet-600",
+        iconSurface: "bg-violet-100",
       },
       {
-        id: "smartphones",
         title: "Smartphones",
+        description: "Latest, upcoming and trending",
         icon: FaMobileAlt,
-        kind: "accordion",
-        items: smartphoneItems,
+        href: "/smartphones",
+        surface: "bg-emerald-50",
+        color: "text-emerald-600",
+        iconSurface: "bg-emerald-100",
       },
       {
-        id: "compare",
-        title: "Compare Devices",
-        icon: FaAlignJustify,
-        kind: "link",
-        href: toCanonicalPagePath("/compare"),
-      },
-      {
-        id: "tvs",
         title: "TVs",
+        description: "Smart TV guides and comparisons",
         icon: FaTv,
-        kind: "accordion",
-        items: tvItems,
+        href: "/tvs",
+        surface: "bg-blue-50",
+        color: "text-blue-600",
+        iconSurface: "bg-blue-100",
       },
       {
-        id: "finder",
-        title: "Phone Finder",
-        icon: FaSearch,
-        kind: "link",
-        href: "/phone-finder",
-      },
-      {
-        id: "news",
-        title: "News",
-        icon: FaInfoCircle,
-        kind: "link",
-        href: toCanonicalPagePath("/news"),
-      },
-      {
-        id: "trending",
-        title: "Trending Mobiles",
-        icon: FaBolt,
-        kind: "link",
-        href: toCanonicalPagePath("/trending/smartphones"),
+        title: "Guides & Articles",
+        description: "Buying guides, tips and tech news",
+        icon: FaNewspaper,
+        href: "/news",
+        surface: "bg-orange-50",
+        color: "text-orange-600",
+        iconSurface: "bg-orange-100",
       },
     ];
 
-    return (
-      <>
-        {isMenuOpen ? (
-          <div className="fixed inset-0 z-[120] lg:hidden">
+    const quickLinks = [
+      {
+        title: "Phone Finder",
+        description: "Find the right phone for you",
+        icon: FaMobileAlt,
+        href: "/phone-finder",
+        surface: "bg-blue-50",
+        color: "text-blue-600",
+        iconSurface: "bg-blue-100",
+      },
+      {
+        title: "Compare",
+        description: "Compare devices side by side",
+        icon: FaAlignJustify,
+        href: "/compare",
+        surface: "bg-violet-50",
+        color: "text-violet-600",
+        iconSurface: "bg-violet-100",
+      },
+    ];
+
+    return isMenuOpen ? (
+      <div className="fixed inset-0 z-[120] overflow-hidden bg-slate-950/55 lg:hidden">
+        <button
+          type="button"
+          className="absolute inset-0 h-full w-full border-0 bg-transparent"
+          onClick={() => setIsMenuOpen(false)}
+          aria-label="Close navigation"
+        />
+        <aside
+          className="absolute inset-y-0 right-0 h-[100dvh] w-[calc(100%-16px)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-tl-[24px] bg-white text-slate-950"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Explore MobilesX"
+        >
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-white px-5 pb-4 pt-[max(1.1rem,env(safe-area-inset-top))] sm:px-8 sm:pb-5 sm:pt-7">
+            <Link
+              to="/"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex min-w-0 items-center gap-3 text-slate-950 no-underline"
+            >
+              <BrandIdentity variant="desktop" />
+              <span className="min-w-0">
+                <strong className="block truncate text-[1.35rem] font-black leading-none tracking-[-0.04em] text-slate-950 sm:text-3xl">
+                  Mobiles<span className="text-blue-600">X</span>
+                </strong>
+              </span>
+            </Link>
             <button
               type="button"
-              className="absolute inset-0 h-full w-full border-0 bg-[rgba(4,10,20,0.68)] backdrop-blur-[10px]"
               onClick={() => setIsMenuOpen(false)}
-              aria-label="Close navigation"
-            />
-
-            <aside
-              className="absolute inset-y-0 right-0 flex w-[min(82vw,360px)] max-w-full flex-col overflow-hidden border-l border-[var(--hooks-line)] bg-[var(--hooks-canvas)] shadow-none"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Hooks navigation"
+              aria-label="Close menu"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-0 bg-blue-50 text-[1.2rem] text-slate-950 transition-colors hover:bg-blue-100"
             >
-              <header className="relative overflow-visible border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.9rem] pb-[0.95rem] pt-[max(0.9rem,env(safe-area-inset-top))] text-[var(--hooks-text)]">
-                <div className="relative z-[2] flex items-center justify-between gap-4">
-                  <Link to="/" onClick={() => setIsMenuOpen(false)}>
-                    <BrandIdentity variant="drawer" />
+              <FaTimes aria-hidden="true" />
+            </button>
+          </header>
+
+          <main className="px-5 pb-5 sm:px-8 sm:pb-7">
+            <section className="pt-5 sm:pt-8">
+              <h1 className="max-w-[700px] text-[1.8rem] font-black leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+                What are you researching <span className="text-blue-600">today?</span>
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-slate-500 sm:mt-4 sm:text-lg sm:leading-7">
+                Search phones, brands, specifications or buying guides.
+              </p>
+
+              <button
+                type="button"
+                className="mt-6 grid min-h-[56px] w-full grid-cols-[22px_minmax(0,1fr)_42px] items-center gap-3 rounded-full border border-blue-200 bg-white px-3 text-left text-slate-500 shadow-[0_8px_20px_rgba(37,99,235,0.08)] transition-colors hover:border-blue-400 sm:mt-8 sm:min-h-[70px] sm:px-5"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  openSearchOverlay();
+                }}
+              >
+                <FaSearch className="ml-1 text-lg text-blue-600" aria-hidden="true" />
+                <span className="truncate text-[0.78rem] sm:text-base">
+                  Search phones, brands or specifications...
+                </span>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-lg text-white sm:h-12 sm:w-12">
+                  <FaArrowRight aria-hidden="true" />
+                </span>
+              </button>
+            </section>
+
+            <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-5">
+              {quickLinks.map((item) => {
+                const ItemIcon = item.icon;
+                const { color: iconColor, iconSurface } = item;
+                return (
+                  <Link
+                    key={item.title}
+                    to={toCanonicalPagePath(item.href)}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`group relative grid min-h-[92px] grid-cols-[40px_minmax(0,1fr)] items-center gap-2.5 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[98px] sm:grid-cols-[58px_minmax(0,1fr)] sm:gap-3 sm:p-4 ${item.surface}`}
+                  >
+                    <span className={`grid h-10 w-10 place-items-center rounded-xl text-base sm:h-[58px] sm:w-[58px] sm:rounded-2xl sm:text-2xl ${iconColor} ${iconSurface}`}>
+                      <ItemIcon aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 pr-4">
+                      <b className="block text-[0.82rem] font-black leading-4 sm:text-lg sm:leading-6">
+                        {item.title}
+                      </b>
+                      <small className="mt-1 block text-[0.68rem] leading-[1.4] text-slate-600 sm:text-sm sm:leading-5">
+                        {item.description}
+                      </small>
+                    </span>
+                    <FaChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] text-slate-700 sm:right-4 sm:text-base" aria-hidden="true" />
                   </Link>
-                  <div className="flex items-center gap-[0.4rem]">
-                    <button
-                      type="button"
+                );
+              })}
+            </section>
+
+            <div className="my-6 border-t border-slate-200 sm:my-8" />
+
+            <section>
+              <h2 className="text-xl font-black tracking-tight sm:text-3xl">
+                Browse Categories
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-base">
+                Explore sections and find what you need.
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-5">
+                {categoryCards.map((item) => {
+                  const ItemIcon = item.icon;
+                  const { surface, color: iconColor, iconSurface } = item;
+                  return (
+                    <Link
+                      key={item.title}
+                      to={toCanonicalPagePath(item.href)}
                       onClick={() => setIsMenuOpen(false)}
-                      aria-label="Close menu"
+                      className={`group relative grid min-h-[112px] grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[126px] sm:grid-cols-[64px_minmax(0,1fr)] sm:gap-4 sm:p-5 ${surface}`}
                     >
-                      <FaTimes aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-                <div className="relative z-[2] mt-[0.85rem] [&>span]:inline-flex [&>span]:items-center [&>span]:gap-[0.42rem] [&>span]:text-[0.56rem] [&>span]:font-[900] [&>span]:uppercase [&>span]:tracking-[0.1em] [&>span]:text-[var(--hooks-success)] [&_h2]:mt-[0.38rem] [&_h2]:text-[1.22rem] [&_h2]:font-[930] [&_h2]:leading-[1.08] [&_h2]:tracking-[-0.035em] [&_p]:mt-[0.32rem] [&_p]:text-[0.68rem] [&_p]:leading-[1.45] [&_p]:text-[var(--hooks-muted)]">
-                  <h2>What are you researching today?</h2>
-                  <p>Jump to a device, budget, brand or buying guide.</p>
-                </div>
-                <button
-                  type="button"
-                  className="relative z-[2] mt-[0.8rem] grid min-h-[46px] w-full grid-cols-[20px_minmax(0,1fr)_16px] items-center gap-[0.65rem] rounded-[13px] border border-[color-mix(in_srgb,var(--hooks-brand)_28%,var(--hooks-line))] bg-[var(--hooks-brand-soft)] px-[0.85rem] text-left text-[var(--hooks-brand)] [&_span]:text-[0.68rem] [&_span]:text-[var(--hooks-text-soft)] [&_svg]:h-[13px] [&_svg]:w-[13px]"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    openSearchOverlay();
-                  }}
-                >
-                  <FaSearch aria-hidden="true" />
-                  <span>Search phones, brands or specifications</span>
-                </button>
-                <div className="relative z-[2] mt-[0.7rem] flex gap-[0.55rem] overflow-x-auto pb-[0.15rem] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden [&_a]:grid [&_a]:min-h-[62px] [&_a]:shrink-0 [&_a]:grow-0 [&_a]:basis-[165px] [&_a]:grid-cols-[34px_minmax(0,1fr)_10px] [&_a]:items-center [&_a]:gap-[0.55rem] [&_a] [&_a]:p-[0.62rem] [&_a]:text-[var(--hooks-text)] [&_a]:no-underline [&_a]:snap-start [&_a>span]:grid [&_a>span]:h-[34px] [&_a>span]:w-[34px] [&_a>span]:place-items-center [&_a>span]:rounded-[10px] [&_a>span]:bg-[var(--hooks-brand-soft)] [&_a>span]:text-[var(--hooks-brand)] [&_a_b]:text-[0.66rem] [&_a_b]:font-[900] [&_a_b]:text-[var(--hooks-text)] [&_a_small]:overflow-hidden [&_a_small]:text-ellipsis [&_a_small]:whitespace-nowrap [&_a_small]:text-[0.53rem] [&_a_small]:text-[var(--hooks-muted)] [&_a>svg]:h-[9px] [&_a>svg]:w-[9px] [&_a>svg]:text-[var(--hooks-muted)]">
-                  <Link to="/phone-finder" onClick={() => setIsMenuOpen(false)}>
-                    <span>
-                      <FaMobileAlt aria-hidden="true" />
-                    </span>
-                    <div>
-                      <b>Phone finder</b>
-                    </div>
-                  </Link>
-                  <Link to="/compare" onClick={() => setIsMenuOpen(false)}>
-                    <span>
-                      <FaAlignJustify aria-hidden="true" />
-                    </span>
-                    <div>
-                      <b>Compare</b>
-                    </div>
-                  </Link>
-                  <Link to="/news" onClick={() => setIsMenuOpen(false)}>
-                    <span>
-                      <FaInfoCircle aria-hidden="true" />
-                    </span>
-                    <div>
-                      <b>Newsroom</b>
-                    </div>
-                  </Link>
-                </div>
-              </header>
-
-              <div className="flex-1 overflow-y-auto bg-[var(--hooks-canvas)]  pb-[calc(1.1rem+env(safe-area-inset-bottom))] pt-[0.85rem]">
-                <div className="flex items-center justify-between gap-4 px-[0.2rem] pb-[0.65rem] [&>div]:grid [&>div]:gap-[0.12rem] [&_span]:text-[0.64rem] [&_span]:font-[920] [&_span]:uppercase [&_span]:tracking-[0.09em] [&_small]:text-[0.58rem] [&_small]:font-[850] [&_small]:text-[var(--hooks-muted)] [&>b]:text-[0.58rem] [&>b]:font-[850] [&>b]:text-[var(--hooks-success)]">
-                  <div>
-                    <span>Browse Hooks</span>
-                    <small>Choose a section to reveal its links</small>
-                  </div>
-                </div>
-
-                <nav
-                  className="overflow-hidden bg-[var(--hooks-surface)] "
-                  aria-label="Mobile navigation"
-                >
-                  {drawerItems.map((item, itemIndex) => {
-                    const isOpen = openSection === item.id;
-                    const ItemIcon = item.icon || FaChevronRight;
-                    const itemDescription = {
-                      price: "Shortlists for every budget",
-                      brands: "Jump to a trusted phone maker",
-                      features: "5G, AMOLED, gaming and more",
-                      smartphones: "Latest, upcoming and trending",
-                      compare: "Place specifications side by side",
-                      tvs: "Smart TV guides and display types",
-                      finder: "Start a guided phone search",
-                      news: "Launches, updates and explainers",
-                      trending: "Most researched phones right now",
-                    }[item.id];
-
-                    if (item.kind === "accordion") {
-                      return (
-                        <section
-                          key={item.id}
-                          className={`border-b border-[var(--hooks-line)] is-${item.id} ${isOpen ? "is-open" : ""}`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenSection(isOpen ? "" : item.id)
-                            }
-                            aria-expanded={isOpen}
-                            className={`flex min-h-[62px] w-full items-center gap-3 border-0 bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] ${isOpen ? "bg-[var(--hooks-surface-soft)]" : ""}`}
-                          >
-                            <span className="min-w-0 flex-1 [&_b]:block [&_b]:truncate [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:mt-[0.12rem] [&_small]:block [&_small]:truncate [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
-                              <b>{item.title}</b>
-                              <small>{itemDescription}</small>
-                            </span>
-                            <span className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center">
-                              <FaChevronDown
-                                className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
-                                aria-hidden="true"
-                              />
-                            </span>
-                          </button>
-
-                          {isOpen ? (
-                            <div className="grid bg-[var(--hooks-surface-soft)] px-[0.8rem] pb-[0.7rem] pl-[3.95rem] pt-1 [&_a]:flex [&_a]:min-h-[39px] [&_a]:items-center [&_a]:justify-between [&_a]:gap-[0.7rem] [&_a]:border-t [&_a]:border-[color-mix(in_srgb,var(--hooks-line)_76%,transparent)] [&_a]:py-[0.45rem] [&_a]:text-[0.68rem] [&_a]:font-[760] [&_a]:text-[var(--hooks-text-soft)] [&_a]:no-underline [&_a>svg]:h-[9px] [&_a>svg]:w-[9px] [&_a>svg]:text-[var(--hooks-muted)]">
-                              {item.items.map((subItem) => (
-                                <Link
-                                  key={`${item.id}-${subItem.label}`}
-                                  to={toCanonicalPagePath(subItem.href)}
-                                  onClick={() => setIsMenuOpen(false)}
-                                >
-                                  <span>{subItem.label}</span>
-                                  <FaArrowRight aria-hidden="true" />
-                                </Link>
-                              ))}
-                              {item.footer ? (
-                                <Link
-                                  to={toCanonicalPagePath(item.footer.href)}
-                                  onClick={() => setIsMenuOpen(false)}
-                                  className="is-footer-link"
-                                >
-                                  <span>{item.footer.label}</span>
-                                  <FaArrowRight aria-hidden="true" />
-                                </Link>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </section>
-                      );
-                    }
-
-                    return (
-                      <Link
-                        key={item.id}
-                        to={toCanonicalPagePath(item.href)}
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex min-h-[62px] w-full items-center gap-3 border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] no-underline [&_b]:block [&_b]:truncate [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:mt-[0.12rem] [&_small]:block [&_small]:truncate [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <b>{item.title}</b>
-                          <small>{itemDescription}</small>
-                        </span>
-                        <span className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center">
-                          <FaChevronDown
-                            className="h-[11px] w-[11px] text-[var(--hooks-muted)]"
-                            aria-hidden="true"
-                          />
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </nav>
+                      <span className={`grid h-10 w-10 place-items-center rounded-xl text-base sm:h-16 sm:w-16 sm:rounded-2xl sm:text-3xl ${iconColor} ${iconSurface}`}>
+                        <ItemIcon aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0 pb-3 pr-2">
+                        <b className="block text-[0.78rem] font-black leading-[1.3] sm:text-lg sm:leading-6">
+                          {item.title}
+                        </b>
+                        <small className="mt-1 block line-clamp-2 text-[0.64rem] leading-[1.4] text-slate-600 sm:text-sm sm:leading-5">
+                          {item.description}
+                        </small>
+                      </span>
+                      <span className={`absolute bottom-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-white/70 sm:bottom-4 sm:right-4 sm:h-9 sm:w-9 ${iconColor}`}>
+                        <FaChevronRight className="text-[0.55rem] sm:text-sm" aria-hidden="true" />
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
-            </aside>
-          </div>
-        ) : null}
-      </>
-    );
+            </section>
+          </main>
+
+          <footer className="mt-6 border-t border-slate-200 px-5 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-5 sm:mx-8 sm:mb-6 sm:px-0 sm:py-6">
+            <div className="grid grid-cols-[42px_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-2xl bg-blue-50 p-4 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:gap-4 sm:p-5">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-slate-950 sm:h-16 sm:w-16">
+                <span className="scale-[0.74] sm:scale-100"><BrandIdentity variant="drawer" darkBackground /></span>
+              </span>
+              <span className="min-w-0">
+                <b className="block truncate text-sm font-black tracking-tight sm:text-2xl">
+                  MobilesX Assistant
+                </b>
+                <small className="mt-1 block text-[0.72rem] leading-4 text-slate-600 sm:text-base sm:leading-6">
+                  Get quick answers, compare phones and find the best deals.
+                </small>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  window.dispatchEvent(new Event(MOBILE_OPEN_ASSISTANT_EVENT));
+                }}
+                className="col-span-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-full border-0 bg-blue-600 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-700 sm:col-span-1 sm:min-h-[58px] sm:px-6 sm:text-base"
+              >
+                <FaComments aria-hidden="true" />
+                Start Chat
+              </button>
+            </div>
+          </footer>
+        </aside>
+      </div>
+    ) : null;
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight, FaClock } from "react-icons/fa";
 import {
@@ -19,7 +19,8 @@ const NewsImage = ({ story, className = "", fit = "cover" }) => {
         src={story.image}
         alt={story.heroImageAlt || story.title}
         loading="lazy"
-        className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"} ${className}`}
+        decoding="async"
+        className={`${fit === "contain" ? "h-auto w-auto max-h-full max-w-full object-contain" : "h-full w-full object-cover"} ${className}`}
         onError={() => setFailed(true)}
       />
     );
@@ -116,13 +117,13 @@ const LeadingStoryCard = ({ story }) => (
 const CompactStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid min-h-[112px] grid-cols-[116px_minmax(0,1fr)] gap-3 rounded-xl bg-[#f7f9fc] p-2.5 transition-colors hover:bg-blue-50/70 sm:grid-cols-[132px_minmax(0,1fr)]"
+    className="group grid min-h-[92px] grid-cols-[100px_minmax(0,1fr)] items-center gap-2.5 rounded-xl bg-[#f7f9fc] p-2 transition-colors hover:bg-blue-50/70 min-[380px]:min-h-[104px] min-[380px]:grid-cols-[116px_minmax(0,1fr)] min-[380px]:gap-3 min-[380px]:p-2.5 sm:grid-cols-[132px_minmax(0,1fr)]"
   >
-    <div className="overflow-hidden rounded-lg bg-white">
+    <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl bg-transparent">
       <NewsImage
         story={story}
         fit="contain"
-        className="transition-transform duration-300 group-hover:scale-[1.04]"
+        className="rounded-xl"
       />
     </div>
 
@@ -134,43 +135,9 @@ const CompactStoryCard = ({ story }) => (
         </h3>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div className="mt-2 flex min-w-0 items-center justify-between gap-2 min-[380px]:mt-3 min-[380px]:gap-3">
         <StoryMeta story={story} compact />
         <FaArrowRight className="shrink-0 text-[10px] text-blue-600 transition-transform duration-200 group-hover:translate-x-1" />
-      </div>
-    </div>
-  </Link>
-);
-
-const MobileStoryCard = ({ story }) => (
-  <Link
-    to={createNewsStoryPath(story.slug)}
-    className="group w-[88%] shrink-0 snap-center overflow-hidden rounded-xl bg-white sm:w-[72%]"
-  >
-    <div className="relative h-48 overflow-hidden rounded-xl bg-slate-100 min-[390px]:h-52">
-      <NewsImage
-        story={story}
-        className="transition-transform duration-300 group-hover:scale-[1.035]"
-      />
-      <div className="absolute left-3 top-3">
-        <StoryLabel story={story} light />
-      </div>
-    </div>
-
-    <div className="px-1 pb-2 pt-3">
-      <h3 className="line-clamp-2 text-base font-black leading-5 tracking-tight text-slate-950">
-        {story.title}
-      </h3>
-      {story.summary ? (
-        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
-          {story.summary}
-        </p>
-      ) : null}
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <StoryMeta story={story} compact />
-        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
-          Read <FaArrowRight className="text-[9px]" />
-        </span>
       </div>
     </div>
   </Link>
@@ -195,9 +162,6 @@ const LatestNewsRouteSection = ({
   const visibleStories = stories.slice(0, limit);
   const leadingStory = visibleStories[0] || null;
   const compactStories = visibleStories.slice(1);
-  const mobileCarouselRef = useRef(null);
-  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
-
   const resolvedNewsLinkLabel =
     newsLinkLabel ||
     (productType === "tv"
@@ -205,69 +169,6 @@ const LatestNewsRouteSection = ({
       : productType === "laptop"
         ? "Latest laptop news"
         : "Latest smartphone news");
-
-  const mobileStorySignature = useMemo(
-    () => visibleStories.map((story) => story?.slug || "").join("|"),
-    [visibleStories],
-  );
-
-  useEffect(() => {
-    setActiveMobileIndex(0);
-    const container = mobileCarouselRef.current;
-    if (container) {
-      container.scrollTo({ left: 0, behavior: "auto" });
-    }
-  }, [mobileStorySignature]);
-
-  const syncActiveMobileIndex = () => {
-    const container = mobileCarouselRef.current;
-    if (!container) return;
-
-    const cards = Array.from(container.children);
-    if (!cards.length) return;
-
-    const viewportCenter = container.scrollLeft + container.clientWidth / 2;
-    let nextIndex = 0;
-    let smallestDistance = Number.POSITIVE_INFINITY;
-
-    cards.forEach((card, index) => {
-      const cardCenter = card.offsetLeft + card.clientWidth / 2;
-      const distance = Math.abs(cardCenter - viewportCenter);
-      if (distance < smallestDistance) {
-        smallestDistance = distance;
-        nextIndex = index;
-      }
-    });
-
-    setActiveMobileIndex(nextIndex);
-  };
-
-  const scrollToMobileStory = (index) => {
-    const container = mobileCarouselRef.current;
-    const target = container?.children?.[index];
-    if (!container || !target) return;
-
-    const nextLeft = Math.max(
-      target.offsetLeft - (container.clientWidth - target.clientWidth) / 2,
-      0,
-    );
-
-    container.scrollTo({ left: nextLeft, behavior: "smooth" });
-    setActiveMobileIndex(index);
-  };
-
-  useEffect(() => {
-    if (visibleStories.length <= 1) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      const nextIndex = (activeMobileIndex + 1) % visibleStories.length;
-      scrollToMobileStory(nextIndex);
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
-  }, [activeMobileIndex, mobileStorySignature, visibleStories.length]);
-
   if (!loading && (error || !visibleStories.length) && !showWhenEmpty) return null;
 
   return (
@@ -300,17 +201,27 @@ const LatestNewsRouteSection = ({
       </div>
 
       {loading && !visibleStories.length ? (
-        <div className="grid gap-3 lg:grid-cols-[1.45fr_0.85fr]">
-          <div className="min-h-[360px] animate-pulse rounded-2xl bg-slate-200" />
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
+        <>
+          <div className="grid gap-3 sm:hidden">
+            {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-[112px] animate-pulse rounded-xl bg-slate-100"
+                className="h-[104px] animate-pulse rounded-xl bg-slate-100"
               />
             ))}
           </div>
-        </div>
+          <div className="hidden gap-3 sm:grid lg:grid-cols-[1.45fr_0.85fr]">
+            <div className="min-h-[360px] animate-pulse rounded-2xl bg-slate-200" />
+            <div className="space-y-3">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-[112px] animate-pulse rounded-xl bg-slate-100"
+                />
+              ))}
+            </div>
+          </div>
+        </>
       ) : null}
 
       {!loading && !error && !visibleStories.length && showWhenEmpty ? (
@@ -336,38 +247,14 @@ const LatestNewsRouteSection = ({
             </div>
           </div>
 
-          <div className="sm:hidden">
-            <div
-              ref={mobileCarouselRef}
-              onScroll={syncActiveMobileIndex}
-              className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 pr-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {visibleStories.map((story) => (
-                <MobileStoryCard key={story.slug} story={story} />
-              ))}
-            </div>
-
-            {visibleStories.length > 1 ? (
-              <div className="mt-3 flex justify-center gap-1.5">
-                {visibleStories.map((story, index) => (
-                  <button
-                    key={`${story.slug}-dot`}
-                    type="button"
-                    aria-label={`Go to story ${index + 1}`}
-                    onClick={() => scrollToMobileStory(index)}
-                    className={`h-1.5 rounded-full transition-all duration-200 ${
-                      activeMobileIndex === index
-                        ? "w-5 bg-blue-600"
-                        : "w-1.5 bg-slate-300"
-                    }`}
-                  />
-                ))}
-              </div>
-            ) : null}
+          <div className="grid gap-2.5 sm:hidden min-[380px]:gap-3">
+            {visibleStories.map((story) => (
+              <CompactStoryCard key={story.slug} story={story} />
+            ))}
 
             <Link
               to="/news"
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-bold text-white"
+              className="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-bold text-white"
             >
               {resolvedNewsLinkLabel}
               <FaArrowRight className="text-[10px]" />
