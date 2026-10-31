@@ -1194,15 +1194,40 @@ const fetchRouteSpecificPreloadedPayload = async (
   }
 
   const smartphoneContext = detailWidgetContextMap.get(canonicalPath);
+  const smartphoneRouteSlug = getSingleSegmentRouteTail(
+    canonicalPath,
+    "/smartphones",
+  );
+  if (smartphoneRouteSlug.endsWith(SMARTPHONE_SEO_SUFFIX)) {
+    const productSlug = stripSmartphoneSeoSuffix(smartphoneRouteSlug);
+    const detailEndpoint = `${API_BASE_URL}/public/smartphones/by-slug/${encodeURIComponent(productSlug)}`;
+    const detailPayload = await fetchApiBody(detailEndpoint);
+    const productId =
+      resolveProductId(detailPayload) ||
+      (smartphoneContext?.entityType === "smartphones"
+        ? toPositiveInteger(smartphoneContext.productId)
+        : null);
+    if (!detailPayload) return null;
+
+    const sanitizedDetail = sanitizePreloadValue(detailPayload);
+    const byUrl = { [detailEndpoint]: sanitizedDetail };
+    if (productId) {
+      byUrl[`${API_BASE_URL}/public/product/${encodeURIComponent(productId)}`] =
+        sanitizedDetail;
+    }
+
+    return {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      apiOrigin: API_ORIGIN,
+      byUrl,
+    };
+  }
+
   if (smartphoneContext?.entityType === "smartphones") {
     const encodedId = encodeURIComponent(smartphoneContext.productId);
-    const encodedEntityType = encodeURIComponent(smartphoneContext.entityType);
     return fetchPayloadForEndpoints([
-      `${API_BASE_URL}/smartphones`,
       `${API_BASE_URL}/public/product/${encodedId}`,
-      `${API_BASE_URL}/public/product/${encodedId}/discovery?entity_type=${encodedEntityType}`,
-      `${API_BASE_URL}/public/product/${encodedId}/competitors?entity_type=${encodedEntityType}`,
-      `${API_BASE_URL}/public/blogs?limit=3&productId=${encodedId}`,
     ]);
   }
 
@@ -3779,11 +3804,18 @@ const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   ) ||
   canonicalPath === "/compare";
 
-export default defineConfig(async () => {
-  const prerenderRoutes = await getPrerenderRoutes();
-  syncPublicSitemap(prerenderRoutes);
-  syncPublicNewsSitemap();
-  const sharedPreloadedApiPayload = await fetchPreloadedApiPayload();
+export default defineConfig(async ({ command }) => {
+  const isBuild = command === "build";
+  // Route discovery and data snapshots are build-time SEO work. Running these
+  // remote API calls when `vite dev` starts delays the first local page load.
+  const prerenderRoutes = isBuild ? await getPrerenderRoutes() : [];
+  if (isBuild) {
+    syncPublicSitemap(prerenderRoutes);
+    syncPublicNewsSitemap();
+  }
+  const sharedPreloadedApiPayload = isBuild
+    ? await fetchPreloadedApiPayload()
+    : null;
   const detailWidgetContextMap = buildDetailWidgetContextMap(
     sharedPreloadedApiPayload,
   );
@@ -3797,17 +3829,20 @@ export default defineConfig(async () => {
     const sharedPayload = usesSharedPreloadedPayload(canonicalPath)
       ? sharedPreloadedApiPayload
       : null;
-    const routeSpecificPayload = await fetchRouteSpecificPreloadedPayload(
-      canonicalPath,
-      detailWidgetContextMap,
-      sharedPreloadedApiPayload,
-    );
+    const routeSpecificPayload = isBuild
+      ? await fetchRouteSpecificPreloadedPayload(
+          canonicalPath,
+          detailWidgetContextMap,
+          sharedPreloadedApiPayload,
+        )
+      : null;
     const mergedPayload = mergePreloadedPayloads(
       sharedPayload,
       routeSpecificPayload,
     );
 
     if (
+      isBuild &&
       canonicalPath.startsWith("/compare/") &&
       !getComparePageFromPayload(canonicalPath, mergedPayload)
     ) {

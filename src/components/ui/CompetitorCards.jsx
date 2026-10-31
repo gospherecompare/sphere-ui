@@ -17,8 +17,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { toCloudinaryResponsiveImage } from "../../utils/cloudinaryImage";
 
 const formatPrice = (value) => {
   const n = Number(value);
@@ -1014,9 +1016,10 @@ const CompetitorCard = ({
             >
               {competitor?.image_url ? (
                 <img
-                  src={competitor.image_url}
+                  src={toCloudinaryResponsiveImage(competitor.image_url, 192)}
                   alt={displayName}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
@@ -1241,11 +1244,9 @@ const CompetitorCards = ({
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(competitorsEndpoint);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await fetchPublicJson(competitorsEndpoint, {
+          cacheTtlMs: 60_000,
+        });
         if (!cancelled) {
           setPayload(data);
         }

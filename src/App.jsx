@@ -47,6 +47,24 @@ const RouteBreadcrumbs = () => {
   return <Breadcrumbs />;
 };
 
+const RoutePageFallback = () => (
+  <main
+    className="mx-auto min-h-[60vh] w-full max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8"
+    role="status"
+    aria-label="Loading page"
+  >
+    <span className="sr-only">Loading page</span>
+    <div className="animate-pulse space-y-5" aria-hidden="true">
+      <div className="h-8 w-56 rounded-lg bg-slate-100" />
+      <div className="h-5 max-w-2xl rounded-lg bg-slate-100" />
+      <div className="grid grid-cols-1 gap-4 pt-3 md:grid-cols-3">
+        <div className="h-52 rounded-2xl bg-slate-100 md:col-span-2" />
+        <div className="h-52 rounded-2xl bg-slate-100" />
+      </div>
+    </div>
+  </main>
+);
+
 const Home = React.lazy(() => import("./components/Home/Home"));
 const Smartphones = React.lazy(
   () => import("./components/Product/Smartphones"),
@@ -250,7 +268,7 @@ function App() {
           <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
             {/* BannerSlot disabled (incomplete). */}
           </aside>
-          <React.Suspense fallback={null}>
+          <React.Suspense fallback={<RoutePageFallback />}>
             <RouteBreadcrumbs />
             <Routes>
             {/* Home */}

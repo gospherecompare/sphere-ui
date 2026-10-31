@@ -500,13 +500,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (!shouldUseServerPagination) return;
-    dispatch(
-      fetchSmartphones({ page: 1, limit: SMARTPHONES_PER_PAGE, force: true }),
-    );
-  }, [dispatch, shouldUseServerPagination]);
-
-  useEffect(() => {
     if (shouldUseServerPagination) return;
     if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
     else if (listFilter === "new") dispatch(fetchNewLaunchSmartphones());
@@ -2350,6 +2343,42 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [compareItems, setCompareItems] = useState([]);
 
   useEffect(() => {
+    if (!shouldUseServerPagination) return;
+    let requestTask;
+    const timer = setTimeout(() => {
+      const popularIds =
+        sortBy === "most-searched"
+          ? Object.entries(searchPopularityOrder)
+              .sort(([, a], [, b]) => a - b)
+              .map(([id]) => id)
+          : [];
+      requestTask = dispatch(
+        fetchSmartphones({
+          page: 1,
+          limit: SMARTPHONES_PER_PAGE,
+          filters,
+          search: searchQuery,
+          sort: sortBy,
+          popularIds,
+          force: true,
+        }),
+      );
+    }, searchQuery ? 250 : 120);
+
+    return () => {
+      clearTimeout(timer);
+      requestTask?.abort?.();
+    };
+  }, [
+    dispatch,
+    shouldUseServerPagination,
+    filters,
+    searchQuery,
+    sortBy,
+    searchPopularityOrder,
+  ]);
+
+  useEffect(() => {
     if (sortBy !== "most-searched") {
       setSearchPopularityOrder({});
       return undefined;
@@ -3240,6 +3269,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     // If dates are missing, fall back to the original list so the route
     // never renders empty on refresh.
     let baseCards = variantCards;
+    // The paginated endpoint has already applied these filters before LIMIT/OFFSET.
+    // Reapplying them to one page would make page sizes and counts inaccurate.
+    if (shouldUseServerPagination) return baseCards;
     if (listFilter === "new") {
       const parseDate = (s) => {
         if (!s) return null;
@@ -3842,7 +3874,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
       return true;
     });
-  }, [variantCards, filters, searchQuery, normalizedFeature]);
+  }, [
+    variantCards,
+    filters,
+    searchQuery,
+    normalizedFeature,
+    shouldUseServerPagination,
+  ]);
 
   const parseFirstInt = (val) => {
     if (val === null || val === undefined) return null;
@@ -4084,7 +4122,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
   };
 
-  const sortedVariants = useMemo(() => [...filteredVariants].sort((a, b) => {
+  const sortedVariants = useMemo(() => {
+    if (shouldUseServerPagination) return filteredVariants;
+    return [...filteredVariants].sort((a, b) => {
     if (sortBy === "most-searched") {
       const aRank =
         searchPopularityOrder[
@@ -4127,12 +4167,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       default:
         return 0;
     }
-  }), [filteredVariants, normalizedFeature, searchPopularityOrder, sortBy]);
+    });
+  }, [
+    filteredVariants,
+    normalizedFeature,
+    searchPopularityOrder,
+    sortBy,
+    shouldUseServerPagination,
+  ]);
   const totalPages = shouldUseServerPagination
     ? Math.max(
         1,
         Math.ceil(
-          Number(smartphonePagination?.total || sortedVariants.length) /
+          Number(smartphonePagination?.total ?? sortedVariants.length) /
             SMARTPHONES_PER_PAGE,
         ),
       )
@@ -4156,7 +4203,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ? shouldUseServerPagination
         ? Math.min(
             currentPageSafe * SMARTPHONES_PER_PAGE,
-            Number(smartphonePagination?.total || sortedVariants.length),
+            Number(smartphonePagination?.total ?? sortedVariants.length),
           )
         : sortedVariants.length
       : visibleResultsStart + paginatedVariants.length - 1
@@ -4204,6 +4251,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         fetchSmartphones({
           page: targetPage,
           limit: SMARTPHONES_PER_PAGE,
+          filters,
+          search: searchQuery,
+          sort: sortBy,
+          popularIds:
+            sortBy === "most-searched"
+              ? Object.entries(searchPopularityOrder)
+                  .sort(([, a], [, b]) => a - b)
+                  .map(([id]) => id)
+              : [],
           force: true,
         }),
       );

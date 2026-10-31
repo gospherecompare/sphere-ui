@@ -94,14 +94,14 @@ const ProductAiSummary = ({ summary = "" }) => {
       {open && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6"
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/40 px-3 py-4 sm:px-4 sm:py-6"
               role="presentation"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget) setOpen(false);
               }}
             >
               <div
-                className="relative max-h-[88vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto rounded-none border-0 bg-white px-5 py-6 font-[Inter,sans-serif] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:w-[calc(100vw-4rem)] sm:px-10 sm:py-9"
+                className="relative min-h-[55dvh] max-h-[88dvh] w-[calc(100vw-1.5rem)] max-w-5xl overflow-y-auto rounded-none border-0 bg-white px-5 py-6 font-[Inter,sans-serif] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:min-h-0 sm:max-h-[88vh] sm:w-[calc(100vw-4rem)] sm:px-10 sm:py-9"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="product-ai-summary-title"

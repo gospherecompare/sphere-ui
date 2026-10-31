@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 64" role="img" aria-labelledby="title">
+  <title>Flipkart</title>
+  <rect width="160" height="64" rx="10" fill="#fff"/>
+  <path d="M31 22h42v8H31zM37 30h30v18H37zM43 34h18v14H43z" fill="#2874f0"/>
+  <path d="m68 22 8 8-8 8-8-8z" fill="#f9b233"/>
+  <text x="105" y="39" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#2874f0">Flipkart</text>
+</svg>

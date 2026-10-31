@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import CompetitorCards from "../ui/CompetitorCards";
-import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
 import { buildClientSmartphoneFaqs } from "../../utils/smartphoneFaqs";
@@ -30,6 +28,7 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaBalanceScale,
+  FaCalendarAlt,
   FaArrowRight,
   FaChevronLeft,
   FaChevronRight,
@@ -77,15 +76,14 @@ import {
 } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
-import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
-import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 import { resolveSmartphoneDisplayState } from "../../utils/canonicalLifecycle";
 import {
   CLOUDINARY_OG_DIMENSIONS,
   toCloudinaryOgImage,
+  toCloudinaryResponsiveImage,
+  toCloudinaryResponsiveSrcSet,
 } from "../../utils/cloudinaryImage";
 
 const MobilesXScoreLogo = ({ className }) => (
@@ -373,6 +371,64 @@ const getRenderableStorePriceRows = (source) => {
   }
 
   return [];
+};
+
+const CompetitorCards = React.lazy(() => import("../ui/CompetitorCards"));
+const SmartphoneFaqSection = React.lazy(
+  () => import("../ui/SmartphoneFaqSection"),
+);
+const LatestNewsRouteSection = React.lazy(
+  () => import("../ui/LatestNewsRouteSection"),
+);
+const ContinueBrowsingSmartphones = React.lazy(
+  () => import("../ui/ContinueBrowsingSmartphones"),
+);
+const ProductDiscoverySections = React.lazy(
+  () => import("../ui/ProductDiscoverySections"),
+);
+
+const DeferredSection = ({
+  children,
+  className = "",
+  onVisible,
+  minHeight = 1,
+}) => {
+  const hostRef = useRef(null);
+  const onVisibleRef = useRef(onVisible);
+  const [visible, setVisible] = useState(false);
+  onVisibleRef.current = onVisible;
+
+  useEffect(() => {
+    if (visible) return undefined;
+    const host = hostRef.current;
+    if (!host || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      onVisibleRef.current?.();
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setVisible(true);
+        onVisibleRef.current?.();
+        observer.disconnect();
+      },
+      { rootMargin: "500px 0px" },
+    );
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  return (
+    <div ref={hostRef} className={className} style={{ minHeight }}>
+      {visible ? (
+        <React.Suspense fallback={null}>
+          {typeof children === "function" ? children() : children}
+        </React.Suspense>
+      ) : null}
+    </div>
+  );
 };
 
 const HiddenScoreBadge = () => null;
@@ -666,6 +722,7 @@ const MobileDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [activePageSection, setActivePageSection] = useState("detail-overview");
+  const [shouldLoadLinkedNews, setShouldLoadLinkedNews] = useState(false);
   const variantInitKeyRef = useRef("");
   const detailFetchKeyRef = useRef("");
   const {
@@ -674,8 +731,7 @@ const MobileDetailCard = () => {
     loading,
     error,
     smartphone,
-    refreshDevices,
-  } = useDevice({ resources: ["smartphones"] });
+  } = useDevice({ resources: [] });
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const navigate = useNavigate();
 
@@ -830,33 +886,6 @@ const MobileDetailCard = () => {
     shouldRenderAliasNotFound,
   ]);
 
-  useEffect(() => {
-    if (shouldRenderAliasNotFound) return;
-    // Resolve smartphone details from the canonical slug instead of query ids
-    // so legacy `?id=` URLs do not become a separate route source.
-    if (routeSlug) {
-      const localDevice = findDeviceBySlug(routeSlug);
-      if (localDevice) return; // already available locally
-
-      // If devices not loaded or currently empty, trigger a refresh
-      if (!Array.isArray(smartphone) || smartphone.length === 0) {
-        // Refresh the full smartphone list so the slug can be resolved locally
-        try {
-          refreshDevices();
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
-    // If nothing else, no-op; the global loader will fetch lists on mount.
-  }, [
-    routeSlug,
-    findDeviceBySlug,
-    refreshDevices,
-    smartphone,
-    shouldRenderAliasNotFound,
-  ]);
-
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
     if (shouldRenderAliasNotFound) return;
@@ -951,17 +980,21 @@ const MobileDetailCard = () => {
 
   useEffect(() => {
     if (shouldRenderAliasNotFound || !routeSlug) return;
-    const resolvedId =
-      localResolved?.id ?? localResolved?.product_id ?? routeProductId ?? null;
-    if (resolvedId == null) return;
-    const fetchKey = `${routeSlug}:${resolvedId}`;
+    const identifier =
+      localResolved?.id ??
+      localResolved?.product_id ??
+      routeProductId ??
+      routeBaseSlug;
+    if (!identifier) return;
+    const fetchKey = `${routeSlug}:${identifier}`;
     if (detailFetchKeyRef.current === fetchKey) return;
     detailFetchKeyRef.current = fetchKey;
-    fetchDevice(resolvedId);
+    fetchDevice(identifier);
   }, [
     fetchDevice,
     localResolved,
     routeProductId,
+    routeBaseSlug,
     routeSlug,
     selectedResolvedForRoute,
     shouldRenderAliasNotFound,
@@ -1403,10 +1436,44 @@ const MobileDetailCard = () => {
 
   const getBatteryCapacityMah = (deviceData) => {
     const raw = getBatteryCapacityRaw(deviceData);
-    if (raw === null || raw === undefined) return null;
-    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-    const m = String(raw).match(/(\d{3,6})/);
-    return m ? parseInt(m[1], 10) : null;
+    const readCapacity = (value, depth = 0) => {
+      if (value === null || value === undefined || depth > 4) return null;
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+      }
+      if (typeof value === "string") {
+        const match = value.match(/(\d{3,6})/);
+        return match ? parseInt(match[1], 10) : null;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const parsed = readCapacity(item, depth + 1);
+          if (parsed !== null) return parsed;
+        }
+        return null;
+      }
+      if (typeof value === "object") {
+        const keys = [
+          "battery_capacity_mah",
+          "battery_capacity",
+          "capacity_mah",
+          "capacity_mAh",
+          "capacity",
+          "typical",
+          "rated",
+          "value",
+          "battery",
+        ];
+        for (const key of keys) {
+          if (!(key in value)) continue;
+          const parsed = readCapacity(value[key], depth + 1);
+          if (parsed !== null) return parsed;
+        }
+      }
+      return null;
+    };
+
+    return readCapacity(raw);
   };
 
   const parseMegapixelValue = (value) => {
@@ -1808,6 +1875,8 @@ const MobileDetailCard = () => {
   const carouselImages = Array.isArray(mobileData?.images)
     ? mobileData.images.filter(Boolean)
     : [];
+  const activeCarouselImage =
+    carouselImages[activeImage] || carouselImages[0] || "/placeholder-image.jpg";
 
   useEffect(() => {
     setActiveImage(0);
@@ -2296,7 +2365,7 @@ const MobileDetailCard = () => {
     limit: LINKED_NEWS_LIMIT,
     category: "",
     productId: currentProductId,
-    enabled: Boolean(currentProductId),
+    enabled: Boolean(currentProductId && shouldLoadLinkedNews),
   });
   const exactLinkedNewsStories = useMemo(() => {
     const resolvedProductId = Number(currentProductId);
@@ -4380,7 +4449,6 @@ Price: ${price}
         .filter(Boolean)
         .slice(0, 3),
     });
-  const headerSummaryPrice = resolvedCurrentNumericPrice;
   const headerSummary = useMemo(() => {
     const processorText = headerProcessor || "a capable chipset";
     const displayText = headerDisplay
@@ -4395,17 +4463,12 @@ Price: ${price}
     const batteryText = batteryForShare
       ? `${batteryForShare} battery`
       : "reliable battery life";
-    const priceText =
-      headerSummaryPrice > 0 ? `₹ ${formatPrice(headerSummaryPrice)}` : "";
 
     const intro = `${headerTitle} is powered by ${processorText} and brings ${displayText}, ${variantText}, ${cameraText}, and ${batteryText} together in one balanced package.`;
-    const priceSentence = priceText
-      ? `Price starts at ${priceText} for the selected configuration, and the cards below make it easy to compare other storage and pricing options.`
-      : "Pricing details are shown in the cards below, making it easy to compare available storage options.";
     const closing =
-      "It is designed for users who want a balanced everyday smartphone experience with smooth performance, clear media viewing, dependable photography, and enough battery life to get through a full day without feeling overcomplicated.";
+      "It is designed for smooth everyday performance, clear media viewing, dependable photography, and all-day battery life.";
 
-    return `${intro} ${priceSentence} ${closing}`;
+    return `${intro} ${closing}`;
   }, [
     batteryForShare,
     currentMainCameraMp,
@@ -4413,7 +4476,6 @@ Price: ${price}
     headerDisplay,
     headerProcessor,
     headerTitle,
-    headerSummaryPrice,
   ]);
   const headerSummaryWords = headerSummary.trim().split(/\s+/).filter(Boolean);
   const headerSummaryLimit = 50;
@@ -5341,9 +5403,10 @@ Price: ${price}
                             }`}
                           >
                             <img
-                              src={image}
+                              src={toCloudinaryResponsiveImage(image, 128)}
                               alt={`${headerTitle} view ${index + 1}`}
-                              loading={index === 0 ? "eager" : "lazy"}
+                              loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-contain"
                             />
                           </button>
@@ -5352,7 +5415,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[18px] bg-[#f4f8ff] p-4 sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[18px] bg-white p-4 sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
@@ -5376,14 +5439,13 @@ Price: ${price}
                         ) : null}
 
                         <img
-                          src={
-                            carouselImages[activeImage] ||
-                            carouselImages[0] ||
-                            "/placeholder-image.jpg"
-                          }
+                          src={toCloudinaryResponsiveImage(activeCarouselImage, 640)}
+                          srcSet={toCloudinaryResponsiveSrcSet(activeCarouselImage)}
+                          sizes="(max-width: 640px) 260px, 330px"
                           alt={`${headerTitle} product image`}
                           loading="eager"
-                          fetchPriority="high"
+                          fetchpriority="high"
+                          decoding="async"
                           className="relative z-[1] max-h-[240px] w-full max-w-[260px] object-contain sm:max-h-[390px] sm:max-w-[330px]"
                           onError={(event) => {
                             event.currentTarget.src =
@@ -5424,7 +5486,7 @@ Price: ${price}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ${
+                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold leading-none ring-1 ${
                             displayState.isUpcoming
                               ? "bg-violet-50 text-violet-700 ring-violet-100   "
                               : "bg-emerald-50 text-emerald-700 ring-emerald-100   "
@@ -5445,10 +5507,10 @@ Price: ${price}
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600 ">
+                      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600">
                         {mobileData?.brand || metaBrand || "Smartphone"}
                       </p>
-                      <h1 className="mt-1 text-[1.3rem] font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                      <h1 className="mt-1 text-[1.45rem] font-bold leading-[1.12] tracking-[-0.035em] text-slate-950 sm:text-[2.1rem]">
                         {headerTitle}
                       </h1>
                     </div>
@@ -5468,8 +5530,8 @@ Price: ${price}
                   {headerSummary ? (
                     <div className="relative z-[1] mt-4">
                       <p
-                        className={`text-sm leading-6 text-slate-600  sm:text-[15px] ${
-                          showHeaderSummaryFull ? "" : "line-clamp-2"
+                        className={`text-[14px] leading-[1.65] text-[#5c6f8d] sm:text-[15px] ${
+                          showHeaderSummaryFull ? "" : "line-clamp-3"
                         }`}
                       >
                         {visibleHeaderSummary}
@@ -5483,13 +5545,17 @@ Price: ${price}
                           className="mt-1 text-sm font-bold text-blue-600 hover:text-blue-700 "
                         >
                           {showHeaderSummaryFull ? "Show less" : "Read more"}
+                          <FaChevronDown
+                            className={`ml-1 inline h-3 w-3 transition-transform ${showHeaderSummaryFull ? "rotate-180" : ""}`}
+                            aria-hidden="true"
+                          />
                         </button>
                       ) : null}
                     </div>
                   ) : null}
 
                   <div
-                    className={`relative z-[1] mt-4 grid gap-3 ${mobileData?.aiSummary ? "grid-cols-2" : "grid-cols-1"}`}
+                    className="relative z-[1] mt-4 flex flex-wrap items-center gap-2"
                   >
                     {mobileData?.aiSummary ? (
                       <ProductAiSummary summary={mobileData.aiSummary} />
@@ -5504,16 +5570,16 @@ Price: ${price}
                         }
                         navigate("/compare");
                       }}
-                      className="mx-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                      className={`mx-primary-button inline-flex min-h-10 min-w-[144px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${mobileData?.aiSummary ? "" : "w-full sm:w-auto"}`}
                     >
                       <FaPlus className="text-xs" aria-hidden="true" />
                       Compare
                     </button>
                   </div>
 
-                  <div className="mx-product-summary-card relative z-[1] mt-5 grid grid-cols-2 gap-2 rounded-[18px] p-3 sm:gap-3 sm:p-4 lg:grid-cols-3">
+                  <div className="mx-product-summary-card relative z-[1] mt-5 grid grid-cols-2 gap-0 overflow-hidden rounded-[18px] p-2 sm:p-3 lg:grid-cols-3">
                     {headerSpecScoreValue != null ? (
-                      <div className="order-1 flex min-w-0 items-center gap-2 rounded-xl bg-white/75 p-3 sm:gap-3 sm:p-4">
+                      <div className="mx-summary-cell order-1 flex min-w-0 items-center gap-2 border-r border-[#e2eaf5] p-2 sm:gap-3 sm:p-3">
                         <MobilesXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
@@ -5534,7 +5600,7 @@ Price: ${price}
                       </div>
                     ) : null}
 
-                    <div className="order-2 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4">
+                    <div className="mx-summary-cell order-2 min-w-0 border-r border-[#e2eaf5] p-2 sm:p-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                         Market status
                       </p>
@@ -5545,16 +5611,20 @@ Price: ${price}
                       </p>
                     </div>
 
-                    <div className="order-4 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4 lg:order-3">
+                    <div className="mx-summary-cell order-4 min-w-0 border-t border-[#e2eaf5] p-2 sm:p-3 lg:order-3 lg:border-t-0">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                         {heroDateLabel}
                       </p>
-                      <p className="mt-1 truncate text-sm font-bold text-slate-800 sm:text-base">
-                        {heroDateText}
+                      <p className="mt-1 inline-flex min-w-0 items-center gap-2 truncate text-sm font-bold text-slate-800 sm:text-base">
+                        <FaCalendarAlt
+                          className="shrink-0 text-blue-600"
+                          aria-hidden="true"
+                        />
+                        <span className="truncate">{heroDateText}</span>
                       </p>
                     </div>
 
-                    <div className="order-3 min-w-0 rounded-xl bg-white/75 p-3 sm:p-4 lg:order-4">
+                    <div className="mx-summary-cell order-3 min-w-0 border-t border-[#e2eaf5] p-2 sm:p-3 lg:order-4">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                         {displayState.isUpcoming
                           ? "Expected price"
@@ -5564,6 +5634,74 @@ Price: ${price}
                         {currentPriceDisplay || "Price not announced"}
                       </p>
                     </div>
+                    <div className="mx-summary-cell mx-summary-stores order-5 col-span-2 min-w-0 border-t border-[#e2eaf5] px-2 py-2.5 lg:col-span-2 lg:border-l lg:border-t-0">
+                      <div className="flex flex-wrap items-center justify-start gap-3">
+                        <p className="shrink-0 text-[10px] font-semibold text-slate-500">
+                          Check prices on
+                        </p>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          {currentVariantStoreRows.slice(0, 2).map((storePrice, index) => {
+                            const storeName =
+                              storePrice.display_store_name ||
+                              storePrice.store ||
+                              storePrice.store_name ||
+                              storePrice.storeName ||
+                              "Online store";
+                            const rawLogo =
+                              getStoreLogo?.(storeName) ||
+                              storePrice.logo ||
+                              getLogo?.(storeName) ||
+                              "";
+                            const logo = rawLogo ? toAbsoluteUrl(rawLogo) : "";
+                            const key = `${storePrice.id || storeName}-summary-${index}`;
+                            const chip = (
+                              <>
+                                {logo ? (
+                                  <img src={logo} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                                ) : (
+                                  <FaStore className="shrink-0 text-[11px] text-slate-400" aria-hidden="true" />
+                                )}
+                                <span className="max-w-[76px] truncate">{storeName}</span>
+                              </>
+                            );
+                            const chipClass = "inline-flex h-9 max-w-[132px] items-center gap-1.5 rounded-lg border border-[#e2eaf5] bg-white px-2 text-[10px] font-semibold text-[#0b1635] no-underline transition hover:border-blue-300 sm:text-[11px]";
+
+                            return storePrice.url ? (
+                              <a
+                                key={key}
+                                href={toAbsoluteUrl(storePrice.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={chipClass}
+                                title={storeName}
+                              >
+                                {chip}
+                              </a>
+                            ) : (
+                              <span key={key} className={chipClass} title={storeName}>
+                                {chip}
+                              </span>
+                            );
+                          })}
+                          {currentVariantStoreRows.length > 2 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                document
+                                  .getElementById("detail-store-prices")
+                                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                              }
+                              className="inline-flex h-9 shrink-0 items-center rounded-lg bg-blue-50 px-2 text-[10px] font-semibold text-blue-700 transition hover:bg-blue-100 sm:text-[11px]"
+                            >
+                              +{currentVariantStoreRows.length - 2} more
+                            </button>
+                          ) : null}
+                          {currentVariantStoreRows.length === 0 ? (
+                            <span className="text-[10px] text-slate-500">Offers not available</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                 </div>
@@ -5571,7 +5709,7 @@ Price: ${price}
 
               <section
                 id="detail-highlights"
-                className="scroll-mt-[136px] mt-5 rounded-2xl border border-slate-200 bg-white p-3 sm:scroll-mt-[148px] sm:p-5"
+                className="scroll-mt-[136px] mt-5 rounded-2xl border border-slate-200 bg-transparent p-3 sm:scroll-mt-[148px] sm:p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-black tracking-tight text-slate-950">
@@ -5629,7 +5767,7 @@ Price: ${price}
                     }
                     navigate("/compare");
                   }}
-                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 lg:hidden"
                 >
                   <FaBalanceScale className="text-sm" />
                   Compare with another phone
@@ -5701,7 +5839,7 @@ Price: ${price}
                     )}
                   </div>
 
-                  <div className="min-w-0 p-4 sm:p-6 lg:pl-7">
+                  <div id="detail-store-prices" className="min-w-0 p-4 sm:p-6 lg:pl-7">
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 ">
@@ -5740,8 +5878,8 @@ Price: ${price}
                             storeObj?.name ||
                             "Online store";
                           const rawLogoSrc =
-                            storePrice.logo ||
                             (storeName ? getStoreLogo?.(storeName) : null) ||
+                            storePrice.logo ||
                             (storeName ? getLogo?.(storeName) : null) ||
                             storeObj?.logo ||
                             "";
@@ -5820,25 +5958,27 @@ Price: ${price}
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
               {competitorLimit > 0 ? (
-                <CompetitorCards
-                  title={
-                    mobileData?.name
-                      ? `Competitors For ${mobileData.name}`
-                      : "Top Competitors"
-                  }
-                  productName={
-                    mobileData?.name || mobileData?.model || "This Device"
-                  }
-                  productId={currentProductId}
-                  onCompare={handlePopularCompare}
-                  compareDisabled={compareDisabled}
-                  fallbackCompetitors={popularComparisonTargets}
-                  currentDevice={mobileData}
-                  currentBrand={mobileData?.brand || ""}
-                  currentPrice={resolvedCurrentNumericPrice}
-                  maxCards={competitorLimit}
-                  className="w-full"
-                />
+                <DeferredSection minHeight={220}>
+                  <CompetitorCards
+                    title={
+                      mobileData?.name
+                        ? `Competitors For ${mobileData.name}`
+                        : "Top Competitors"
+                    }
+                    productName={
+                      mobileData?.name || mobileData?.model || "This Device"
+                    }
+                    productId={currentProductId}
+                    onCompare={handlePopularCompare}
+                    compareDisabled={compareDisabled}
+                    fallbackCompetitors={popularComparisonTargets}
+                    currentDevice={mobileData}
+                    currentBrand={mobileData?.brand || ""}
+                    currentPrice={resolvedCurrentNumericPrice}
+                    maxCards={competitorLimit}
+                    className="w-full"
+                  />
+                </DeferredSection>
               ) : null}
               <div className="space-y-4 sm:space-y-6">
                 {/* <RecommendedSmartphones /> */}
@@ -5857,7 +5997,11 @@ Price: ${price}
           id="detail-news"
           className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
-          {shouldShowLinkedNews ? (
+          <DeferredSection
+            minHeight={1}
+            onVisible={() => setShouldLoadLinkedNews(true)}
+          >
+            {shouldShowLinkedNews ? (
             <div className="w-full">
               <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
                 <section className="mx-auto w-full max-w-7xl bg-transparent ">
@@ -5900,12 +6044,13 @@ Price: ${price}
                 </section>
               </div>
             </div>
-          ) : null}
-          <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-            <div className="mx-auto w-full max-w-7xl">
-              <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
+            ) : null}
+            <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+              <div className="mx-auto w-full max-w-7xl">
+                <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
+              </div>
             </div>
-          </div>
+          </DeferredSection>
         </div>
 
         {smartphoneFaqItems.length > 0 ? (
@@ -5914,29 +6059,34 @@ Price: ${price}
             className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-              <div className="mx-auto w-full max-w-7xl">
-                <SmartphoneFaqSection
-                  items={smartphoneFaqItems}
-                  initialLimit={6}
-                />
-              </div>
+              <DeferredSection minHeight={120}>
+                <div className="mx-auto w-full max-w-7xl">
+                  <SmartphoneFaqSection
+                    items={smartphoneFaqItems}
+                    initialLimit={6}
+                  />
+                </div>
+              </DeferredSection>
             </div>
           </div>
         ) : null}
 
-        <section className="w-full bg-white">
-          <ProductDiscoverySections
-            productId={currentProductId}
-            currentBrand={mobileData?.brand || ""}
-            entityType="smartphones"
-            layout="latestPhones"
-            showComparisonBanner={false}
-            fullWidthBackground
-          />
+        <section className="mx-product-discovery-section w-full bg-transparent">
+          <DeferredSection minHeight={220}>
+            <ProductDiscoverySections
+              productId={currentProductId}
+              currentBrand={mobileData?.brand || ""}
+              entityType="smartphones"
+              layout="latestPhones"
+              showComparisonBanner={false}
+            />
+          </DeferredSection>
         </section>
 
         {currentProductId ? (
-          <ContinueBrowsingSmartphones currentProduct={currentBrowsingProduct} />
+          <DeferredSection minHeight={140}>
+            <ContinueBrowsingSmartphones currentProduct={currentBrowsingProduct} />
+          </DeferredSection>
         ) : null}
       </main>
     </div>

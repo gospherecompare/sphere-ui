@@ -1,7 +1,10 @@
-// Shared mapping of store identifiers to local asset paths
+import amazonLogo from "../assets/amazon.svg";
+import flipkartLogo from "../assets/flipkart.svg";
+
+// Shared mapping of store identifiers to build-emitted asset URLs.
 export const STORE_LOGOS = {
-  amazon: "/asset/amazon.svg",
-  flipkart: "/asset/flipkart.svg",
+  amazon: amazonLogo,
+  flipkart: flipkartLogo,
   smartarena: "/asset/logo.png",
   default: "/asset/logo.png",
 };
