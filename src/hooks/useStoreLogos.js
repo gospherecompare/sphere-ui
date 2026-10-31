@@ -127,10 +127,17 @@ export default function useStoreLogos() {
   const getStoreLogo = (storeName) => {
     try {
       if (!storeName) return null;
-      const storeObj = storeLookup(storeName);
-      if (storeObj && storeObj.logo) return storeObj.logo;
       const key = normalizeForConstants(storeName);
+      const storeObj = storeLookup(storeName);
+      // Use the configured store artwork from the online-stores API first.
+      // The local Amazon/Flipkart SVGs are lightweight fallbacks, not brand masters.
+      if (storeObj?.logo) return storeObj.logo;
       if (STORE_LOGOS[key]) return STORE_LOGOS[key];
+      const knownLogo = Object.entries(STORE_LOGOS).find(
+        ([storeKey]) =>
+          storeKey !== "default" && key.includes(storeKey),
+      );
+      if (knownLogo) return knownLogo[1];
       const fallback = Object.entries(STORE_LOGOS).find(
         ([storeKey]) => key.includes(storeKey) || storeKey.includes(key),
       );

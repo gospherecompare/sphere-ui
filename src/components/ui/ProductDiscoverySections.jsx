@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { createProductPath } from "../../utils/slugGenerator";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
+import { toCloudinaryResponsiveImage } from "../../utils/cloudinaryImage";
 import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
@@ -470,9 +471,10 @@ const RowVisual = ({ src = "", label = "" }) => {
   if (imageSrc && !failed) {
     return (
       <img
-        src={imageSrc}
+        src={toCloudinaryResponsiveImage(imageSrc, 96)}
         alt={label || "Item"}
         loading="lazy"
+        decoding="async"
         className="h-9 w-9 shrink-0 rounded-xl border border-slate-200 bg-white object-contain p-1.5 sm:h-10 sm:w-10"
         onError={() => setFailed(true)}
       />
@@ -501,9 +503,10 @@ const BrandLogo = ({ src = "", label = "", flat = false }) => {
     >
       {imageSrc && !failed ? (
         <img
-          src={imageSrc}
+          src={toCloudinaryResponsiveImage(imageSrc, 144)}
           alt={label || "Brand"}
           loading="lazy"
+          decoding="async"
           className="h-8 w-8 object-contain   sm:h-9 sm:w-9"
           onError={() => setFailed(true)}
         />
@@ -1272,9 +1275,10 @@ const SidebarTileVisual = ({ src = "", label = "" }) => {
       <div className="absolute -left-6 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-white/40" />
       {imageSrc && !failed ? (
         <img
-          src={imageSrc}
+          src={toCloudinaryResponsiveImage(imageSrc, 320)}
           alt={label || "Explore"}
           loading="lazy"
+          decoding="async"
           className="relative z-10 h-full w-full object-contain p-2.5"
           onError={() => setFailed(true)}
         />

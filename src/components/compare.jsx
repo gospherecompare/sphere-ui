@@ -559,6 +559,10 @@ const getImage = (device) => {
 };
 
 const getSuggestedPhones = (suggestion, devices) => {
+  if (Array.isArray(suggestion.phones) && suggestion.phones.length) {
+    return suggestion.phones;
+  }
+
   const productSlugs = String(suggestion.slug || "")
     .replace(/-comparison$/i, "")
     .split("-and-")
@@ -664,19 +668,56 @@ const mapSystemCompareSuggestions = (payload) =>
     })
     .filter(Boolean);
 
+const loadCompareSuggestionPhones = async (suggestion, signal) => {
+  const endpoint = buildApiUrl(
+    `/public/compare-pages/resolve?slug=${encodeURIComponent(suggestion.slug)}`,
+  );
+  try {
+    const payload =
+      readPreloadedApiResponse(endpoint) ||
+      (await fetchPublicJson(endpoint, { signal }));
+    const items = Array.isArray(payload?.page?.items)
+      ? payload.page.items
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : [];
+    const phones = items
+      .slice(0, 2)
+      .map((item) => ({
+        name: String(item?.product_name || item?.name || "").trim(),
+        image: String(item?.image_url || item?.image || "").trim(),
+      }))
+      .filter((phone) => phone.name && phone.image);
+    return phones.length >= 2 ? { ...suggestion, phones } : suggestion;
+  } catch (error) {
+    if (error?.name !== "AbortError") {
+      console.warn("Failed to load a popular compare preview:", error);
+    }
+    return suggestion;
+  }
+};
+
 const MobileCompare = () => {
-  const { devices: availableDevices = [], loading } = useDevice({
-    resources: ["smartphones", "laptops", "tvs", "networking"],
-  });
-  const { getStoreLogo } = useStoreLogos();
   const location = useLocation();
   const { compareSlug = "" } = useParams();
+  const [showPicker, setShowPicker] = useState(false);
+  const searchParams = new URLSearchParams(location.search || "");
+  const needsDeviceCatalog =
+    showPicker ||
+    Boolean(compareSlug) ||
+    searchParams.has("devices") ||
+    searchParams.has("add");
+  const { devices: availableDevices = [], loading } = useDevice({
+    resources: needsDeviceCatalog
+      ? ["smartphones", "laptops", "tvs", "networking"]
+      : [],
+  });
+  const { getStoreLogo } = useStoreLogos();
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [draftDeviceIds, setDraftDeviceIds] = useState(["", "", ""]);
   const [openDraftSlot, setOpenDraftSlot] = useState(null);
   const [draftSearch, setDraftSearch] = useState("");
   const [activeDraftOptionIndex, setActiveDraftOptionIndex] = useState(0);
-  const [showPicker, setShowPicker] = useState(false);
   const [search, setSearch] = useState("");
   const [pickerMessage, setPickerMessage] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
@@ -697,25 +738,36 @@ const MobileCompare = () => {
     const preloadedPayload = readPreloadedApiResponse(
       SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT,
     );
-    if (preloadedPayload) {
-      setSystemCompareSuggestions(
-        mapSystemCompareSuggestions(preloadedPayload),
-      );
-      return undefined;
-    }
-
     let cancelled = false;
     const controller =
       typeof AbortController !== "undefined" ? new AbortController() : null;
+    const applySuggestions = async (payload) => {
+      const suggestions = mapSystemCompareSuggestions(payload);
+      const resolved = await Promise.all(
+        suggestions
+          .slice(0, 4)
+          .map((suggestion) =>
+            loadCompareSuggestionPhones(suggestion, controller?.signal),
+          ),
+      );
+      if (!cancelled) setSystemCompareSuggestions(resolved);
+    };
+
+    if (preloadedPayload) {
+      void applySuggestions(preloadedPayload);
+      return () => {
+        cancelled = true;
+        controller?.abort?.();
+      };
+    }
+
     const loadSuggestions = async () => {
       try {
         const payload = await fetchPublicJson(
           SYSTEM_COMPARE_SUGGESTIONS_ENDPOINT,
           { signal: controller?.signal },
         );
-        if (!cancelled) {
-          setSystemCompareSuggestions(mapSystemCompareSuggestions(payload));
-        }
+        await applySuggestions(payload);
       } catch (error) {
         if (error?.name !== "AbortError" && !cancelled) {
           console.error("Failed to load system compare suggestions:", error);

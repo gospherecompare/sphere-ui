@@ -5,6 +5,10 @@ import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
+import {
+  toCloudinaryResponsiveImage,
+  toCloudinaryResponsiveSrcSet,
+} from "../../utils/cloudinaryImage";
 
 const NewsImage = ({ story, className = "", fit = "cover" }) => {
   const [failed, setFailed] = useState(false);
@@ -16,7 +20,9 @@ const NewsImage = ({ story, className = "", fit = "cover" }) => {
   if (story?.image && !failed) {
     return (
       <img
-        src={story.image}
+        src={toCloudinaryResponsiveImage(story.image, 640)}
+        srcSet={toCloudinaryResponsiveSrcSet(story.image, [320, 640, 960])}
+        sizes="(max-width: 640px) 76vw, 640px"
         alt={story.heroImageAlt || story.title}
         loading="lazy"
         decoding="async"

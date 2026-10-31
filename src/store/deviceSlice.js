@@ -628,14 +628,23 @@ const buildPreloadedDeviceState = () => {
 export const fetchSmartphones = createAsyncThunk(
   "device/fetchSmartphones",
   // Accept an optional options object: { feature }
-  async (opts = {}, { rejectWithValue }) => {
+  async (opts = {}, { rejectWithValue, signal }) => {
     try {
       const params = new URLSearchParams();
       if (opts.page != null) params.set("page", String(opts.page));
       if (opts.limit != null) params.set("limit", String(opts.limit));
+      if (opts.filters && typeof opts.filters === "object") {
+        params.set("filters", JSON.stringify(opts.filters));
+      }
+      if (opts.search) params.set("search", String(opts.search));
+      if (opts.sort) params.set("sort", String(opts.sort));
+      if (Array.isArray(opts.popularIds) && opts.popularIds.length) {
+        params.set("popularIds", opts.popularIds.join(","));
+      }
       const query = params.toString();
       const res = await fetch(
         `${API_BASE_URL}/smartphones${query ? `?${query}` : ""}`,
+        { signal },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -955,7 +964,7 @@ export const fetchCategories = createAsyncThunk(
   },
 );
 
-// Fetch a single smartphone by id (numeric) or by model/name (non-numeric).
+// Fetch a single smartphone by ID or canonical route slug.
 export const fetchSmartphone = createAsyncThunk(
   "device/fetchSmartphone",
   async (identifier, { rejectWithValue }) => {
@@ -979,25 +988,18 @@ export const fetchSmartphone = createAsyncThunk(
         variants: normalizeVariants(d),
       });
 
-      const numericId = Number(identifier);
-      if (!Number.isNaN(numericId) && String(identifier).trim() !== "") {
-        // try fetch by id using public endpoint
-        const res = await fetch(
-          `${API_BASE_URL}/public/product/${encodeURIComponent(identifier)}`,
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const body = await res.json();
+      const normalizedIdentifier = String(identifier).trim();
+      if (!normalizedIdentifier) throw new Error("Missing identifier");
+      const numericId = Number(normalizedIdentifier);
+      const isNumericId =
+        !Number.isNaN(numericId) && normalizedIdentifier !== "";
+      const detailUrl = isNumericId
+        ? `${API_BASE_URL}/public/product/${encodeURIComponent(normalizedIdentifier)}`
+        : `${API_BASE_URL}/public/smartphones/by-slug/${encodeURIComponent(normalizedIdentifier)}`;
+      const body = await fetchPublicJson(detailUrl, { cacheTtlMs: 60_000 });
 
-        if (!body || !body.id) {
-          throw new Error("Invalid product data");
-        }
-
-        // Body is already flattened, use it directly
-        return mapSingle(body);
-      }
-
-      // fallback: throw error
-      throw new Error("Device not found by identifier");
+      if (!body || !body.id) throw new Error("Invalid product data");
+      return mapSingle(body);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -1173,24 +1175,30 @@ const deviceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSmartphones.pending, (state) => {
+      .addCase(fetchSmartphones.pending, (state, action) => {
         state.loading = true;
         state.error = null;
+        state.smartphoneRequestId = action.meta.requestId;
       })
       .addCase(fetchSmartphones.fulfilled, (state, action) => {
+        if (state.smartphoneRequestId !== action.meta.requestId) return;
         const page = action.payload?.items || action.payload || [];
         state.smartphone = page;
         state.smartphoneAll = page;
         state.smartphonePagination = action.payload?.pagination || null;
+        state.smartphoneRequestId = null;
         state.loading = false;
         state.loaded = true;
         state.error = null;
       })
       .addCase(fetchSmartphones.rejected, (state, action) => {
+        if (state.smartphoneRequestId !== action.meta.requestId) return;
+        state.smartphoneRequestId = null;
         state.loading = false;
         state.loaded = true;
-        state.error =
-          action.payload || action.error?.message || String(action.error);
+        state.error = action.meta.aborted
+          ? null
+          : action.payload || action.error?.message || String(action.error);
       })
       .addCase(fetchTrendingSmartphones.pending, (state) => {
         state.loading = true;

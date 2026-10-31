@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import CompetitorCards from "../ui/CompetitorCards";
-import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
 import { buildClientSmartphoneFaqs } from "../../utils/smartphoneFaqs";
@@ -78,15 +76,14 @@ import {
 } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
-import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
-import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 import { resolveSmartphoneDisplayState } from "../../utils/canonicalLifecycle";
 import {
   CLOUDINARY_OG_DIMENSIONS,
   toCloudinaryOgImage,
+  toCloudinaryResponsiveImage,
+  toCloudinaryResponsiveSrcSet,
 } from "../../utils/cloudinaryImage";
 
 const MobilesXScoreLogo = ({ className }) => (
@@ -374,6 +371,64 @@ const getRenderableStorePriceRows = (source) => {
   }
 
   return [];
+};
+
+const CompetitorCards = React.lazy(() => import("../ui/CompetitorCards"));
+const SmartphoneFaqSection = React.lazy(
+  () => import("../ui/SmartphoneFaqSection"),
+);
+const LatestNewsRouteSection = React.lazy(
+  () => import("../ui/LatestNewsRouteSection"),
+);
+const ContinueBrowsingSmartphones = React.lazy(
+  () => import("../ui/ContinueBrowsingSmartphones"),
+);
+const ProductDiscoverySections = React.lazy(
+  () => import("../ui/ProductDiscoverySections"),
+);
+
+const DeferredSection = ({
+  children,
+  className = "",
+  onVisible,
+  minHeight = 1,
+}) => {
+  const hostRef = useRef(null);
+  const onVisibleRef = useRef(onVisible);
+  const [visible, setVisible] = useState(false);
+  onVisibleRef.current = onVisible;
+
+  useEffect(() => {
+    if (visible) return undefined;
+    const host = hostRef.current;
+    if (!host || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      onVisibleRef.current?.();
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setVisible(true);
+        onVisibleRef.current?.();
+        observer.disconnect();
+      },
+      { rootMargin: "500px 0px" },
+    );
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  return (
+    <div ref={hostRef} className={className} style={{ minHeight }}>
+      {visible ? (
+        <React.Suspense fallback={null}>
+          {typeof children === "function" ? children() : children}
+        </React.Suspense>
+      ) : null}
+    </div>
+  );
 };
 
 const HiddenScoreBadge = () => null;
@@ -667,6 +722,7 @@ const MobileDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [activePageSection, setActivePageSection] = useState("detail-overview");
+  const [shouldLoadLinkedNews, setShouldLoadLinkedNews] = useState(false);
   const variantInitKeyRef = useRef("");
   const detailFetchKeyRef = useRef("");
   const {
@@ -675,8 +731,7 @@ const MobileDetailCard = () => {
     loading,
     error,
     smartphone,
-    refreshDevices,
-  } = useDevice({ resources: ["smartphones"] });
+  } = useDevice({ resources: [] });
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const navigate = useNavigate();
 
@@ -831,33 +886,6 @@ const MobileDetailCard = () => {
     shouldRenderAliasNotFound,
   ]);
 
-  useEffect(() => {
-    if (shouldRenderAliasNotFound) return;
-    // Resolve smartphone details from the canonical slug instead of query ids
-    // so legacy `?id=` URLs do not become a separate route source.
-    if (routeSlug) {
-      const localDevice = findDeviceBySlug(routeSlug);
-      if (localDevice) return; // already available locally
-
-      // If devices not loaded or currently empty, trigger a refresh
-      if (!Array.isArray(smartphone) || smartphone.length === 0) {
-        // Refresh the full smartphone list so the slug can be resolved locally
-        try {
-          refreshDevices();
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
-    // If nothing else, no-op; the global loader will fetch lists on mount.
-  }, [
-    routeSlug,
-    findDeviceBySlug,
-    refreshDevices,
-    smartphone,
-    shouldRenderAliasNotFound,
-  ]);
-
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
     if (shouldRenderAliasNotFound) return;
@@ -952,17 +980,21 @@ const MobileDetailCard = () => {
 
   useEffect(() => {
     if (shouldRenderAliasNotFound || !routeSlug) return;
-    const resolvedId =
-      localResolved?.id ?? localResolved?.product_id ?? routeProductId ?? null;
-    if (resolvedId == null) return;
-    const fetchKey = `${routeSlug}:${resolvedId}`;
+    const identifier =
+      localResolved?.id ??
+      localResolved?.product_id ??
+      routeProductId ??
+      routeBaseSlug;
+    if (!identifier) return;
+    const fetchKey = `${routeSlug}:${identifier}`;
     if (detailFetchKeyRef.current === fetchKey) return;
     detailFetchKeyRef.current = fetchKey;
-    fetchDevice(resolvedId);
+    fetchDevice(identifier);
   }, [
     fetchDevice,
     localResolved,
     routeProductId,
+    routeBaseSlug,
     routeSlug,
     selectedResolvedForRoute,
     shouldRenderAliasNotFound,
@@ -1843,6 +1875,8 @@ const MobileDetailCard = () => {
   const carouselImages = Array.isArray(mobileData?.images)
     ? mobileData.images.filter(Boolean)
     : [];
+  const activeCarouselImage =
+    carouselImages[activeImage] || carouselImages[0] || "/placeholder-image.jpg";
 
   useEffect(() => {
     setActiveImage(0);
@@ -2331,7 +2365,7 @@ const MobileDetailCard = () => {
     limit: LINKED_NEWS_LIMIT,
     category: "",
     productId: currentProductId,
-    enabled: Boolean(currentProductId),
+    enabled: Boolean(currentProductId && shouldLoadLinkedNews),
   });
   const exactLinkedNewsStories = useMemo(() => {
     const resolvedProductId = Number(currentProductId);
@@ -5369,9 +5403,10 @@ Price: ${price}
                             }`}
                           >
                             <img
-                              src={image}
+                              src={toCloudinaryResponsiveImage(image, 128)}
                               alt={`${headerTitle} view ${index + 1}`}
-                              loading={index === 0 ? "eager" : "lazy"}
+                              loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-contain"
                             />
                           </button>
@@ -5404,14 +5439,13 @@ Price: ${price}
                         ) : null}
 
                         <img
-                          src={
-                            carouselImages[activeImage] ||
-                            carouselImages[0] ||
-                            "/placeholder-image.jpg"
-                          }
+                          src={toCloudinaryResponsiveImage(activeCarouselImage, 640)}
+                          srcSet={toCloudinaryResponsiveSrcSet(activeCarouselImage)}
+                          sizes="(max-width: 640px) 260px, 330px"
                           alt={`${headerTitle} product image`}
                           loading="eager"
-                          fetchPriority="high"
+                          fetchpriority="high"
+                          decoding="async"
                           className="relative z-[1] max-h-[240px] w-full max-w-[260px] object-contain sm:max-h-[390px] sm:max-w-[330px]"
                           onError={(event) => {
                             event.currentTarget.src =
@@ -5614,8 +5648,8 @@ Price: ${price}
                               storePrice.storeName ||
                               "Online store";
                             const rawLogo =
-                              storePrice.logo ||
                               getStoreLogo?.(storeName) ||
+                              storePrice.logo ||
                               getLogo?.(storeName) ||
                               "";
                             const logo = rawLogo ? toAbsoluteUrl(rawLogo) : "";
@@ -5844,8 +5878,8 @@ Price: ${price}
                             storeObj?.name ||
                             "Online store";
                           const rawLogoSrc =
-                            storePrice.logo ||
                             (storeName ? getStoreLogo?.(storeName) : null) ||
+                            storePrice.logo ||
                             (storeName ? getLogo?.(storeName) : null) ||
                             storeObj?.logo ||
                             "";
@@ -5924,25 +5958,27 @@ Price: ${price}
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
               {competitorLimit > 0 ? (
-                <CompetitorCards
-                  title={
-                    mobileData?.name
-                      ? `Competitors For ${mobileData.name}`
-                      : "Top Competitors"
-                  }
-                  productName={
-                    mobileData?.name || mobileData?.model || "This Device"
-                  }
-                  productId={currentProductId}
-                  onCompare={handlePopularCompare}
-                  compareDisabled={compareDisabled}
-                  fallbackCompetitors={popularComparisonTargets}
-                  currentDevice={mobileData}
-                  currentBrand={mobileData?.brand || ""}
-                  currentPrice={resolvedCurrentNumericPrice}
-                  maxCards={competitorLimit}
-                  className="w-full"
-                />
+                <DeferredSection minHeight={220}>
+                  <CompetitorCards
+                    title={
+                      mobileData?.name
+                        ? `Competitors For ${mobileData.name}`
+                        : "Top Competitors"
+                    }
+                    productName={
+                      mobileData?.name || mobileData?.model || "This Device"
+                    }
+                    productId={currentProductId}
+                    onCompare={handlePopularCompare}
+                    compareDisabled={compareDisabled}
+                    fallbackCompetitors={popularComparisonTargets}
+                    currentDevice={mobileData}
+                    currentBrand={mobileData?.brand || ""}
+                    currentPrice={resolvedCurrentNumericPrice}
+                    maxCards={competitorLimit}
+                    className="w-full"
+                  />
+                </DeferredSection>
               ) : null}
               <div className="space-y-4 sm:space-y-6">
                 {/* <RecommendedSmartphones /> */}
@@ -5961,7 +5997,11 @@ Price: ${price}
           id="detail-news"
           className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
-          {shouldShowLinkedNews ? (
+          <DeferredSection
+            minHeight={1}
+            onVisible={() => setShouldLoadLinkedNews(true)}
+          >
+            {shouldShowLinkedNews ? (
             <div className="w-full">
               <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
                 <section className="mx-auto w-full max-w-7xl bg-transparent ">
@@ -6004,12 +6044,13 @@ Price: ${price}
                 </section>
               </div>
             </div>
-          ) : null}
-          <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-            <div className="mx-auto w-full max-w-7xl">
-              <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
+            ) : null}
+            <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+              <div className="mx-auto w-full max-w-7xl">
+                <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
+              </div>
             </div>
-          </div>
+          </DeferredSection>
         </div>
 
         {smartphoneFaqItems.length > 0 ? (
@@ -6018,28 +6059,34 @@ Price: ${price}
             className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-              <div className="mx-auto w-full max-w-7xl">
-                <SmartphoneFaqSection
-                  items={smartphoneFaqItems}
-                  initialLimit={6}
-                />
-              </div>
+              <DeferredSection minHeight={120}>
+                <div className="mx-auto w-full max-w-7xl">
+                  <SmartphoneFaqSection
+                    items={smartphoneFaqItems}
+                    initialLimit={6}
+                  />
+                </div>
+              </DeferredSection>
             </div>
           </div>
         ) : null}
 
         <section className="mx-product-discovery-section w-full bg-transparent">
-          <ProductDiscoverySections
-            productId={currentProductId}
-            currentBrand={mobileData?.brand || ""}
-            entityType="smartphones"
-            layout="latestPhones"
-            showComparisonBanner={false}
-          />
+          <DeferredSection minHeight={220}>
+            <ProductDiscoverySections
+              productId={currentProductId}
+              currentBrand={mobileData?.brand || ""}
+              entityType="smartphones"
+              layout="latestPhones"
+              showComparisonBanner={false}
+            />
+          </DeferredSection>
         </section>
 
         {currentProductId ? (
-          <ContinueBrowsingSmartphones currentProduct={currentBrowsingProduct} />
+          <DeferredSection minHeight={140}>
+            <ContinueBrowsingSmartphones currentProduct={currentBrowsingProduct} />
+          </DeferredSection>
         ) : null}
       </main>
     </div>

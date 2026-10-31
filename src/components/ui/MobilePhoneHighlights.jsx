@@ -29,7 +29,6 @@ import {
 const SMARTPHONE_HIGHLIGHTS_ENDPOINT = buildApiUrl(
   "/public/smartphones/highlights",
 );
-const SMARTPHONE_CATALOG_ENDPOINT = buildApiUrl("/smartphones");
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -606,7 +605,6 @@ const MobilePhoneHighlights = ({
   showCompareLink = true,
 }) => {
   const [serverRows, setServerRows] = useState([]);
-  const [catalogPhones, setCatalogPhones] = useState([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -614,35 +612,15 @@ const MobilePhoneHighlights = ({
 
     (async () => {
       try {
-        const [highlightsResult, catalogResult] = await Promise.allSettled([
-          fetchPublicJson(SMARTPHONE_HIGHLIGHTS_ENDPOINT, {
-            signal: controller.signal,
-          }),
-          fetchPublicJson(SMARTPHONE_CATALOG_ENDPOINT, {
-            signal: controller.signal,
-          }),
-        ]);
+        const highlightsResult = await fetchPublicJson(
+          SMARTPHONE_HIGHLIGHTS_ENDPOINT,
+          { signal: controller.signal },
+        );
 
         if (cancelled) return;
 
-        if (highlightsResult.status === "fulfilled") {
-          const normalized = normalizeServerHighlightRows(
-            highlightsResult.value,
-          );
-          if (normalized.length > 0) setServerRows(normalized);
-        }
-
-        if (catalogResult.status === "fulfilled") {
-          const catalogBody = catalogResult.value;
-          const phones = Array.isArray(catalogBody)
-            ? catalogBody
-            : Array.isArray(catalogBody?.smartphones)
-              ? catalogBody.smartphones
-              : Array.isArray(catalogBody?.data)
-                ? catalogBody.data
-                : [];
-          setCatalogPhones(phones);
-        }
+        const normalized = normalizeServerHighlightRows(highlightsResult);
+        if (normalized.length > 0) setServerRows(normalized);
       } catch (error) {
         if (error?.name === "AbortError") return;
       }
@@ -676,14 +654,14 @@ const MobilePhoneHighlights = ({
 
   const deviceLookup = useMemo(() => {
     const lookup = new Map();
-    uniquePhones([...devices, ...catalogPhones]).forEach((phone) => {
+    uniquePhones(devices).forEach((phone) => {
       const name = getPhoneName(phone).toLowerCase();
       if (name) lookup.set(`name:${name}`, phone);
       const id = phone?.product_id ?? phone?.productId ?? phone?.id ?? null;
       if (id != null && String(id).trim()) lookup.set(`id:${id}`, phone);
     });
     return lookup;
-  }, [catalogPhones, devices]);
+  }, [devices]);
 
   const rows = useMemo(() => {
     const sourceRows = serverRows.length > 0 ? serverRows : fallbackRows;

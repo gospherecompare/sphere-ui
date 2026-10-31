@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FaArrowRight, FaMobile } from "react-icons/fa";
 import { buildApiUrl } from "../../utils/apiUrl";
 import { createSmartphoneDetailPath } from "../../utils/slugGenerator";
+import { toCloudinaryResponsiveImage } from "../../utils/cloudinaryImage";
 import "../../styles/hideScrollbar.css";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
@@ -242,9 +243,10 @@ const ContinueBrowsingSmartphones = ({
                       <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-white p-1">
                         {image ? (
                           <img
-                            src={image}
+                            src={toCloudinaryResponsiveImage(image, 160)}
                             alt={itemName}
                             loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-contain"
                           />
                         ) : (

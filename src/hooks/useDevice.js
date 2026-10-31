@@ -35,7 +35,10 @@ const ALL_DEVICE_RESOURCES = [
   "categories",
 ];
 
-export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
+export function useDevice({
+  resources = ALL_DEVICE_RESOURCES,
+  smartphoneLimit,
+} = {}) {
   const dispatch = useDispatch();
   const state = useSelector((s) => s.device || {});
   const requestedResources = Array.isArray(resources)
@@ -49,6 +52,11 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
     requestedResources.includes("homeAppliances");
   const loadBrands = requestedResources.includes("brands");
   const loadCategories = requestedResources.includes("categories");
+  const shouldLoadFullSmartphoneCatalog =
+    loadSmartphones &&
+    smartphoneLimit == null &&
+    state.loaded &&
+    Boolean(state.smartphonePagination?.hasNext);
 
   // load data when relevant flags show data is missing. Include explicit
   // dependencies so the effect won't be re-run unexpectedly and will only
@@ -56,14 +64,20 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
   useEffect(() => {
     if (
       loadSmartphones &&
-      !state.loaded &&
+      (!state.loaded || shouldLoadFullSmartphoneCatalog) &&
       !state.loading &&
       !inFlightInitialLoads.smartphones
     ) {
       inFlightInitialLoads.smartphones = true;
-      Promise.resolve(dispatch(fetchSmartphones())).finally(() => {
-        inFlightInitialLoads.smartphones = false;
-      });
+      const requestOptions =
+        smartphoneLimit == null
+          ? { force: shouldLoadFullSmartphoneCatalog }
+          : { page: 1, limit: smartphoneLimit };
+      Promise.resolve(dispatch(fetchSmartphones(requestOptions))).finally(
+        () => {
+          inFlightInitialLoads.smartphones = false;
+        },
+      );
     }
     if (
       loadNetworking &&
@@ -123,6 +137,8 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
   }, [
     dispatch,
     loadSmartphones,
+    smartphoneLimit,
+    shouldLoadFullSmartphoneCatalog,
     loadNetworking,
     loadLaptops,
     loadTvs,
@@ -130,6 +146,7 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
     loadCategories,
     state.loaded,
     state.loading,
+    state.smartphonePagination?.hasNext,
     state.networkingLoaded,
     state.networkingLoading,
     state.laptopsLoaded,

@@ -23,7 +23,10 @@ const normalizeList = (rows, type = "smartphones") =>
   );
 
 export const HomeDataProvider = ({ children }) => {
-  const devices = useDevice({ resources: ["smartphones", "tvs", "brands"] });
+  const devices = useDevice({
+    resources: ["smartphones", "brands"],
+    smartphoneLimit: 1,
+  });
   const [remote, setRemote] = useState({
     trending: [],
     latest: [],
@@ -38,7 +41,7 @@ export const HomeDataProvider = ({ children }) => {
 
     const load = async () => {
       const requests = await Promise.allSettled([
-        fetchPublicJson(buildApiUrl("/public/trending/smartphones?limit=40"), {
+        fetchPublicJson(buildApiUrl("/public/trending/smartphones?limit=12"), {
           signal: controller.signal,
         }),
         fetchPublicJson(buildApiUrl("/public/new/smartphones"), {
@@ -78,12 +81,10 @@ export const HomeDataProvider = ({ children }) => {
     const storeSmartphones = normalizeList(
       (devices.smartphoneAll?.length ? devices.smartphoneAll : devices.smartphone) || [],
     );
-    const storeTvs = normalizeList(devices.homeAppliances || [], "tvs");
     const catalog = uniqueProducts([
       ...remote.trending,
       ...remote.latest,
       ...storeSmartphones,
-      ...storeTvs,
     ]);
 
     const trendingSource = remote.trending.length
@@ -127,14 +128,17 @@ export const HomeDataProvider = ({ children }) => {
       .slice(0, 24);
 
     const categoryCounts = {
-      smartphones: storeSmartphones.length || catalog.filter((item) => item.type === "smartphones").length,
-      tvs: storeTvs.length || catalog.filter((item) => item.type === "tvs").length,
+      smartphones:
+        Number(devices.smartphonePagination?.total) ||
+        storeSmartphones.length ||
+        catalog.filter((item) => item.type === "smartphones").length,
+      tvs: catalog.filter((item) => item.type === "tvs").length,
       brands: brands.length,
       comparisons: remote.comparisons.length,
     };
 
     return {
-      loading: remote.loading || devices.loading || devices.homeAppliancesLoading,
+      loading: remote.loading || devices.loading,
       error: remote.error,
       heroProduct,
       trendingProducts,
