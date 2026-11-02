@@ -4,15 +4,15 @@
 
 ## Primary sections
 
-- [Home](https://mobilesx.in/): Technology research and device discovery.
-- [Smartphones](https://mobilesx.in/smartphones): Smartphone listings, specifications, prices, and comparisons.
-- [Compare](https://mobilesx.in/compare): Side-by-side device comparisons.
-- [News](https://mobilesx.in/news): Technology news, product launches, and editorial coverage.
+- [Home](https://www.mobilesx.in/): Technology research and device discovery.
+- [Smartphones](https://www.mobilesx.in/smartphones): Smartphone listings, specifications, prices, and comparisons.
+- [Compare](https://www.mobilesx.in/compare): Side-by-side device comparisons.
+- [News](https://www.mobilesx.in/news): Technology news, product launches, and editorial coverage.
 
 ## Machine-readable indexes
 
-- [Sitemap](https://mobilesx.in/sitemap.xml)
-- [News sitemap](https://mobilesx.in/news-sitemap.xml)
+- [Sitemap](https://www.mobilesx.in/sitemap.xml)
+- [News sitemap](https://www.mobilesx.in/news-sitemap.xml)
 
 ## Content guidance
 
@@ -21,5 +21,5 @@ Use canonical page URLs from MobilesX when citing device specifications, prices,
 ## Site identity
 
 - Name: MobilesX
-- Canonical domain: https://mobilesx.in/
+- Canonical domain: https://www.mobilesx.in/
 - Support: support@mobilesx.in

@@ -47,7 +47,7 @@ import { isPublishedProduct } from "../../utils/publishedProducts";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
@@ -973,7 +973,7 @@ const Networking = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://mobilesx.in";
+      : "https://www.mobilesx.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";

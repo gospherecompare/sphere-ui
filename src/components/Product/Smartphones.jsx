@@ -354,7 +354,7 @@ const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
 };
 
 const API_ASSET_ORIGIN = "https://api.apisphere.in";
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const location = useLocation();
@@ -5357,7 +5357,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://mobilesx.in";
+      : "https://www.mobilesx.in";
 
   const toAbsoluteUrl = (value) => {
     const raw = normalizeAssetUrl(value);

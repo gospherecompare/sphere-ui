@@ -1,6 +1,10 @@
-import { toCanonicalPagePath, toCanonicalPageUrl } from "./publicUrl";
+import {
+  normalizeLegacySiteUrls,
+  toCanonicalPagePath,
+  toCanonicalPageUrl,
+} from "./publicUrl";
 
-export const NEWS_SITE_ORIGIN = "https://mobilesx.in";
+export const NEWS_SITE_ORIGIN = "https://www.mobilesx.in";
 
 export const NEWS_LISTING_SEO = Object.freeze({
   title: "Tech News, Gadget Launches, Reviews & Buying Guides | MobilesX",
@@ -207,7 +211,7 @@ export const escapeNewsHtml = (value = "") =>
     .replace(/>/g, "&gt;");
 
 export const sanitizeNewsArticleHtml = (value = "") => {
-  const decoded = decodeNewsEntities(value)
+  const decoded = normalizeLegacySiteUrls(decodeNewsEntities(value))
     .replace(/<!--([\s\S]*?)-->/g, "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")

@@ -1,4 +1,19 @@
-const DEFAULT_SITE_ORIGIN = "https://mobilesx.in";
+export const DEFAULT_SITE_ORIGIN = "https://www.mobilesx.in";
+
+export const normalizeLegacySiteUrls = (value = "") =>
+  String(value || "").replace(
+    /(?:https?:)?\/\/(?:www\.)?tryhook\.shop(?=[/?#\s"'<>]|$)/gi,
+    DEFAULT_SITE_ORIGIN,
+  );
+
+const isMobilesXOrigin = (value) => {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname === "mobilesx.in" || hostname === "www.mobilesx.in";
+  } catch {
+    return false;
+  }
+};
 
 const parseUrlLike = (value = "", baseOrigin = DEFAULT_SITE_ORIGIN) => {
   const raw = String(value || "").trim();
@@ -62,7 +77,10 @@ export const toCanonicalPageUrl = (
   siteOrigin = DEFAULT_SITE_ORIGIN,
 ) => {
   const parsed = parseUrlLike(value, siteOrigin);
-  const origin = String(parsed.origin || siteOrigin).replace(/\/+$/g, "");
+  const parsedOrigin = parsed.origin || siteOrigin;
+  const origin = isMobilesXOrigin(parsedOrigin)
+    ? DEFAULT_SITE_ORIGIN
+    : String(parsedOrigin).replace(/\/+$/g, "");
   // Canonical URLs identify the preferred document URL, so tracking/filter
   // parameters and fragments are intentionally removed.
   const path = toCanonicalPagePath(parsed.pathname || "/");
@@ -70,6 +88,7 @@ export const toCanonicalPageUrl = (
 };
 
 export default {
+  normalizeLegacySiteUrls,
   toCanonicalPagePath,
   toCanonicalPageUrl,
 };

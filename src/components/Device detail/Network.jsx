@@ -70,7 +70,7 @@ import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 // Rating Input Component
 const InlineRatingInput = ({

@@ -171,7 +171,7 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 const clampScore100 = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -1589,7 +1589,7 @@ const Laptops = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://mobilesx.in";
+      : "https://www.mobilesx.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";

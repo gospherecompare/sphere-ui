@@ -2,9 +2,12 @@ import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { normalizeSeoTitle } from "../utils/seoTitle";
-import { toCanonicalPageUrl } from "../utils/publicUrl";
+import {
+  DEFAULT_SITE_ORIGIN,
+  toCanonicalPageUrl,
+} from "../utils/publicUrl";
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = DEFAULT_SITE_ORIGIN;
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large";
 const PRERENDER_SCHEMA_SELECTOR =
   'script[type="application/ld+json"][data-hooks-prerender-schema="true"]';
@@ -37,15 +40,7 @@ const toAbsoluteUrl = (value, fallbackPath = "/") => {
  * Falls back to window.location.href if available
  */
 const getCanonicalUrl = (customUrl, pathname) => {
-  if (customUrl) return toCanonicalPageUrl(customUrl);
-
-  if (typeof window !== "undefined") {
-    const origin = window.location?.origin || SITE_ORIGIN;
-    const path = pathname || window.location?.pathname || "/";
-    return toCanonicalPageUrl(path, origin);
-  }
-
-  return toCanonicalPageUrl(pathname || "/", SITE_ORIGIN);
+  return toCanonicalPageUrl(customUrl || pathname || "/", SITE_ORIGIN);
 };
 
 const inferImageType = (url) => {

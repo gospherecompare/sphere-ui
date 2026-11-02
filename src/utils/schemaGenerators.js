@@ -4,7 +4,7 @@
  */
 import { toCanonicalPageUrl } from "./publicUrl";
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 /**
  * Convert relative/absolute URLs to full absolute URLs

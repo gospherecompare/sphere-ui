@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 const MAX_COMPARE_PAYLOAD_BYTES = 75_000;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(scriptDir, "..");
@@ -153,7 +153,7 @@ const run = async () => {
     );
   });
 
-  const compareUrls = urls.filter((url) => /^\/compare\/[^/]+\/$/.test(new URL(url).pathname));
+  const compareUrls = urls.filter((url) => /^\/compare\/[^/]+$/.test(new URL(url).pathname));
   assert(compareUrls.length > 0, "Sitemap contains no comparison detail URLs");
 
   const rows = [];
@@ -212,15 +212,15 @@ const run = async () => {
   const controls = await Promise.all([
     verifyControlRoute(
       urls,
-      /^\/smartphones\/(?!brand\/|filter\/|feature\/)[^/]+\/$/,
+      /^\/smartphones\/(?!brand\/|filter\/|feature\/)[^/]+$/,
       "smartphone detail",
     ),
     verifyControlRoute(
       urls,
-      /^\/tvs\/(?!brand\/|filter\/|feature\/)[^/]+\/$/,
+      /^\/tvs\/(?!brand\/|filter\/|feature\/)[^/]+$/,
       "TV detail",
     ),
-    verifyControlRoute(urls, /^\/news\/[^/]+\/$/, "news article"),
+    verifyControlRoute(urls, /^\/news\/[^/]+$/, "news article"),
   ]);
 
   console.log(
