@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(scriptDir, "..");
 const distDir = path.join(clientRoot, "dist");
@@ -71,7 +71,7 @@ const inspectHead = (html, routeLabel) => {
   return { title, description, canonical };
 };
 
-const assertTrailingNewsLinks = (html, routeLabel) => {
+const assertCanonicalNewsLinks = (html, routeLabel) => {
   const hrefs = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["']/gi)].map(
     (match) => decodeHtml(match[1]),
   );
@@ -85,10 +85,15 @@ const assertTrailingNewsLinks = (html, routeLabel) => {
   });
 
   articleLinks.forEach((href) => {
-    const pathname = new URL(href, SITE_ORIGIN).pathname;
+    const parsedUrl = new URL(href, SITE_ORIGIN);
+    const pathname = parsedUrl.pathname;
+    assert(
+      ["mobilesx.in", "www.mobilesx.in"].includes(parsedUrl.hostname),
+      `${routeLabel} links to an unexpected site hostname: ${href}`,
+    );
     assert(
       pathname === "/" || !pathname.endsWith("/"),
-      `${routeLabel} links to ${href} with a trailing slash`,
+      `${routeLabel} links to ${href} with an unexpected trailing slash`,
     );
   });
 
@@ -114,7 +119,7 @@ const run = async () => {
   const listingHead = inspectHead(listingHtml, "/news/");
 
   assert(
-    listingHead.canonical === `${SITE_ORIGIN}/news/`,
+    listingHead.canonical === `${SITE_ORIGIN}/news`,
     `/news/ canonical is ${listingHead.canonical}`,
   );
   assert(
@@ -134,7 +139,7 @@ const run = async () => {
     !/["']@type["']\s*:\s*["']NewsArticle["']/i.test(listingHtml),
     "/news/ must not contain NewsArticle JSON-LD",
   );
-  const listingLinks = assertTrailingNewsLinks(listingHtml, "/news/");
+  const listingLinks = assertCanonicalNewsLinks(listingHtml, "/news");
   assert(listingLinks.length > 0, "/news/ has no crawlable article links");
 
   const directoryEntries = await fs.readdir(newsDir, { withFileTypes: true });
@@ -144,7 +149,7 @@ const run = async () => {
   const rows = [];
   for (const entry of articleDirectories) {
     const slug = entry.name;
-    const routeLabel = `/news/${slug}/`;
+    const routeLabel = `/news/${slug}`;
     const html = await fs.readFile(
       path.join(newsDir, slug, "index.html"),
       "utf8",
@@ -179,7 +184,7 @@ const run = async () => {
       /["']@type["']\s*:\s*["']BreadcrumbList["']/i.test(html),
       `${routeLabel} is missing initial BreadcrumbList JSON-LD`,
     );
-    assertTrailingNewsLinks(html, routeLabel);
+    assertCanonicalNewsLinks(html, routeLabel);
     assert(
       sitemapXml.includes(`<loc>${expectedCanonical}</loc>`),
       `${routeLabel} canonical is absent from dist/sitemap.xml`,

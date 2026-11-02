@@ -1522,7 +1522,7 @@ const NewsArticlesPage = () => {
     (!taxonomyRoute || hasExtraNewsRouteSegments);
   const canonicalPath = taxonomyRoute?.path || "/news";
   const canonical = taxonomyRoute
-    ? `https://mobilesx.in${canonicalPath}`
+    ? `https://www.mobilesx.in${canonicalPath}`
     : NEWS_LISTING_SEO.canonicalUrl;
   const feedCategory =
     activeCategory || taxonomyRoute?.matchCategories?.join(",") || "";
@@ -1585,7 +1585,7 @@ const NewsArticlesPage = () => {
 
   const pageSchema = [
     createBreadcrumbSchema([
-      { label: "Home", url: "https://mobilesx.in/" },
+      { label: "Home", url: "https://www.mobilesx.in/" },
       { label: "News", url: NEWS_LISTING_SEO.canonicalUrl },
       ...(taxonomyRoute
         ? [{ label: taxonomyRoute.title, url: canonical }]
@@ -1595,7 +1595,7 @@ const NewsArticlesPage = () => {
       name: taxonomyRoute?.title || "MobilesX News",
       description: pageDescription,
       url: canonical,
-      image: "https://mobilesx.in/mobilex-favicon.svg",
+      image: "https://www.mobilesx.in/mobilex-favicon.svg",
     }),
     createWebPageSchema({
       name: taxonomyRoute?.title || "MobilesX News",
@@ -1617,7 +1617,7 @@ const NewsArticlesPage = () => {
         url={canonical}
         robots="index, follow, max-image-preview:large"
         ogType="website"
-        image="https://mobilesx.in/mobilex-favicon.svg"
+        image="https://www.mobilesx.in/mobilex-favicon.svg"
         schema={pageSchema}
       />
 

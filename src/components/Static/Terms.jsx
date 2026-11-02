@@ -13,7 +13,7 @@ import SEO from "../SEO";
 import CompanyPageShell from "../ui/CompanyPageShell";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 
-const SITE_ORIGIN = "https://mobilesx.in";
+const SITE_ORIGIN = "https://www.mobilesx.in";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 

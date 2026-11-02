@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
-import { toCanonicalPagePath } from "../utils/publicUrl";
+import {
+  normalizeLegacySiteUrls,
+  toCanonicalPagePath,
+} from "../utils/publicUrl";
 import { buildApiUrl } from "../utils/apiUrl";
 import { fetchPublicJson } from "../utils/publicJsonRequest";
 
@@ -243,7 +246,7 @@ const decodeHtmlEntitiesOnce = (value) => {
     text = text.split(encoded).join(decoded);
   });
 
-  return text;
+  return normalizeLegacySiteUrls(text);
 };
 
 const normalizeHtmlContent = (value) => {
@@ -1266,7 +1269,7 @@ export const useStoryListSchemaItems = (stories = []) =>
     () =>
       stories.map((story) => ({
         name: story.title,
-        url: `https://mobilesx.in${createNewsStoryPath(story.slug)}`,
+        url: `https://www.mobilesx.in${createNewsStoryPath(story.slug)}`,
         image: story.image,
       })),
     [stories],
