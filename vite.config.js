@@ -491,7 +491,9 @@ const joinCompareNamesWithoutCommas = (names = []) => {
   return clean.join(" and ");
 };
 const limitSeoText = (value, maxLength) => {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
+  const text = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, Math.max(1, maxLength - 3)).trim()}...`;
 };
@@ -518,7 +520,8 @@ const buildCompareSeoTitle = (names = []) => {
   const cleanNames = (Array.isArray(names) ? names : [])
     .map((name) => String(name || "").trim())
     .filter(Boolean);
-  if (!cleanNames.length) return "Compare Smartphones, TVs and Devices | MobileX";
+  if (!cleanNames.length)
+    return "Compare Smartphones, TVs and Devices | MobileX";
 
   const suffix = ": Specs & Price | MobileX";
   const compactNames = cleanNames.map(compactCompareName);
@@ -2241,7 +2244,8 @@ const resolveSeo = (routePath) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "MobilesX: Compare Smartphones, TVs & Gadgets in India",
+      title:
+        "MobilesX | AI-Powered Phone & TV Comparisons | Phone Finder | Tech News",
       description:
         "MobilesX is an AI-powered platform to discover and compare smartphones, TVs, laptops and gadgets in India with latest prices, detailed specs, reviews, comparisons, tech news and AI summaries.",
       keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
@@ -2398,7 +2402,8 @@ const resolveSeo = (routePath) => {
         trendingLabels[trendingCategory] || trendingLabels.smartphones,
       ).toLowerCase()} based on momentum and user interest to spot what is popular right now.`,
       keywords:
-        trendingKeywordSets[trendingCategory] || trendingKeywordSets.smartphones,
+        trendingKeywordSets[trendingCategory] ||
+        trendingKeywordSets.smartphones,
     },
     {
       test: (p) => p === "/news",
@@ -3152,7 +3157,9 @@ const buildNewsListingPrerenderMarkup = (preloadedApiPayload) => {
     `${API_BASE_URL}/public/blogs?limit=50`,
     ["blogs"],
   ).filter((blog) => {
-    const slug = String(blog?.slug || "").trim().toLowerCase();
+    const slug = String(blog?.slug || "")
+      .trim()
+      .toLowerCase();
     return slug && publishedNewsRouteMeta.has(normalizePath(`/news/${slug}`));
   });
 
@@ -3234,7 +3241,9 @@ const buildNewsArticlePrerenderMarkup = (
     ["blogs"],
   )
     .filter((item) => {
-      const slug = String(item?.slug || "").trim().toLowerCase();
+      const slug = String(item?.slug || "")
+        .trim()
+        .toLowerCase();
       return (
         slug &&
         slug !== blog.slug &&
@@ -3320,7 +3329,10 @@ const getListingPrerenderRows = (canonicalPath, payload) => {
     const listingRoute = parseSmartphoneListingPath(canonicalPath);
     if (listingRoute?.upcoming || canonicalPath.includes("/upcoming")) {
       candidates.push(`${API_BASE_URL}/public/upcoming/smartphones`);
-    } else if (listingRoute?.filter === "new" || canonicalPath.includes("/filter/new")) {
+    } else if (
+      listingRoute?.filter === "new" ||
+      canonicalPath.includes("/filter/new")
+    ) {
       candidates.push(`${API_BASE_URL}/public/new/smartphones`);
     }
     candidates.push(
@@ -3413,7 +3425,11 @@ const injectListingRouteContent = (html, routePath, payload) => {
     canonicalPath === "/trending/tvs" ||
     canonicalPath === "/trending/networking" ||
     isPopularComparisonsRoute;
-  if (!isListingRoute || getSmartphoneDetailName(canonicalPath) || getTvDetailName(canonicalPath)) {
+  if (
+    !isListingRoute ||
+    getSmartphoneDetailName(canonicalPath) ||
+    getTvDetailName(canonicalPath)
+  ) {
     return html;
   }
 
