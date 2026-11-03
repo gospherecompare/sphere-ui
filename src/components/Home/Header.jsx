@@ -2959,7 +2959,6 @@ const Header = () => {
     const categoryCards = [
       {
         title: "Best Phones by Price",
-        description: "Shortlists for every budget",
         icon: FaTag,
         href: buildSmartphoneFilterPath("under-20000"),
         surface: "bg-amber-50",
@@ -2968,7 +2967,6 @@ const Header = () => {
       },
       {
         title: "Popular Brands",
-        description: "Jump to a trusted phone maker",
         icon: FaStore,
         href: "/brands",
         surface: "bg-rose-50",
@@ -2977,7 +2975,6 @@ const Header = () => {
       },
       {
         title: "Browse by Feature",
-        description: "5G, AMOLED, gaming and more",
         icon: FaBolt,
         href: buildFeatureListingPath("5g"),
         surface: "bg-violet-50",
@@ -2986,7 +2983,6 @@ const Header = () => {
       },
       {
         title: "Smartphones",
-        description: "Latest, upcoming and trending",
         icon: FaMobileAlt,
         href: "/smartphones",
         surface: "bg-emerald-50",
@@ -2995,7 +2991,6 @@ const Header = () => {
       },
       {
         title: "TVs",
-        description: "Smart TV guides and comparisons",
         icon: FaTv,
         href: "/tvs",
         surface: "bg-blue-50",
@@ -3004,7 +2999,6 @@ const Header = () => {
       },
       {
         title: "Guides & Articles",
-        description: "Buying guides, tips and tech news",
         icon: FaNewspaper,
         href: "/news",
         surface: "bg-orange-50",
@@ -3016,7 +3010,6 @@ const Header = () => {
     const quickLinks = [
       {
         title: "Phone Finder",
-        description: "Find the right phone for you",
         icon: FaMobileAlt,
         href: "/phone-finder",
         surface: "bg-blue-50",
@@ -3025,7 +3018,6 @@ const Header = () => {
       },
       {
         title: "Compare",
-        description: "Compare devices side by side",
         icon: FaAlignJustify,
         href: "/compare",
         surface: "bg-violet-50",
@@ -3043,7 +3035,7 @@ const Header = () => {
           aria-label="Close navigation"
         />
         <aside
-          className="absolute inset-y-0 right-0 h-[100dvh] w-[calc(100%-16px)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-tl-[24px] bg-white text-slate-950"
+          className="absolute inset-y-0 right-0 h-[100dvh] w-[calc(100%-16px)] overflow-x-hidden overflow-y-auto overscroll-contain bg-white text-slate-950"
           role="dialog"
           aria-modal="true"
           aria-label="Explore MobilesX"
@@ -3107,7 +3099,7 @@ const Header = () => {
                     key={item.title}
                     to={toCanonicalPagePath(item.href)}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`group relative grid min-h-[92px] grid-cols-[40px_minmax(0,1fr)] items-center gap-2.5 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[98px] sm:grid-cols-[58px_minmax(0,1fr)] sm:gap-3 sm:p-4 ${item.surface}`}
+                    className={`group relative grid min-h-[72px] grid-cols-[40px_minmax(0,1fr)] items-center gap-2.5 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[84px] sm:grid-cols-[58px_minmax(0,1fr)] sm:gap-3 sm:p-4 ${item.surface}`}
                   >
                     <span className={`grid h-10 w-10 place-items-center rounded-xl text-base sm:h-[58px] sm:w-[58px] sm:rounded-2xl sm:text-2xl ${iconColor} ${iconSurface}`}>
                       <ItemIcon aria-hidden="true" />
@@ -3116,9 +3108,6 @@ const Header = () => {
                       <b className="block text-[0.82rem] font-black leading-4 sm:text-lg sm:leading-6">
                         {item.title}
                       </b>
-                      <small className="mt-1 block text-[0.68rem] leading-[1.4] text-slate-600 sm:text-sm sm:leading-5">
-                        {item.description}
-                      </small>
                     </span>
                     <FaChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] text-slate-700 sm:right-4 sm:text-base" aria-hidden="true" />
                   </Link>
@@ -3132,11 +3121,7 @@ const Header = () => {
               <h2 className="text-xl font-black tracking-tight sm:text-3xl">
                 Browse Categories
               </h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-base">
-                Explore sections and find what you need.
-              </p>
-
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-5">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-5">
                 {categoryCards.map((item) => {
                   const ItemIcon = item.icon;
                   const { surface, color: iconColor, iconSurface } = item;
@@ -3145,18 +3130,15 @@ const Header = () => {
                       key={item.title}
                       to={toCanonicalPagePath(item.href)}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`group relative grid min-h-[112px] grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[126px] sm:grid-cols-[64px_minmax(0,1fr)] sm:gap-4 sm:p-5 ${surface}`}
+                      className={`group relative grid min-h-[88px] grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 text-slate-950 no-underline transition-transform hover:-translate-y-0.5 sm:min-h-[96px] sm:grid-cols-[64px_minmax(0,1fr)] sm:gap-4 sm:p-5 ${surface}`}
                     >
                       <span className={`grid h-10 w-10 place-items-center rounded-xl text-base sm:h-16 sm:w-16 sm:rounded-2xl sm:text-3xl ${iconColor} ${iconSurface}`}>
                         <ItemIcon aria-hidden="true" />
                       </span>
-                      <span className="min-w-0 pb-3 pr-2">
+                      <span className="min-w-0 pr-2">
                         <b className="block text-[0.78rem] font-black leading-[1.3] sm:text-lg sm:leading-6">
                           {item.title}
                         </b>
-                        <small className="mt-1 block line-clamp-2 text-[0.64rem] leading-[1.4] text-slate-600 sm:text-sm sm:leading-5">
-                          {item.description}
-                        </small>
                       </span>
                       <span className={`absolute bottom-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-white/70 sm:bottom-4 sm:right-4 sm:h-9 sm:w-9 ${iconColor}`}>
                         <FaChevronRight className="text-[0.55rem] sm:text-sm" aria-hidden="true" />

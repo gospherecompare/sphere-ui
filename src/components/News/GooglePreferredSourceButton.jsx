@@ -59,6 +59,7 @@ const GooglePreferredSourceButton = ({
       rel="noopener noreferrer"
       aria-label="Add MobilesX as a preferred source on Google"
       className={[
+        isArticle ? "hooks-google-preferred-source-button" : "",
         isArticle
           ? "group flex w-full max-w-full flex-row items-center justify-between gap-2 rounded-sm bg-[#f8fafc] px-3 py-3 text-left transition hover:bg-[#f3f6fb] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2 sm:min-h-[64px] sm:gap-3 sm:px-4"
           : "inline-flex max-w-full items-center gap-3 rounded-[8px] bg-[#111111] px-4 py-3 text-left text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-[#202124] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2",
@@ -80,7 +81,7 @@ const GooglePreferredSourceButton = ({
             ].join(" ")}
           >
             {isArticle
-              ? "Add MobilesX as a preferred source on Google"
+              ? "Follow MobilesX on Google"
               : "Add MobilesX as a preferred source"}
           </span>
           <span
@@ -92,7 +93,7 @@ const GooglePreferredSourceButton = ({
             ].join(" ")}
           >
             {isArticle
-              ? "Open Google source preferences for this publication"
+              ? "Choose MobilesX in Google preferences"
               : "on Google"}
           </span>
         </span>
