@@ -1330,7 +1330,7 @@ const TrendingProductsHub = () => {
     width: 1200,
     height: 630,
     alt: `${normalizeSeoTitle(seoTitle)
-      .replace(/\s*Hooks$/i, "")
+      .replace(/\s*MobilesX$/i, "")
       .trim()} preview image`,
   };
   const normalizedSeoTitle = normalizeSeoTitle(seoTitle);

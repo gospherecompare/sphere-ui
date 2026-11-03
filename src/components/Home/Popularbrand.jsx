@@ -75,7 +75,7 @@ const PopularBrands = () => {
           eyebrow="Brand navigator"
           titleId="home-v2-brands-title"
           title="Jump directly to the makers you trust"
-          copy="Real brands from the Hooks catalogue, arranged as a fast visual index instead of another product-card grid."
+          copy="Real brands from the MobilesX catalogue, arranged as a fast visual index instead of another product-card grid."
           actionTo="/brands"
           actionLabel="Browse every brand"
           artVariant="brands"

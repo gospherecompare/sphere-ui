@@ -427,7 +427,7 @@ const NewsStoryPage = () => {
     .filter(Boolean)
     .filter((value, index, list) => list.indexOf(value) === index)
     .slice(0, 3);
-  const sourceLabel = story?.authorRole || story?.author || "Hooks editorial";
+  const sourceLabel = story?.authorRole || story?.author || "MobilesX editorial";
   const canonicalUrl = canonical;
 
   const schema = story

@@ -277,7 +277,7 @@ const resolveNewsDateModified = (publishedValue, updatedValue) => {
 };
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
-const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+const DEFAULT_SEO_KEYWORDS = `MobilesX, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const DEFAULT_INDEX_ROBOTS = "index, follow, max-image-preview:large";
 let publishedCompareRouteMeta = new Map();
 let publishedNewsRouteMeta = new Map();
@@ -2114,7 +2114,7 @@ const syncPublicNewsSitemap = () =>
   writeNewsSitemapFile(path.join(__dirname, "public", "news-sitemap.xml"));
 
 const createSitemapPlugin = (routes = []) => ({
-  name: "hook-generate-sitemap",
+  name: "MobilesX-generate-sitemap",
   apply: "build",
   closeBundle() {
     const outputDir = path.join(__dirname, "dist");
@@ -2125,7 +2125,7 @@ const createSitemapPlugin = (routes = []) => ({
 });
 
 const createNewsSitemapPlugin = () => ({
-  name: "hook-generate-news-sitemap",
+  name: "MobilesX-generate-news-sitemap",
   apply: "build",
   closeBundle() {
     const outputDir = path.join(__dirname, "dist");
@@ -2140,7 +2140,7 @@ const createStaticRouteHtmlPlugin = ({
   getPreloadedPayloadForRoute,
   processHtml,
 }) => ({
-  name: "hook-generate-route-html",
+  name: "MobilesX-generate-route-html",
   apply: "build",
   async closeBundle() {
     const outputDir = path.join(__dirname, "dist");
@@ -2248,7 +2248,7 @@ const resolveSeo = (routePath) => {
         "MobilesX | AI-Powered Phone & TV Comparisons | Phone Finder | Tech News",
       description:
         "MobilesX is an AI-powered platform to discover and compare smartphones, TVs, laptops and gadgets in India with latest prices, detailed specs, reviews, comparisons, tech news and AI summaries.",
-      keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
+      keywords: `MobilesX, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
@@ -2417,7 +2417,7 @@ const resolveSeo = (routePath) => {
       description:
         "Apply for frontend, backend, content developer, and fullstack opportunities at MobilesX through a simple step-by-step application form.",
       keywords:
-        "careers at hook, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
+        "careers at mobilesx, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
     },
     {
       test: (p) => p.startsWith("/about"),
@@ -2425,7 +2425,7 @@ const resolveSeo = (routePath) => {
       description:
         "Learn about MobilesX, our mission, and how we help users compare technology products with structured and transparent information.",
       keywords:
-        "about hook, product comparison platform, technology discovery, gadget research platform",
+        "about MobilesX, product comparison platform, technology discovery, gadget research platform",
     },
     {
       test: (p) => p.startsWith("/contact"),
@@ -2433,7 +2433,7 @@ const resolveSeo = (routePath) => {
       description:
         "Contact MobilesX for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
-        "contact hook, support hook, partnerships, press inquiries, hook contact details",
+        "contact MobilesX, support MobilesX, partnerships, press inquiries, MobilesX contact details",
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
@@ -2441,14 +2441,14 @@ const resolveSeo = (routePath) => {
       description:
         "Read the MobilesX Privacy Policy to understand how we collect, use and protect your information and how you can control your privacy.",
       keywords:
-        "privacy policy, data privacy, hook policy, personal data rights",
+        "privacy policy, data privacy, MobilesX policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
       title: "Terms and Conditions | MobilesX",
       description:
         "Read the MobilesX terms of use covering platform usage, content accuracy, and service limitations.",
-      keywords: "terms of use, hook terms, website terms, usage policy",
+      keywords: "terms of use, MobilesX terms, website terms, usage policy",
     },
     {
       test: (p) =>
@@ -2459,7 +2459,7 @@ const resolveSeo = (routePath) => {
       title: "MobilesX Account",
       description:
         "Secure account pages for your MobilesX profile and saved data.",
-      keywords: "hook account, user account, login, signup, wishlist",
+      keywords: "MobilesX account, user account, login, signup, wishlist",
       robots: "noindex, nofollow",
     },
   ];
@@ -3011,7 +3011,7 @@ const escapeInlineJson = (value) =>
 
 const injectPreloadedPayload = (html, payload) => {
   if (!payload) return html;
-  if (html.includes('id="hook-prerender-data"')) return html;
+  if (html.includes('id="MobilesX-prerender-data"')) return html;
   const scriptTag = `<script id="hook-prerender-data">window.__HOOKS_PRERENDER_DATA__=${escapeInlineJson(payload)};</script>`;
   return html.replace("</head>", `${scriptTag}\n</head>`);
 };

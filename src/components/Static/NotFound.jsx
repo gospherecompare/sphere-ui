@@ -25,7 +25,7 @@ const NotFound = () => {
             This page took a wrong turn
           </h1>
           <p className="mt-4 text-sm sm:text-base text-gray-600">
-            The address does not match an active Hooks page:
+            The address does not match an active MobilesX page:
           </p>
           <p className="mt-1 text-sm sm:text-base font-medium text-gray-900 break-all">
             {path}
