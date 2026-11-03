@@ -5386,7 +5386,7 @@ Price: ${price}
           <div className="mx-auto w-full max-w-[1440px] px-3 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-7 lg:px-8">
             <div className="relative mx-auto w-full max-w-7xl bg-transparent ">
               <div className="mx-product-hero grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
-                <div className="rounded-[24px] bg-transparent p-3  sm:p-5 lg:p-6">
+                <div className="rounded-[24px] bg-transparent p-3 sm:p-5 lg:p-6">
                   <div className="grid gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
                     {carouselImages.length > 1 ? (
                       <div className="no-scrollbar hidden snap-x snap-mandatory scroll-px-1 gap-2 overflow-x-auto px-1 py-1 sm:order-1 sm:flex sm:flex-col sm:overflow-visible">
@@ -5396,10 +5396,10 @@ Price: ${price}
                             type="button"
                             onClick={() => setActiveImage(index)}
                             aria-label={`View ${headerTitle} image ${index + 1}`}
-                            className={`flex h-16 w-16 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-[#ffffff] p-1.5 transition-all  ${
+                            className={`flex h-16 w-16 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-[#ffffff] p-1.5 transition-all ${
                               activeImage === index
-                                ? "border-blue-500 shadow-sm "
-                                : "border-transparent hover:border-blue-200 hover:bg-blue-50  "
+                                ? "border-blue-500 shadow-sm"
+                                : "border-transparent hover:border-blue-200 hover:bg-blue-50"
                             }`}
                           >
                             <img
@@ -5423,7 +5423,7 @@ Price: ${price}
                               type="button"
                               onClick={goToPreviousImage}
                               aria-label="Previous product image"
-                              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700  "
+                              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700"
                             >
                               <FaChevronLeft className="text-xs" />
                             </button>
@@ -5431,7 +5431,7 @@ Price: ${price}
                               type="button"
                               onClick={goToNextImage}
                               aria-label="Next product image"
-                              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700  "
+                              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700"
                             >
                               <FaChevronRight className="text-xs" />
                             </button>
@@ -5464,7 +5464,7 @@ Price: ${price}
                                 className={`h-1.5 rounded-full transition-all ${
                                   activeImage === index
                                     ? "w-7 bg-blue-600"
-                                    : "w-1.5 bg-slate-300 "
+                                    : "w-1.5 bg-slate-300"
                                 }`}
                               />
                             ))}
@@ -5472,7 +5472,7 @@ Price: ${price}
                         ) : null}
                       </div>
                       {carouselImages.length > 0 ? (
-                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500 ">
+                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500">
                           {activeImage + 1} / {carouselImages.length}
                         </p>
                       ) : null}

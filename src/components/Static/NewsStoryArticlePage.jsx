@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import {
@@ -7,6 +7,7 @@ import {
   FaChevronRight,
   FaFacebookF,
   FaLink,
+  FaMobile,
   FaUser,
   FaWhatsapp,
 } from "react-icons/fa";
@@ -34,6 +35,9 @@ import MobilesXLogo from "../ui/MobileX";
 import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { useDevice } from "../../hooks/useDevice";
+import { createSmartphoneDetailPath } from "../../utils/slugGenerator";
+import { toCloudinaryResponsiveImage } from "../../utils/cloudinaryImage";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 import "./news-article.css";
 
@@ -50,6 +54,71 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 const MOBILE_RELATED_STORIES_PER_PAGE = 2;
 const DESKTOP_RELATED_STORIES_PER_PAGE = 4;
 const RELATED_STORIES_MOBILE_QUERY = "(max-width: 639px)";
+const SMARTPHONE_RAIL_TABS = [
+  {
+    id: "trending",
+    label: "Trending",
+    shortLabel: "Trending",
+    endpoint: "/public/trending/smartphones/views?limit=12",
+  },
+  {
+    id: "most-searched",
+    label: "Most searched",
+    shortLabel: "Searched",
+    endpoint: "/public/most-searched/smartphones?limit=12&days=30",
+  },
+  {
+    id: "latest",
+    label: "Latest launches",
+    shortLabel: "Latest",
+    endpoint: "/public/new/smartphones?limit=12",
+  },
+  {
+    id: "upcoming",
+    label: "Upcoming",
+    shortLabel: "Upcoming",
+    endpoint: "/public/upcoming/smartphones?limit=12",
+  },
+];
+
+const getRelatedPageItems = (pageCount, currentPage, compact = false) => {
+  const current = currentPage + 1;
+  const leadingCount = compact ? 3 : 5;
+  const edgeWindow = compact ? 1 : 2;
+
+  if (pageCount <= leadingCount + 1) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  if (current <= leadingCount - 1) {
+    return [
+      ...Array.from({ length: leadingCount }, (_, index) => index + 1),
+      "ellipsis",
+      pageCount,
+    ];
+  }
+
+  if (current >= pageCount - edgeWindow) {
+    return [
+      1,
+      "ellipsis",
+      ...Array.from(
+        { length: leadingCount },
+        (_, index) => pageCount - leadingCount + index + 1,
+      ),
+    ];
+  }
+
+  return [
+    1,
+    "ellipsis",
+    current - 1,
+    current,
+    current + 1,
+    "ellipsis",
+    pageCount,
+  ];
+};
 
 const ArticleAuthorAvatar = ({ story, className = "" }) => {
   const [authorImageFailed, setAuthorImageFailed] = useState(false);
@@ -780,6 +849,257 @@ const SidebarStoryCard = ({ story }) => (
   </Link>
 );
 
+const formatSidebarSmartphonePrice = (value) => {
+  const numeric = Number(String(value ?? "").replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(numeric) || numeric <= 0) return "";
+  return `${String.fromCharCode(0x20b9)}${new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(numeric)}`;
+};
+
+const SidebarSmartphoneCard = ({ phone, badge = "" }) => {
+  const name =
+    phone?.name ||
+    phone?.model ||
+    phone?.title ||
+    phone?.product_name ||
+    phone?.productName ||
+    "Smartphone";
+  const rawImages = Array.isArray(phone?.images)
+    ? phone.images
+    : [phone?.images];
+  const image =
+    rawImages.find((value) => typeof value === "string" && value.trim()) ||
+    phone?.image_url ||
+    phone?.imageUrl ||
+    phone?.image ||
+    phone?.thumbnail ||
+    "";
+  const price = formatSidebarSmartphonePrice(
+    phone?.price ||
+      phone?.starting_price ||
+      phone?.startingPrice ||
+      phone?.variants?.[0]?.base_price ||
+      phone?.variants?.[0]?.price,
+  );
+
+  return (
+    <Link
+      to={createSmartphoneDetailPath(phone?.model || name)}
+      className="hooks-sidebar-smartphone"
+    >
+      <span className="hooks-sidebar-smartphone__media">
+        {image ? (
+          <img
+            src={toCloudinaryResponsiveImage(image, 144)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <FaMobile aria-hidden="true" />
+        )}
+        {badge ? (
+          <span className="hooks-sidebar-smartphone__badge">{badge}</span>
+        ) : null}
+      </span>
+
+      <span className="hooks-sidebar-smartphone__copy">
+        {phone?.brand || phone?.brand_name ? (
+          <span className="hooks-sidebar-smartphone__brand">
+            {phone.brand || phone.brand_name}
+          </span>
+        ) : null}
+        <strong>{name}</strong>
+        <span className="hooks-sidebar-smartphone__price">
+          {price || "View phone details"}
+        </span>
+      </span>
+
+      <span className="hooks-sidebar-smartphone__arrow" aria-hidden="true">
+        <FaArrowRight />
+      </span>
+    </Link>
+  );
+};
+
+const normalizeSmartphoneName = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const extractSidebarSmartphones = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  return (
+    [
+      payload?.smartphones,
+      payload?.trending,
+      payload?.devices,
+      payload?.upcoming,
+      payload?.new,
+      payload?.data,
+      payload?.rows,
+    ].find(Array.isArray) || []
+  );
+};
+
+const SidebarSmartphoneDiscovery = ({
+  initialItems = [],
+  currentProductName = "",
+}) => {
+  const [activeTab, setActiveTab] = useState("trending");
+  const [feeds, setFeeds] = useState({});
+  const [statuses, setStatuses] = useState({});
+  const requestedRef = useRef({});
+  const activeTabConfig =
+    SMARTPHONE_RAIL_TABS.find((tab) => tab.id === activeTab) ||
+    SMARTPHONE_RAIL_TABS[0];
+
+  useEffect(() => {
+    if (
+      Object.prototype.hasOwnProperty.call(feeds, activeTab) ||
+      statuses[activeTab] === "loading" ||
+      requestedRef.current[activeTab]
+    ) {
+      return;
+    }
+
+    requestedRef.current[activeTab] = true;
+    setStatuses((current) => ({ ...current, [activeTab]: "loading" }));
+
+    fetch(buildApiUrl(activeTabConfig.endpoint))
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Could not load ${activeTabConfig.label}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        setFeeds((current) => ({
+          ...current,
+          [activeTab]: extractSidebarSmartphones(payload).slice(0, 12),
+        }));
+        setStatuses((current) => ({ ...current, [activeTab]: "loaded" }));
+      })
+      .catch(() => {
+        requestedRef.current[activeTab] = false;
+        setStatuses((current) => ({ ...current, [activeTab]: "error" }));
+      });
+  }, [activeTab, activeTabConfig, feeds, statuses]);
+
+  const activeItems = Object.prototype.hasOwnProperty.call(feeds, activeTab)
+    ? feeds[activeTab]
+    : activeTab === "trending"
+      ? initialItems
+      : [];
+  const visibleItems = activeItems
+    .filter((phone) => {
+      const phoneName = normalizeSmartphoneName(
+        phone?.name || phone?.model || phone?.title || phone?.product_name,
+      );
+      const currentName = normalizeSmartphoneName(currentProductName);
+      return !(
+        phoneName &&
+        currentName &&
+        (phoneName.includes(currentName) || currentName.includes(phoneName))
+      );
+    })
+    .slice(0, 4);
+  const activeStatus = statuses[activeTab] || "idle";
+
+  const retryActiveTab = () => {
+    requestedRef.current[activeTab] = false;
+    setStatuses((current) => ({ ...current, [activeTab]: "idle" }));
+  };
+
+  return (
+    <section className="hooks-article-sidebar-section hooks-smartphone-discovery">
+      <div className="hooks-article-sidebar-section__header">
+        <span className="hooks-article-sidebar-section__pulse" />
+        <h2>Discover Smartphones</h2>
+      </div>
+
+      <div className="hooks-article-sidebar-section__body hooks-smartphone-discovery__content">
+        <div
+          className="hooks-sidebar-smartphone-tabs"
+          role="tablist"
+          aria-label="Smartphone discovery categories"
+        >
+          {SMARTPHONE_RAIL_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                id={`smartphone-rail-tab-${tab.id}`}
+                type="button"
+                role="tab"
+                aria-label={tab.label}
+                aria-selected={isActive}
+                aria-controls="smartphone-rail-panel"
+                className={`hooks-sidebar-smartphone-tab${
+                  isActive ? " is-active" : ""
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.shortLabel}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          id="smartphone-rail-panel"
+          className="hooks-sidebar-smartphone-panel"
+          role="tabpanel"
+          aria-labelledby={`smartphone-rail-tab-${activeTab}`}
+        >
+          {visibleItems.length ? (
+            <div
+              key={activeTab}
+              className="hooks-sidebar-smartphone-list"
+              aria-live="polite"
+            >
+              {visibleItems.map((phone, index) => (
+                <SidebarSmartphoneCard
+                  key={String(
+                    phone.id || phone.product_id || phone.model || phone.name || index,
+                  )}
+                  phone={phone}
+                  badge={index === 0 ? activeTabConfig.shortLabel : ""}
+                />
+              ))}
+            </div>
+          ) : activeStatus === "loading" || activeStatus === "idle" ? (
+            <div className="hooks-sidebar-smartphone-loading" aria-live="polite">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          ) : activeStatus === "error" ? (
+            <div className="hooks-sidebar-smartphone-empty" role="status">
+              <span>Could not load this phone list.</span>
+              <button type="button" onClick={retryActiveTab}>
+                Retry
+              </button>
+            </div>
+          ) : (
+            <p className="hooks-sidebar-smartphone-empty" role="status">
+              No phones to show in this category yet.
+            </p>
+          )}
+
+          <Link to="/smartphones" className="hooks-sidebar-smartphone-all">
+            <span>Browse all smartphones</span>
+            <FaArrowRight aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const RailPanel = ({ title, items = [], linkable = false }) => {
   if (!items.length) return null;
 
@@ -880,10 +1200,6 @@ const RelatedStoryTile = ({ story, featured = false }) => (
 
       <div className="hooks-related-story__footer">
         <strong>Read article</strong>
-
-        <span aria-hidden="true">
-          <FaArrowRight />
-        </span>
       </div>
     </div>
   </Link>
@@ -959,7 +1275,21 @@ const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
 
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
-  const deviceContext = useDevice({ resources: ["brands"] });
+  const deviceContext = useDevice({
+    resources: ["brands", "smartphones"],
+    smartphoneLimit: 12,
+  });
+
+  const sidebarSmartphones = useMemo(
+    () =>
+      (Array.isArray(deviceContext?.smartphone)
+        ? deviceContext.smartphone
+        : []
+      )
+        .filter((phone) => phone?.name || phone?.model)
+        .slice(0, 10),
+    [deviceContext?.smartphone],
+  );
 
   const { stories: feedStories = [] } = usePublicNewsFeed({
     limit: 18,
@@ -1284,17 +1614,17 @@ const NewsStoryArticlePage = () => {
       <main className="hooks-article-page">
         <section className="hooks-article-header">
           <div className="hooks-article-shell hooks-article-header__grid">
-            <div className="hooks-article-header__headline">
-              <p className="hooks-article-category">
-                {articleCategory || "Technology"}
-              </p>
-              <h1>{story.title}</h1>
-
-              <p className="hooks-article-deck">{articleDescription}</p>
-            </div>
-
             <div className="hooks-article-lead-grid">
               <div className="hooks-article-lead-main">
+                <div className="hooks-article-header__headline">
+                  <p className="hooks-article-category">
+                    {articleCategory || "Technology"}
+                  </p>
+                  <h1>{story.title}</h1>
+
+                  <p className="hooks-article-deck">{articleDescription}</p>
+                </div>
+
                 <div className="hooks-article-header__meta">
                   <div className="hooks-article-byline-row">
                     <ArticleAuthorAvatar story={story} />
@@ -1351,26 +1681,7 @@ const NewsStoryArticlePage = () => {
               </div>
 
               <aside className="hooks-article-lead-rail">
-                <div className="hooks-article-source-card">
-                  <div className="hooks-article-source-card__brand">
-                    <MobilesXLogo
-                      className="hooks-article-source-card__logo"
-                      aria-label="MobilesX"
-                      darkBackground={false}
-                    />
-
-                    <div>
-                      <strong>MobilesX News</strong>
-
-                      <span>Research smarter</span>
-                    </div>
-                  </div>
-
-                  <p>
-                    Add MobilesX as a preferred source to see our technology
-                    reporting more often.
-                  </p>
-
+                <div className="hooks-article-source-action">
                   <GooglePreferredSourceButton variant="article" />
                 </div>
 
@@ -1386,6 +1697,11 @@ const NewsStoryArticlePage = () => {
                       ))}
                     </div>
                   </SidebarSection>
+
+                  <SidebarSmartphoneDiscovery
+                    initialItems={sidebarSmartphones}
+                    currentProductName={story?.productName || story?.title}
+                  />
                 </div>
               </aside>
             </div>
@@ -1538,7 +1854,7 @@ const NewsStoryArticlePage = () => {
                     to="/news"
                     className="hooks-related-section__all-link"
                   >
-                    View all news <FaArrowRight />
+                    View all news
                   </Link>
                 </div>
 
@@ -1565,21 +1881,42 @@ const NewsStoryArticlePage = () => {
                       <FaChevronLeft />
                     </button>
 
-                    <div>
-                      {Array.from({
-                        length: relatedPageCount,
-                      }).map((_, index) => {
-                        const isActive = index === currentRelatedPage;
+                    <div
+                      className="hooks-related-pagination__pages"
+                      role="group"
+                      aria-label="Related news pages"
+                    >
+                      {getRelatedPageItems(
+                        relatedPageCount,
+                        currentRelatedPage,
+                        isRelatedMobileLayout,
+                      ).map((item, index) => {
+                        if (item === "ellipsis") {
+                          return (
+                            <span
+                              key={`related-ellipsis-${index}`}
+                              className="hooks-related-pagination__ellipsis"
+                              aria-hidden="true"
+                            >
+                              …
+                            </span>
+                          );
+                        }
+
+                        const pageIndex = item - 1;
+                        const isActive = pageIndex === currentRelatedPage;
 
                         return (
                           <button
-                            key={`related-page-${index + 1}`}
+                            key={`related-page-${item}`}
                             type="button"
-                            onClick={() => setRelatedPage(index)}
-                            aria-label={`Show related stories page ${index + 1}`}
+                            onClick={() => setRelatedPage(pageIndex)}
+                            aria-label={`Show related stories page ${item}`}
                             aria-current={isActive ? "page" : undefined}
                             className={isActive ? "is-active" : ""}
-                          />
+                          >
+                            {item}
+                          </button>
                         );
                       })}
                     </div>
@@ -1823,7 +2160,7 @@ const NewsStoryArticlePage = () => {
           </div>
         </section>
 
-        <section className="w-full bg-white pb-6">
+        <section className="hooks-article-product-discovery w-full bg-white pb-6">
           <ProductDiscoverySections
             entityType="smartphones"
             brandCatalog={deviceContext?.brands || []}
