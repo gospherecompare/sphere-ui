@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { FaExchangeAlt } from "react-icons/fa";
+import SEO from "./SEO";
 import { useDevice } from "../hooks/useDevice";
 import useStoreLogos from "../hooks/useStoreLogos";
 import ContinueBrowsingSmartphones from "./ui/ContinueBrowsingSmartphones";
@@ -8,6 +9,10 @@ import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import { buildApiUrl } from "../utils/apiUrl";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
 import { fetchPublicJson } from "../utils/publicJsonRequest";
+import {
+  buildCompareSeoMetadata,
+  getCompareNamesFromSlug,
+} from "../utils/compareSeo";
 
 const MIN_COMPARE_DEVICES = 2;
 const MAX_COMPARE_DEVICES = 3;
@@ -700,6 +705,7 @@ const loadCompareSuggestionPhones = async (suggestion, signal) => {
 const MobileCompare = () => {
   const location = useLocation();
   const { compareSlug = "" } = useParams();
+  const routeCompareNames = getCompareNamesFromSlug(compareSlug);
   const [showPicker, setShowPicker] = useState(false);
   const searchParams = new URLSearchParams(location.search || "");
   const needsDeviceCatalog =
@@ -714,6 +720,12 @@ const MobileCompare = () => {
   });
   const { getStoreLogo } = useStoreLogos();
   const [selectedDevices, setSelectedDevices] = useState([]);
+  const compareNames = compareSlug
+    ? selectedDevices.length >= MIN_COMPARE_DEVICES
+      ? selectedDevices.map((device) => String(getProductName(device)))
+      : routeCompareNames
+    : [];
+  const compareSeo = buildCompareSeoMetadata(compareNames);
   const [draftDeviceIds, setDraftDeviceIds] = useState(["", "", ""]);
   const [openDraftSlot, setOpenDraftSlot] = useState(null);
   const [draftSearch, setDraftSearch] = useState("");
@@ -1240,6 +1252,12 @@ const MobileCompare = () => {
 
   return (
     <main className="mx-compare-page min-h-screen min-w-0 bg-slate-50 font-sans text-slate-900">
+      <SEO
+        title={compareSeo.title}
+        description={compareSeo.description}
+        ogTitle={compareSeo.ogTitle}
+        ogDescription={compareSeo.ogDescription}
+      />
       <style>{`
         .compare-hidden-scrollbar { scrollbar-width: none !important; -ms-overflow-style: none !important; }
         .compare-hidden-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
@@ -1252,11 +1270,12 @@ const MobileCompare = () => {
               <span className="px-2">/</span>Compare
             </p>
             <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-3xl">
-              Compare Phones Your Way
+              {compareSlug ? compareSeo.heading : "Compare Phones Your Way"}
             </h1>
             <p className="mt-1 text-sm leading-5 text-slate-500 sm:text-base">
-              Compare prices, specifications and features side by side to find
-              the right phone for you.
+              {compareSlug
+                ? compareSeo.description
+                : "Compare prices, specifications and features side by side to find the right phone for you."}
             </p>
           </div>
           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">

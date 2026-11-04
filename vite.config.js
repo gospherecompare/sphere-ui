@@ -34,6 +34,7 @@ import {
   normalizeLegacySiteUrls,
   toCanonicalPageUrl,
 } from "./src/utils/publicUrl.js";
+import { buildCompareSeoMetadata } from "./src/utils/compareSeo.js";
 import {
   NEWS_LISTING_SEO,
   buildNewsArticleSeo,
@@ -480,66 +481,6 @@ const extractCompareRouteNames = (path) => {
     .split("-and-")
     .map((part) => toReadableTitleFromSlug(part))
     .filter(Boolean);
-};
-
-const joinCompareNamesWithoutCommas = (names = []) => {
-  const clean = (Array.isArray(names) ? names : [])
-    .map((name) => String(name || "").trim())
-    .filter(Boolean);
-  if (!clean.length) return "";
-  if (clean.length === 1) return clean[0];
-  return clean.join(" and ");
-};
-const limitSeoText = (value, maxLength) => {
-  const text = String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(1, maxLength - 3)).trim()}...`;
-};
-
-const getSeoFingerprint = (value = "") => {
-  let hash = 2166136261;
-  for (const character of String(value || "")) {
-    hash ^= character.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36).slice(0, 5);
-};
-
-const compactCompareName = (name = "") => {
-  const words = String(name || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length <= 3) return words.join(" ");
-  return `${words.slice(0, 2).join(" ")} ${words[words.length - 1]}`;
-};
-
-const buildCompareSeoTitle = (names = []) => {
-  const cleanNames = (Array.isArray(names) ? names : [])
-    .map((name) => String(name || "").trim())
-    .filter(Boolean);
-  if (!cleanNames.length)
-    return "Compare Smartphones, TVs and Devices | MobilesX";
-
-  const suffix = ": Specs & Price | MobilesX";
-  const compactNames = cleanNames.map(compactCompareName);
-  const label = compactNames.join(" vs ");
-  if (label.length <= 60 - suffix.length) return `${label}${suffix}`;
-
-  const fingerprint = getSeoFingerprint(cleanNames.join("|"));
-  const labelBudget = 60 - suffix.length - fingerprint.length - 3;
-  const shortened = `${limitSeoText(label, labelBudget)} (${fingerprint})`;
-  return `${shortened}${suffix}`;
-};
-
-const buildCompareSeoDescription = (names = []) => {
-  const label = joinCompareNamesWithoutCommas(names) || "these devices";
-  return limitSeoText(
-    `Compare ${label} on price, specifications, features, and performance in India with current product details on MobilesX.`,
-    160,
-  );
 };
 
 const toSlug = (value = "") =>
@@ -2210,6 +2151,7 @@ const resolveSeo = (routePath) => {
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   const tvDetailName = getTvDetailName(canonicalPath);
   const compareNames = extractCompareRouteNames(canonicalPath);
+  const compareSeo = buildCompareSeoMetadata(compareNames);
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -2387,8 +2329,7 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/compare"),
-      title: buildCompareSeoTitle(compareNames),
-      description: buildCompareSeoDescription(compareNames),
+      ...compareSeo,
       keywords:
         compareNames.length >= 2
           ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
@@ -2469,6 +2410,14 @@ const resolveSeo = (routePath) => {
     title:
       matched?.title || "Compare Smartphones, TVs & More in India | MobilesX",
     description:
+      matched?.description ||
+      "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on MobilesX.",
+    ogTitle:
+      matched?.ogTitle ||
+      matched?.title ||
+      "Compare Smartphones, TVs & More in India | MobilesX",
+    ogDescription:
+      matched?.ogDescription ||
       matched?.description ||
       "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on MobilesX.",
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
@@ -2751,10 +2700,13 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
       canonicalPath,
       preloadedApiPayload,
     );
+    const compareSeo = buildCompareSeoMetadata(
+      comparePage?.items?.map(
+        (item) => item.product_name || item.name || "Compared product",
+      ) || extractCompareRouteNames(canonicalPath),
+    );
     const compareLabel =
-      comparePage?.title ||
-      extractCompareRouteNames(canonicalPath).join(" vs ") ||
-      "Compare Devices";
+      compareSeo.heading || "Compare Devices";
     const schemas = [
       createBreadcrumbSchema([
         { label: "Home", url: toCanonicalPageUrl("/", SITE_ORIGIN) },
@@ -2764,8 +2716,8 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
           : [{ label: compareLabel, url: canonicalUrl }]),
       ]),
       createWebApplicationSchema({
-        name: seo.title,
-        description: seo.description,
+        name: compareSeo.title,
+        description: compareSeo.description,
         url: canonicalUrl,
         applicationCategory: "UtilityApplication",
       }),
@@ -2783,9 +2735,9 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
     if (compareItemsForSchema.length >= 2) {
       schemas.push(
         createItemListSchema({
-          name: seo.title,
+          name: compareSeo.title,
           url: canonicalUrl,
-          description: seo.description,
+          description: compareSeo.description,
           items: compareItemsForSchema,
         }),
       );
@@ -3062,14 +3014,12 @@ const buildCompareDetailPrerenderMarkup = (
     );
   }
 
-  const seo = resolveSeo(canonicalPath);
   const names = page.items.map(
     (item) => item.product_name || item.name || "Compared product",
   );
-  const heading = stripMarkupForSeo(page.title || seo.title);
-  const description = stripMarkupForSeo(
-    page.meta_description || seo.description,
-  );
+  const compareSeo = buildCompareSeoMetadata(names);
+  const heading = stripMarkupForSeo(compareSeo.heading);
+  const description = stripMarkupForSeo(compareSeo.description);
   const productCards = page.items
     .map((item, index) => {
       const name = stripMarkupForSeo(
@@ -3547,8 +3497,24 @@ const injectPublicStaticRouteContent = (html, routePath) => {
   );
 };
 
-const applySeoToHtml = (html, routePath) => {
-  const seo = resolveSeo(routePath);
+const applySeoToHtml = (html, routePath, preloadedApiPayload) => {
+  let seo = resolveSeo(routePath);
+  if (seo.canonicalPath.startsWith("/compare/")) {
+    const comparePage = getComparePageFromPayload(
+      seo.canonicalPath,
+      preloadedApiPayload,
+    );
+    if (comparePage) {
+      seo = {
+        ...seo,
+        ...buildCompareSeoMetadata(
+          comparePage.items.map(
+            (item) => item.product_name || item.name || "Compared product",
+          ),
+        ),
+      };
+    }
+  }
   const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
   const normalizedRoute = normalizePath(routePath || "/");
   const isAliasRoute = normalizedRoute !== seo.canonicalPath;
@@ -3576,12 +3542,12 @@ const applySeoToHtml = (html, routePath) => {
   next = replaceMetaTag(
     next,
     /<meta\s+property=["']og:title["'][^>]*>/i,
-    `<meta property="og:title" content="${escapeHtml(seo.title)}">`,
+    `<meta property="og:title" content="${escapeHtml(seo.ogTitle)}">`,
   );
   next = replaceMetaTag(
     next,
     /<meta\s+property=["']og:description["'][^>]*>/i,
-    `<meta property="og:description" content="${escapeHtml(seo.description)}">`,
+    `<meta property="og:description" content="${escapeHtml(seo.ogDescription)}">`,
   );
   next = replaceMetaTag(
     next,
@@ -3591,12 +3557,12 @@ const applySeoToHtml = (html, routePath) => {
   next = replaceMetaTag(
     next,
     /<meta\s+name=["']twitter:title["'][^>]*>/i,
-    `<meta name="twitter:title" content="${escapeHtml(seo.title)}">`,
+    `<meta name="twitter:title" content="${escapeHtml(seo.ogTitle)}">`,
   );
   next = replaceMetaTag(
     next,
     /<meta\s+name=["']twitter:description["'][^>]*>/i,
-    `<meta name="twitter:description" content="${escapeHtml(seo.description)}">`,
+    `<meta name="twitter:description" content="${escapeHtml(seo.ogDescription)}">`,
   );
   next = replaceMetaTag(
     next,
@@ -3761,7 +3727,7 @@ const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
 
 const processRouteHtml = (html, routePath, preloadedApiPayload) => {
   const normalizedRoute = normalizePath(routePath || "/");
-  let nextHtml = applySeoToHtml(html, normalizedRoute);
+  let nextHtml = applySeoToHtml(html, normalizedRoute, preloadedApiPayload);
   nextHtml = applyNewsArticleSeoToHtml(
     nextHtml,
     normalizedRoute,

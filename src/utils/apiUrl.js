@@ -1,4 +1,4 @@
-export const DEFAULT_REMOTE_API_BASE_URL = "https://apisphere.in/api";
+export const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 export const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
 
 const trimTrailingSlashes = (value = "") =>
