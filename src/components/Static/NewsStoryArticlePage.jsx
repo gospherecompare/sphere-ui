@@ -1,13 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import {
   FaArrowRight,
   FaChevronLeft,
   FaChevronRight,
+  FaEnvelope,
   FaFacebookF,
+  FaInstagram,
   FaLink,
-  FaMobile,
+  FaLinkedinIn,
+  FaTelegramPlane,
   FaUser,
   FaWhatsapp,
 } from "react-icons/fa";
@@ -35,9 +38,6 @@ import MobilesXLogo from "../ui/MobileX";
 import ContinueBrowsingSmartphones from "../ui/ContinueBrowsingSmartphones";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { useDevice } from "../../hooks/useDevice";
-import { createSmartphoneDetailPath } from "../../utils/slugGenerator";
-import { toCloudinaryResponsiveImage } from "../../utils/cloudinaryImage";
-import { buildApiUrl } from "../../utils/apiUrl";
 
 import "./news-article.css";
 
@@ -54,33 +54,6 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 const MOBILE_RELATED_STORIES_PER_PAGE = 2;
 const DESKTOP_RELATED_STORIES_PER_PAGE = 4;
 const RELATED_STORIES_MOBILE_QUERY = "(max-width: 639px)";
-const SMARTPHONE_RAIL_TABS = [
-  {
-    id: "trending",
-    label: "Trending",
-    shortLabel: "Trending",
-    endpoint: "/public/trending/smartphones/views?limit=12",
-  },
-  {
-    id: "most-searched",
-    label: "Most searched",
-    shortLabel: "Searched",
-    endpoint: "/public/most-searched/smartphones?limit=12&days=30",
-  },
-  {
-    id: "latest",
-    label: "Latest launches",
-    shortLabel: "Latest",
-    endpoint: "/public/new/smartphones?limit=12",
-  },
-  {
-    id: "upcoming",
-    label: "Upcoming",
-    shortLabel: "Upcoming",
-    endpoint: "/public/upcoming/smartphones?limit=12",
-  },
-];
-
 const getRelatedPageItems = (pageCount, currentPage, compact = false) => {
   const current = currentPage + 1;
   const leadingCount = compact ? 3 : 5;
@@ -612,53 +585,6 @@ const StoryImage = ({ story, className = "", eager = false, fit = "cover" }) => 
   );
 };
 
-const InstagramBrandIcon = ({ className = "" }) => (
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    focusable="false"
-    className={className}
-  >
-    <defs>
-      <linearGradient
-        id="instagram-share-gradient"
-        x1="3"
-        y1="21"
-        x2="21"
-        y2="3"
-      >
-        <stop offset="0" stopColor="#feda75" />
-        <stop offset="0.28" stopColor="#fa7e1e" />
-        <stop offset="0.5" stopColor="#d62976" />
-        <stop offset="0.74" stopColor="#962fbf" />
-        <stop offset="1" stopColor="#4f5bd5" />
-      </linearGradient>
-    </defs>
-
-    <rect
-      x="3.25"
-      y="3.25"
-      width="17.5"
-      height="17.5"
-      rx="5.2"
-      fill="none"
-      stroke="url(#instagram-share-gradient)"
-      strokeWidth="2"
-    />
-
-    <circle
-      cx="12"
-      cy="12"
-      r="4.1"
-      fill="none"
-      stroke="url(#instagram-share-gradient)"
-      strokeWidth="2"
-    />
-
-    <circle cx="17.1" cy="6.9" r="1.25" fill="url(#instagram-share-gradient)" />
-  </svg>
-);
-
 const ArticleShareLinks = ({ title, description, url }) => {
   const [copied, setCopied] = useState(false);
 
@@ -702,21 +628,15 @@ const ArticleShareLinks = ({ title, description, url }) => {
           text: shareText || shareTitle || "MobilesX",
           url: currentUrl,
         });
-
         return;
       }
     } catch {
-      // Native share cancelled or unavailable.
+      // Native sharing can be unavailable or cancelled.
     }
 
     await copyLink();
-
     if (typeof window !== "undefined") {
-      window.open(
-        "https://www.instagram.com/",
-        "_blank",
-        "noopener,noreferrer",
-      );
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
     }
   };
 
@@ -724,25 +644,43 @@ const ArticleShareLinks = ({ title, description, url }) => {
     {
       name: "Facebook",
       icon: FaFacebookF,
-      className: "text-[#1877f2]",
+      className: "is-facebook",
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`,
     },
     {
       name: "X",
       icon: FaXTwitter,
-      className: "text-[#111827]",
+      className: "is-x",
       url: `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    },
+    {
+      name: "LinkedIn",
+      icon: FaLinkedinIn,
+      className: "is-linkedin",
+      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     },
     {
       name: "WhatsApp",
       icon: FaWhatsapp,
-      className: "text-[#25d366]",
+      className: "is-whatsapp",
       url: `https://wa.me/?text=${encodedText}%0A%0A${encodedUrl}`,
     },
     {
+      name: "Telegram",
+      icon: FaTelegramPlane,
+      className: "is-telegram",
+      url: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    },
+    {
+      name: "Email",
+      icon: FaEnvelope,
+      className: "is-email",
+      url: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`${shareText}\n\n${currentUrl}`)}`,
+    },
+    {
       name: "Instagram",
-      icon: InstagramBrandIcon,
-      className: "text-[#d62976]",
+      icon: FaInstagram,
+      className: "is-instagram",
       onClick: shareOnInstagram,
     },
   ];
@@ -751,9 +689,6 @@ const ArticleShareLinks = ({ title, description, url }) => {
     <div className="hooks-article-share" aria-label="Share this article">
       {shareLinks.map((item) => {
         const Icon = item.icon;
-
-        const className = `hooks-article-share__button ${item.className}`;
-
         if (item.onClick) {
           return (
             <button
@@ -761,7 +696,7 @@ const ArticleShareLinks = ({ title, description, url }) => {
               type="button"
               onClick={item.onClick}
               aria-label={`Share on ${item.name}`}
-              className={className}
+              className={`hooks-article-share__button ${item.className}`}
             >
               <Icon className="h-3.5 w-3.5" />
             </button>
@@ -772,10 +707,10 @@ const ArticleShareLinks = ({ title, description, url }) => {
           <a
             key={item.name}
             href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            target={item.url.startsWith("mailto:") ? undefined : "_blank"}
+            rel={item.url.startsWith("mailto:") ? undefined : "noopener noreferrer"}
             aria-label={`Share on ${item.name}`}
-            className={className}
+            className={`hooks-article-share__button ${item.className}`}
           >
             <Icon className="h-3.5 w-3.5" />
           </a>
@@ -786,7 +721,7 @@ const ArticleShareLinks = ({ title, description, url }) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy article link"
-        className="hooks-article-share__button text-[#475569]"
+        className="hooks-article-share__button is-copy"
       >
         <FaLink className="h-3.5 w-3.5" />
       </button>
@@ -848,257 +783,6 @@ const SidebarStoryCard = ({ story }) => (
     </div>
   </Link>
 );
-
-const formatSidebarSmartphonePrice = (value) => {
-  const numeric = Number(String(value ?? "").replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(numeric) || numeric <= 0) return "";
-  return `${String.fromCharCode(0x20b9)}${new Intl.NumberFormat("en-IN", {
-    maximumFractionDigits: 0,
-  }).format(numeric)}`;
-};
-
-const SidebarSmartphoneCard = ({ phone, badge = "" }) => {
-  const name =
-    phone?.name ||
-    phone?.model ||
-    phone?.title ||
-    phone?.product_name ||
-    phone?.productName ||
-    "Smartphone";
-  const rawImages = Array.isArray(phone?.images)
-    ? phone.images
-    : [phone?.images];
-  const image =
-    rawImages.find((value) => typeof value === "string" && value.trim()) ||
-    phone?.image_url ||
-    phone?.imageUrl ||
-    phone?.image ||
-    phone?.thumbnail ||
-    "";
-  const price = formatSidebarSmartphonePrice(
-    phone?.price ||
-      phone?.starting_price ||
-      phone?.startingPrice ||
-      phone?.variants?.[0]?.base_price ||
-      phone?.variants?.[0]?.price,
-  );
-
-  return (
-    <Link
-      to={createSmartphoneDetailPath(phone?.model || name)}
-      className="hooks-sidebar-smartphone"
-    >
-      <span className="hooks-sidebar-smartphone__media">
-        {image ? (
-          <img
-            src={toCloudinaryResponsiveImage(image, 144)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <FaMobile aria-hidden="true" />
-        )}
-        {badge ? (
-          <span className="hooks-sidebar-smartphone__badge">{badge}</span>
-        ) : null}
-      </span>
-
-      <span className="hooks-sidebar-smartphone__copy">
-        {phone?.brand || phone?.brand_name ? (
-          <span className="hooks-sidebar-smartphone__brand">
-            {phone.brand || phone.brand_name}
-          </span>
-        ) : null}
-        <strong>{name}</strong>
-        <span className="hooks-sidebar-smartphone__price">
-          {price || "View phone details"}
-        </span>
-      </span>
-
-      <span className="hooks-sidebar-smartphone__arrow" aria-hidden="true">
-        <FaArrowRight />
-      </span>
-    </Link>
-  );
-};
-
-const normalizeSmartphoneName = (value) =>
-  String(value || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-
-const extractSidebarSmartphones = (payload) => {
-  if (Array.isArray(payload)) return payload;
-  return (
-    [
-      payload?.smartphones,
-      payload?.trending,
-      payload?.devices,
-      payload?.upcoming,
-      payload?.new,
-      payload?.data,
-      payload?.rows,
-    ].find(Array.isArray) || []
-  );
-};
-
-const SidebarSmartphoneDiscovery = ({
-  initialItems = [],
-  currentProductName = "",
-}) => {
-  const [activeTab, setActiveTab] = useState("trending");
-  const [feeds, setFeeds] = useState({});
-  const [statuses, setStatuses] = useState({});
-  const requestedRef = useRef({});
-  const activeTabConfig =
-    SMARTPHONE_RAIL_TABS.find((tab) => tab.id === activeTab) ||
-    SMARTPHONE_RAIL_TABS[0];
-
-  useEffect(() => {
-    if (
-      Object.prototype.hasOwnProperty.call(feeds, activeTab) ||
-      statuses[activeTab] === "loading" ||
-      requestedRef.current[activeTab]
-    ) {
-      return;
-    }
-
-    requestedRef.current[activeTab] = true;
-    setStatuses((current) => ({ ...current, [activeTab]: "loading" }));
-
-    fetch(buildApiUrl(activeTabConfig.endpoint))
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Could not load ${activeTabConfig.label}`);
-        }
-        return response.json();
-      })
-      .then((payload) => {
-        setFeeds((current) => ({
-          ...current,
-          [activeTab]: extractSidebarSmartphones(payload).slice(0, 12),
-        }));
-        setStatuses((current) => ({ ...current, [activeTab]: "loaded" }));
-      })
-      .catch(() => {
-        requestedRef.current[activeTab] = false;
-        setStatuses((current) => ({ ...current, [activeTab]: "error" }));
-      });
-  }, [activeTab, activeTabConfig, feeds, statuses]);
-
-  const activeItems = Object.prototype.hasOwnProperty.call(feeds, activeTab)
-    ? feeds[activeTab]
-    : activeTab === "trending"
-      ? initialItems
-      : [];
-  const visibleItems = activeItems
-    .filter((phone) => {
-      const phoneName = normalizeSmartphoneName(
-        phone?.name || phone?.model || phone?.title || phone?.product_name,
-      );
-      const currentName = normalizeSmartphoneName(currentProductName);
-      return !(
-        phoneName &&
-        currentName &&
-        (phoneName.includes(currentName) || currentName.includes(phoneName))
-      );
-    })
-    .slice(0, 4);
-  const activeStatus = statuses[activeTab] || "idle";
-
-  const retryActiveTab = () => {
-    requestedRef.current[activeTab] = false;
-    setStatuses((current) => ({ ...current, [activeTab]: "idle" }));
-  };
-
-  return (
-    <section className="hooks-article-sidebar-section hooks-smartphone-discovery">
-      <div className="hooks-article-sidebar-section__header">
-        <span className="hooks-article-sidebar-section__pulse" />
-        <h2>Discover Smartphones</h2>
-      </div>
-
-      <div className="hooks-article-sidebar-section__body hooks-smartphone-discovery__content">
-        <div
-          className="hooks-sidebar-smartphone-tabs"
-          role="tablist"
-          aria-label="Smartphone discovery categories"
-        >
-          {SMARTPHONE_RAIL_TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-
-            return (
-              <button
-                key={tab.id}
-                id={`smartphone-rail-tab-${tab.id}`}
-                type="button"
-                role="tab"
-                aria-label={tab.label}
-                aria-selected={isActive}
-                aria-controls="smartphone-rail-panel"
-                className={`hooks-sidebar-smartphone-tab${
-                  isActive ? " is-active" : ""
-                }`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.shortLabel}
-              </button>
-            );
-          })}
-        </div>
-
-        <div
-          id="smartphone-rail-panel"
-          className="hooks-sidebar-smartphone-panel"
-          role="tabpanel"
-          aria-labelledby={`smartphone-rail-tab-${activeTab}`}
-        >
-          {visibleItems.length ? (
-            <div
-              key={activeTab}
-              className="hooks-sidebar-smartphone-list"
-              aria-live="polite"
-            >
-              {visibleItems.map((phone, index) => (
-                <SidebarSmartphoneCard
-                  key={String(
-                    phone.id || phone.product_id || phone.model || phone.name || index,
-                  )}
-                  phone={phone}
-                  badge={index === 0 ? activeTabConfig.shortLabel : ""}
-                />
-              ))}
-            </div>
-          ) : activeStatus === "loading" || activeStatus === "idle" ? (
-            <div className="hooks-sidebar-smartphone-loading" aria-live="polite">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-          ) : activeStatus === "error" ? (
-            <div className="hooks-sidebar-smartphone-empty" role="status">
-              <span>Could not load this phone list.</span>
-              <button type="button" onClick={retryActiveTab}>
-                Retry
-              </button>
-            </div>
-          ) : (
-            <p className="hooks-sidebar-smartphone-empty" role="status">
-              No phones to show in this category yet.
-            </p>
-          )}
-
-          <Link to="/smartphones" className="hooks-sidebar-smartphone-all">
-            <span>Browse all smartphones</span>
-            <FaArrowRight aria-hidden="true" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const RailPanel = ({ title, items = [], linkable = false }) => {
   if (!items.length) return null;
@@ -1276,20 +960,8 @@ const NewsStoryArticlePage = () => {
 
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
   const deviceContext = useDevice({
-    resources: ["brands", "smartphones"],
-    smartphoneLimit: 12,
+    resources: ["brands"],
   });
-
-  const sidebarSmartphones = useMemo(
-    () =>
-      (Array.isArray(deviceContext?.smartphone)
-        ? deviceContext.smartphone
-        : []
-      )
-        .filter((phone) => phone?.name || phone?.model)
-        .slice(0, 10),
-    [deviceContext?.smartphone],
-  );
 
   const { stories: feedStories = [] } = usePublicNewsFeed({
     limit: 18,
@@ -1650,18 +1322,18 @@ const NewsStoryArticlePage = () => {
                         {story.readTime || "3 min read"}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="hooks-article-header-actions">
-                    <ArticleShareLinks
-                      title={story.title}
-                      description={articleDescription}
-                      url={canonicalUrl}
-                    />
+                    <div className="hooks-article-header-actions">
+                      <ArticleShareLinks
+                        title={story.title}
+                        description={articleDescription}
+                        url={canonicalUrl}
+                      />
 
-                    {story.aiSummary ? (
-                      <AiSummary summary={story.aiSummary} />
-                    ) : null}
+                      {story.aiSummary ? (
+                        <AiSummary summary={story.aiSummary} />
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
@@ -1697,11 +1369,6 @@ const NewsStoryArticlePage = () => {
                       ))}
                     </div>
                   </SidebarSection>
-
-                  <SidebarSmartphoneDiscovery
-                    initialItems={sidebarSmartphones}
-                    currentProductName={story?.productName || story?.title}
-                  />
                 </div>
               </aside>
             </div>
