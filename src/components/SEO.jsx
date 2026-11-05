@@ -90,6 +90,8 @@ const hasMatchingPrerenderSchema = (canonicalUrl) => {
 const SEO = ({
   title,
   description = "",
+  ogTitle = "",
+  ogDescription = "",
   image = null,
   imageWidth = 1200,
   imageHeight = 630,
@@ -115,6 +117,11 @@ const SEO = ({
     () => normalizeSeoTitle(title),
     [title],
   );
+  const normalizedOgTitle = React.useMemo(
+    () => normalizeSeoTitle(ogTitle || title),
+    [ogTitle, title],
+  );
+  const resolvedOgDescription = ogDescription || description;
   const hasStaticSchema = React.useMemo(
     () => hasMatchingPrerenderSchema(canonicalUrl),
     [canonicalUrl],
@@ -230,12 +237,12 @@ const SEO = ({
       <link key="canonical" rel="canonical" href={canonicalUrl} />
 
       {/* ===== OPEN GRAPH META TAGS ===== */}
-      <meta key="og:title" property="og:title" content={normalizedTitle} />
-      {description && (
+      <meta key="og:title" property="og:title" content={normalizedOgTitle} />
+      {resolvedOgDescription && (
         <meta
           key="og:description"
           property="og:description"
-          content={description}
+          content={resolvedOgDescription}
         />
       )}
       <meta property="og:type" content={ogType} />
@@ -268,13 +275,13 @@ const SEO = ({
       <meta
         key="twitter:title"
         name="twitter:title"
-        content={normalizedTitle}
+        content={normalizedOgTitle}
       />
-      {description && (
+      {resolvedOgDescription && (
         <meta
           key="twitter:description"
           name="twitter:description"
-          content={description}
+          content={resolvedOgDescription}
         />
       )}
       {imageMeta && <meta name="twitter:image" content={imageMeta.url} />}

@@ -914,7 +914,11 @@ const normalizeBlogStory = (blog) => {
   if (!blog || typeof blog !== "object") return null;
 
   const slug = safeText(blog.slug);
-  const title = safeText(blog.title);
+  const title =
+    safeText(blog.title) ||
+    safeText(blog.headline) ||
+    safeText(blog.meta_title) ||
+    safeText(blog.metaTitle);
   if (!slug || !title) return null;
 
   const linkedProducts = normalizeLinkedProductEntries(blog);
