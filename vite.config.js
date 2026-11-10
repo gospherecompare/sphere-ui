@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -85,6 +86,7 @@ const KNOWN_DISCOVERED_COMPARE_ROUTES = [
 ];
 const MAX_NEWS_ROUTES = 1000;
 const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
+const MAX_CLIENT_PRELOAD_BYTES = 512 * 1024;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
 const SMARTPHONE_FILTER_SEO = {
@@ -282,6 +284,8 @@ const DEFAULT_SEO_KEYWORDS = `MobilesX, best gadget comparison site, mobile pric
 const DEFAULT_INDEX_ROBOTS = "index, follow, max-image-preview:large";
 let publishedCompareRouteMeta = new Map();
 let publishedNewsRouteMeta = new Map();
+let publishedProductRouteMeta = new Map();
+let publishedCategoryRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
@@ -907,7 +911,7 @@ const fetchApiRows = async (endpoint, preferredKeys = []) => {
 
 const apiBodyCache = new Map();
 
-const fetchApiBody = async (endpoint) => {
+const fetchApiBody = async (endpoint, { quiet = false } = {}) => {
   if (typeof fetch !== "function") return null;
   if (apiBodyCache.has(endpoint)) return apiBodyCache.get(endpoint);
 
@@ -919,9 +923,11 @@ const fetchApiBody = async (endpoint) => {
       }
       return await response.json();
     } catch (error) {
-      console.warn(
-        `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
-      );
+      if (!quiet) {
+        console.warn(
+          `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
+        );
+      }
       return null;
     }
   })();
@@ -1157,7 +1163,18 @@ const fetchRouteSpecificPreloadedPayload = async (
         : null);
     if (!detailPayload) return null;
 
-    const sanitizedDetail = sanitizePreloadValue(detailPayload);
+    const catalogUpdatedAt = publishedProductRouteMeta.get(canonicalPath)
+      ?.updatedAt;
+    const detailWithCatalogTimestamp =
+      detailPayload &&
+      typeof detailPayload === "object" &&
+      !Array.isArray(detailPayload) &&
+      catalogUpdatedAt &&
+      !detailPayload.updated_at &&
+      !detailPayload.updatedAt
+        ? { ...detailPayload, updated_at: catalogUpdatedAt }
+        : detailPayload;
+    const sanitizedDetail = sanitizePreloadValue(detailWithCatalogTimestamp);
     const byUrl = { [detailEndpoint]: sanitizedDetail };
     if (productId) {
       byUrl[`${API_BASE_URL}/public/product/${encodeURIComponent(productId)}`] =
@@ -1172,11 +1189,64 @@ const fetchRouteSpecificPreloadedPayload = async (
     };
   }
 
+  const tvRouteSlug = getSingleSegmentRouteTail(canonicalPath, "/tvs");
+  if (tvRouteSlug && getTvDetailName(canonicalPath)) {
+    const detailEndpoint = `${API_BASE_URL}/public/tvs/by-slug/${encodeURIComponent(
+      tvRouteSlug,
+    )}`;
+    const detailPayload = await fetchApiBody(detailEndpoint, { quiet: true });
+    let product = getProductFromResponse(detailPayload);
+    const isMatchedDetail =
+      product?.product_type === "tv" &&
+      toSlug(getPrerenderProductName(product)) === toSlug(tvRouteSlug);
+
+    if (!isMatchedDetail) {
+      // Older API deployments may not have the by-slug route yet. Resolve only
+      // published catalog rows and keep a single product in this route payload.
+      const catalogPayload = await fetchApiBody(`${API_BASE_URL}/tvs`);
+      const catalogRows = parseApiRows(catalogPayload, ["tvs"]);
+      const publishedRow = catalogRows.find(
+        (row) =>
+          row?.publish === true &&
+          toSlug(getPrerenderProductName(row)) === toSlug(tvRouteSlug),
+      );
+      if (!publishedRow) return null;
+      product = {
+        ...publishedRow,
+        name: getPrerenderProductName(publishedRow),
+        brand: getPrerenderProductBrand(publishedRow),
+        variants: Array.isArray(publishedRow.variants)
+          ? publishedRow.variants
+          : Array.isArray(publishedRow.variants_json)
+            ? publishedRow.variants_json
+            : [],
+        images: Array.isArray(publishedRow.images)
+          ? publishedRow.images
+          : Array.isArray(publishedRow.images_json)
+            ? publishedRow.images_json
+            : [],
+      };
+    }
+    return {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      apiOrigin: API_ORIGIN,
+      byUrl: { [detailEndpoint]: sanitizePreloadValue(product) },
+    };
+  }
+
   if (smartphoneContext?.entityType === "smartphones") {
     const encodedId = encodeURIComponent(smartphoneContext.productId);
     return fetchPayloadForEndpoints([
       `${API_BASE_URL}/public/product/${encodedId}`,
     ]);
+  }
+
+  const smartphoneListingEndpoint = getSmartphoneListingApiEndpoint(
+    canonicalPath,
+  );
+  if (smartphoneListingEndpoint) {
+    return fetchPayloadForEndpoints([smartphoneListingEndpoint]);
   }
 
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
@@ -1266,6 +1336,8 @@ const fetchRouteSpecificPreloadedPayload = async (
 };
 
 const fetchDetailRoutesFromApi = async () => {
+  publishedProductRouteMeta = new Map();
+  publishedCategoryRouteMeta = new Map();
   const sources = [
     {
       endpoint: `${API_BASE_URL}/smartphones`,
@@ -1312,9 +1384,19 @@ const fetchDetailRoutesFromApi = async () => {
 
   for (const source of sources) {
     const rows = await fetchApiRows(source.endpoint, source.preferredKeys);
+    const categoryUpdatedAt = rows
+      .map((row) =>
+        normalizeSourceTimestamp(row?.updated_at ?? row?.updatedAt ?? null),
+      )
+      .filter(Boolean)
+      .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] || null;
+    if (categoryUpdatedAt) {
+      publishedCategoryRouteMeta.set(source.basePath, categoryUpdatedAt);
+    }
     let addedCount = 0;
 
     for (const row of rows) {
+      if (source.basePath === "/tvs" && row?.publish !== true) continue;
       const detailSlugs = source.getDetailSlugs
         ? source.getDetailSlugs(row)
         : (() => {
@@ -1327,7 +1409,18 @@ const fetchDetailRoutesFromApi = async () => {
           })();
 
       for (const detailSlug of detailSlugs) {
-        routes.push(`${source.basePath}/${detailSlug}`);
+        const routePath = normalizePath(`${source.basePath}/${detailSlug}`);
+        routes.push(routePath);
+        const updatedAt = normalizeSourceTimestamp(
+          row?.updated_at ?? row?.updatedAt ?? null,
+        );
+        const existingMeta = publishedProductRouteMeta.get(routePath);
+        if (
+          !existingMeta?.updatedAt ||
+          (updatedAt && new Date(updatedAt).getTime() > new Date(existingMeta.updatedAt).getTime())
+        ) {
+          publishedProductRouteMeta.set(routePath, { updatedAt });
+        }
         addedCount += 1;
         if (addedCount >= MAX_DETAIL_ROUTES_PER_CATEGORY) break;
       }
@@ -1917,6 +2010,9 @@ const filterValidPrerenderRoutes = async (routes = []) => {
       if (routePath.startsWith("/compare/")) {
         return publishedCompareRouteMeta.has(routePath) ? routePath : null;
       }
+      if (getTvDetailName(routePath)) {
+        return publishedProductRouteMeta.has(routePath) ? routePath : null;
+      }
 
       return routePath;
     }),
@@ -1967,7 +2063,6 @@ const escapeSitemapXml = (value = "") =>
     .replace(/>/g, "&gt;");
 
 const buildSitemapXml = (routes = []) => {
-  const today = new Date().toISOString().slice(0, 10);
   const canonicalRoutes = [
     ...new Set(
       routes
@@ -1986,7 +2081,7 @@ const buildSitemapXml = (routes = []) => {
   const urls = canonicalRoutes
     .map((routePath) => {
       const loc = toCanonicalPageUrl(routePath, SITE_ORIGIN);
-      const lastmod = getRouteSitemapLastmod(routePath, today);
+      const lastmod = getRouteSitemapLastmod(routePath);
       const isDetailPage =
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
@@ -1994,7 +2089,8 @@ const buildSitemapXml = (routes = []) => {
         routePath.startsWith("/networking/") ||
         routePath.startsWith("/news/");
       const priority = routePath === "/" ? "1.0" : isDetailPage ? "0.8" : "0.7";
-      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+      const lastmodElement = lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : "";
+      return `  <url>\n    <loc>${loc}</loc>${lastmodElement}\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })
     .join("\n");
 
@@ -2463,26 +2559,60 @@ const inferImageType = (url = "") => {
   return "image/jpeg";
 };
 
-const toSitemapLastmod = (value, fallback) => {
-  const date = parseNewsDate(value);
-  if (!date) return fallback;
+const normalizeSourceTimestamp = (value) => {
+  if (value == null || value === "" || value === 0 || String(value).trim() === "0") {
+    return null;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()) || date.getUTCFullYear() < 2000) return null;
+  return date.toISOString();
+};
+
+const toSitemapLastmod = (value) => {
+  const normalized = normalizeSourceTimestamp(value);
+  if (!normalized) return null;
+  const date = new Date(normalized);
   return date.toISOString().slice(0, 10);
 };
 
-const getRouteSitemapLastmod = (routePath = "/", fallbackDate = "") => {
+const getRouteSitemapLastmod = (routePath = "/") => {
   const normalizedRoute = normalizePath(routePath);
 
   if (normalizedRoute.startsWith("/news/")) {
     const meta = publishedNewsRouteMeta.get(normalizedRoute);
-    return toSitemapLastmod(meta?.updatedAt || meta?.publishedAt, fallbackDate);
+    return toSitemapLastmod(meta?.updatedAt || meta?.publishedAt);
   }
 
   if (normalizedRoute.startsWith("/compare/")) {
     const meta = publishedCompareRouteMeta.get(normalizedRoute);
-    return toSitemapLastmod(meta?.updatedAt, fallbackDate);
+    return toSitemapLastmod(meta?.updatedAt);
   }
 
-  return fallbackDate;
+  const productMeta = publishedProductRouteMeta.get(normalizedRoute);
+  if (productMeta) return toSitemapLastmod(productMeta.updatedAt);
+
+  const smartphoneTail = getSingleSegmentRouteTail(
+    normalizedRoute,
+    "/smartphones",
+  );
+  if (
+    smartphoneTail.endsWith(SMARTPHONE_SEO_SUFFIX) &&
+    !SMARTPHONE_LIST_SLUGS.has(smartphoneTail)
+  ) {
+    return null;
+  }
+  const tvTail = getSingleSegmentRouteTail(normalizedRoute, "/tvs");
+  if (tvTail && !getTvListingRouteMeta(normalizedRoute)) return null;
+  const networkingTail = getSingleSegmentRouteTail(
+    normalizedRoute,
+    "/networking",
+  );
+  if (networkingTail) return null;
+
+  if (["/smartphones", "/tvs", "/networking"].includes(normalizedRoute)) {
+    return toSitemapLastmod(publishedCategoryRouteMeta.get(normalizedRoute));
+  }
+  return null;
 };
 
 const getComparePageFromPayload = (canonicalPath = "", preloadedApiPayload) => {
@@ -2554,6 +2684,480 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
     datePublished,
     dateModified,
   };
+};
+
+const getFirstProductValue = (...values) => {
+  for (const value of values) {
+    if (value == null || value === "") continue;
+    if (typeof value === "string" && !value.trim()) continue;
+    if (typeof value === "object" && !Array.isArray(value)) continue;
+    return value;
+  }
+  return null;
+};
+
+const toProductText = (value) => {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return value.map(toProductText).filter(Boolean).join(", ");
+  }
+  if (typeof value === "object") {
+    return String(value.name || value.value || value.label || "").trim();
+  }
+  return String(value).replace(/\s+/g, " ").trim();
+};
+
+const toProductObject = (value) => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
+const getProductObject = (...values) => {
+  for (const value of values) {
+    const parsed = toProductObject(value);
+    if (Object.keys(parsed).length) return parsed;
+  }
+  return {};
+};
+
+const getProductFromResponse = (response) => {
+  if (
+    response?.product &&
+    typeof response.product === "object" &&
+    !Array.isArray(response.product)
+  ) {
+    return response.product;
+  }
+  if (
+    response?.data?.product &&
+    typeof response.data.product === "object" &&
+    !Array.isArray(response.data.product)
+  ) {
+    return response.data.product;
+  }
+  if (response?.name && response?.product_type) return response;
+  if (
+    response?.data &&
+    typeof response.data === "object" &&
+    !Array.isArray(response.data)
+  ) {
+    return response.data;
+  }
+  if (
+    response?.smartphone &&
+    typeof response.smartphone === "object" &&
+    !Array.isArray(response.smartphone)
+  ) {
+    return response.smartphone;
+  }
+  return response && typeof response === "object" ? response : null;
+};
+
+const getSmartphoneProductFromPayload = (canonicalPath, payload) => {
+  const routeSlug = getSingleSegmentRouteTail(canonicalPath, "/smartphones");
+  if (!routeSlug.endsWith(SMARTPHONE_SEO_SUFFIX)) return null;
+  const productSlug = stripSmartphoneSeoSuffix(routeSlug);
+  const endpoint = `${API_BASE_URL}/public/smartphones/by-slug/${encodeURIComponent(
+    productSlug,
+  )}`;
+  return getProductFromResponse(payload?.byUrl?.[endpoint]);
+};
+
+const getTvProductFromPayload = (canonicalPath, payload) => {
+  const routeSlug = getSingleSegmentRouteTail(canonicalPath, "/tvs");
+  if (!routeSlug || !getTvDetailName(canonicalPath)) return null;
+  const endpoint = `${API_BASE_URL}/public/tvs/by-slug/${encodeURIComponent(
+    routeSlug,
+  )}`;
+  const product = getProductFromResponse(payload?.byUrl?.[endpoint]);
+  return product?.product_type === "tv" ? product : null;
+};
+
+const getPrerenderProductName = (product = {}) => {
+  const record = product && typeof product === "object" ? product : {};
+  return toProductText(
+    getFirstProductValue(
+      record.product_name,
+      record.name,
+      record.model_number,
+      record.model,
+      record.basic_info?.product_name,
+      record.basic_info?.title,
+      record.basic_info?.model_number,
+      record.basic_info?.model,
+    ),
+  );
+};
+
+const getPrerenderProductBrand = (product = {}) => {
+  const brand = getFirstProductValue(
+    product.brand_name,
+    product.brandName,
+    product.brand,
+    product.basic_info?.brand_name,
+    product.basic_info?.brand,
+  );
+  return toProductText(brand?.name || brand);
+};
+
+const toPositiveRetailPrice = (value) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+  const parsed = Number(String(value ?? "").replace(/[^\d.]/g, ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const getVariantRetailPrice = (variant = {}) => {
+  const directPrice = toPositiveRetailPrice(
+    getFirstProductValue(
+      variant.base_price,
+      variant.basePrice,
+      variant.price,
+      variant.starting_price,
+    ),
+  );
+  if (directPrice) return directPrice;
+  const storePrices = Array.isArray(variant.store_prices)
+    ? variant.store_prices
+    : [];
+  const prices = storePrices
+    .map((store) => toPositiveRetailPrice(store?.price ?? store?.base_price))
+    .filter(Boolean);
+  return prices.length ? Math.min(...prices) : null;
+};
+
+const getPrerenderStartingPrice = (product = {}) => {
+  const directPrice = toPositiveRetailPrice(
+    getFirstProductValue(
+      product.starting_price,
+      product.startingPrice,
+      product.best_price,
+      product.bestPrice,
+      product.price,
+      product.base_price,
+      product.basePrice,
+    ),
+  );
+  if (directPrice) return directPrice;
+  const prices = (Array.isArray(product.variants) ? product.variants : [])
+    .map((variant) => getVariantRetailPrice(variant))
+    .filter(Boolean);
+  return prices.length ? Math.min(...prices) : null;
+};
+
+const formatIndianRetailPrice = (value) => {
+  const price = toPositiveRetailPrice(value);
+  return price == null
+    ? ""
+    : `₹${new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: Number.isInteger(price) ? 0 : 2,
+      }).format(price)}`;
+};
+
+const appendProductUnit = (value, unit, matcher) => {
+  const text = toProductText(value);
+  if (!text) return "";
+  return matcher.test(text) ? text : `${text} ${unit}`;
+};
+
+const getSmartphoneSpecificationRows = (product = {}) => {
+  const display = getProductObject(product.display, product.display_json);
+  const performance = getProductObject(
+    product.performance,
+    product.performance_json,
+  );
+  const battery = getProductObject(product.battery, product.battery_json);
+  const camera = getProductObject(product.camera, product.camera_json);
+  const screenSize = toProductText(
+    getFirstProductValue(
+      display.size,
+      display.screen_size,
+      display.display_size,
+      product.screen_size,
+    ),
+  );
+  const formattedScreenSize = appendProductUnit(
+    screenSize,
+    "inch",
+    /inch|inches|\"|″/i,
+  );
+  const panel = toProductText(
+    getFirstProductValue(
+      display.panel,
+      display.type,
+      display.panel_type,
+      display.technology,
+    ),
+  );
+  const refreshRate = toProductText(
+    getFirstProductValue(display.refresh_rate, display.refreshRate),
+  );
+  const formattedRefreshRate = appendProductUnit(refreshRate, "Hz", /hz/i);
+  const displaySummary = [formattedScreenSize, panel, formattedRefreshRate]
+    .filter(Boolean)
+    .join(", ");
+
+  const processor = toProductText(
+    getFirstProductValue(
+      performance.processor,
+      performance.chipset,
+      performance.soc,
+      product.processor,
+      product.chipset,
+    ),
+  );
+  const rawCapacity = getFirstProductValue(
+    battery.capacity_typical,
+    battery.capacity_rated,
+    battery.battery_capacity_mah,
+    battery.battery_capacity,
+    battery.capacity_mAh,
+    battery.capacity_mah,
+    battery.capacity,
+    product.battery_capacity_mah,
+  );
+  const capacity = appendProductUnit(rawCapacity, "mAh", /mah/i);
+  const chargingProfile = getProductObject(battery.charging);
+  const rawCharging = toProductText(
+    getFirstProductValue(
+      battery.fast_charging,
+      battery.fastCharging,
+      battery.fast_charge,
+      battery.charging_speed,
+      battery.wired_charging,
+      chargingProfile.wired,
+      chargingProfile.wired_charging,
+      chargingProfile.fast_charging,
+      chargingProfile.wired_w,
+      chargingProfile.wired_wattage,
+      chargingProfile.fast_charging_w,
+      chargingProfile.max_w,
+      chargingProfile.max_wattage,
+      chargingProfile.wattage,
+    ),
+  );
+  const charging = appendProductUnit(rawCharging, "W", /w/i);
+  const rear = getProductObject(camera.rear, camera.rear_camera, camera.rearCamera);
+  const rearMain = getProductObject(rear.main, rear.main_camera);
+  const front = getProductObject(
+    camera.front,
+    camera.front_camera,
+    camera.frontCamera,
+  );
+  const rearCamera = toProductText(
+    getFirstProductValue(
+      rearMain.megapixels,
+      rearMain.resolution,
+      rear.megapixels,
+      rear.resolution,
+      camera.rear_camera?.main?.resolution,
+      camera.rear_camera?.main_camera?.resolution,
+      camera.rear_camera?.resolution,
+      camera.rearCamera?.main?.resolution,
+      camera.rearCamera?.resolution,
+      camera.main_camera_megapixels,
+      camera.mainCameraMegapixels,
+    ),
+  );
+  const frontCamera = toProductText(
+    getFirstProductValue(
+      front.megapixels,
+      front.resolution,
+      camera.front_camera?.resolution,
+      camera.front_camera?.megapixels,
+      camera.frontCamera?.resolution,
+      camera.front_camera_megapixels,
+      camera.selfie_camera_megapixels,
+    ),
+  );
+
+  return [
+    displaySummary ? { label: "Display", value: displaySummary } : null,
+    processor ? { label: "Processor", value: processor } : null,
+    capacity ? { label: "Battery", value: capacity } : null,
+    charging ? { label: "Charging", value: charging } : null,
+    rearCamera
+      ? { label: "Rear camera", value: appendProductUnit(rearCamera, "MP", /mp/i) }
+      : null,
+    frontCamera
+      ? { label: "Front camera", value: appendProductUnit(frontCamera, "MP", /mp/i) }
+      : null,
+  ].filter(Boolean);
+};
+
+const getTvSpecificationRows = (product = {}) => {
+  const keySpecs = getProductObject(
+    product.key_specs_json,
+    product.key_specs,
+  );
+  const basicInfo = getProductObject(
+    product.basic_info_json,
+    product.basic_info,
+  );
+  const display = getProductObject(product.display_json, product.display);
+  const video = getProductObject(
+    product.video_engine_json,
+    product.video,
+  );
+  const smartTv = getProductObject(
+    product.smart_tv_json,
+    product.smart_tv,
+  );
+  const audio = getProductObject(product.audio_json, product.audio);
+  const fields = [
+    {
+      label: "Screen size",
+      value: getFirstProductValue(
+        keySpecs.screen_size,
+        display.screen_size,
+        display.size,
+        basicInfo.screen_size,
+      ),
+      unit: "inch",
+      matcher: /inch|inches|\"|″/i,
+    },
+    {
+      label: "Resolution",
+      value: getFirstProductValue(
+        keySpecs.resolution,
+        display.resolution,
+        basicInfo.resolution,
+      ),
+    },
+    {
+      label: "Display",
+      value: getFirstProductValue(
+        keySpecs.panel_type,
+        keySpecs.display_type,
+        display.panel_type,
+        display.panel,
+        display.technology,
+        video.display_technology,
+      ),
+    },
+    {
+      label: "Refresh rate",
+      value: getFirstProductValue(
+        keySpecs.refresh_rate,
+        display.refresh_rate,
+      ),
+      unit: "Hz",
+      matcher: /hz/i,
+    },
+    {
+      label: "Smart platform",
+      value: getFirstProductValue(
+        keySpecs.operating_system,
+        smartTv.operating_system,
+        smartTv.os,
+        basicInfo.operating_system,
+      ),
+    },
+    {
+      label: "Audio output",
+      value: getFirstProductValue(
+        keySpecs.audio_output,
+        audio.output_power,
+        audio.audio_output,
+        audio.output,
+      ),
+      unit: "W",
+      matcher: /w/i,
+    },
+  ];
+  const seenValues = new Set();
+  return fields
+    .map(({ label, value, unit, matcher }) => {
+      const text = toProductText(value);
+      const normalized = text.toLowerCase();
+      if (!text || seenValues.has(normalized)) return null;
+      seenValues.add(normalized);
+      return {
+        label,
+        value: unit ? appendProductUnit(text, unit, matcher) : text,
+      };
+    })
+    .filter(Boolean);
+};
+
+const buildSmartphoneProductDescription = (product = {}, fallback = "") => {
+  const name = getPrerenderProductName(product);
+  const details = getSmartphoneSpecificationRows(product)
+    .slice(0, 3)
+    .map((item) => `${item.value} ${item.label.toLowerCase()}`);
+  if (!name || !details.length) return fallback;
+  return `Explore the ${name} with ${details.join(", ")}.`;
+};
+
+const buildTvProductDescription = (product = {}, fallback = "") => {
+  const name = getPrerenderProductName(product);
+  const details = getTvSpecificationRows(product)
+    .slice(0, 3)
+    .map((item) => `${item.value} ${item.label.toLowerCase()}`);
+  if (!name || !details.length) return fallback;
+  return `Explore the ${name} with ${details.join(", ")}.`;
+};
+
+const getProductOfferFromProduct = (product = {}) => {
+  const offers = (Array.isArray(product.variants) ? product.variants : [])
+    .flatMap((variant) =>
+      (Array.isArray(variant?.store_prices) ? variant.store_prices : []).map(
+        (store) => ({ variant, store }),
+      ),
+    )
+    .map(({ variant, store }) => {
+      const price = toPositiveRetailPrice(
+        store?.price ?? store?.base_price ?? variant?.base_price,
+      );
+      const url = toProductText(store?.url || store?.url_link || store?.link);
+      if (price == null || !url) return null;
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        return null;
+      }
+      if (parsedUrl.protocol !== "https:") return null;
+      const status = String(
+        store?.availability_status || store?.availabilityStatus || "",
+      ).toLowerCase();
+      const availability = /out.?of.?stock|unavailable|discontinued/.test(status)
+        ? "OutOfStock"
+        : /pre.?order|upcoming/.test(status)
+          ? "PreOrder"
+          : /in.?stock|available|live/.test(status) || store?.is_live === true
+            ? "InStock"
+            : null;
+      return { price, url, availability };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.price - right.price);
+  return offers[0] || null;
+};
+
+const getTvStartingPrice = (product = {}) =>
+  getProductOfferFromProduct(product)?.price ??
+  getPrerenderStartingPrice(product);
+
+const getProductImageUrls = (product = {}) => {
+  const record = product && typeof product === "object" ? product : {};
+  const images = Array.isArray(record.images)
+    ? record.images
+    : [record.image_url || record.image];
+  return images.map(toProductText).filter(Boolean).slice(0, 4);
 };
 
 const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
@@ -2632,12 +3236,68 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
 
   const smartphoneDetailName = getSmartphoneDetailName(canonicalPath);
   if (smartphoneDetailName) {
+    const product = getSmartphoneProductFromPayload(
+      canonicalPath,
+      preloadedApiPayload,
+    );
+    if (!product) {
+      return [
+        createWebPageSchema({
+          name: seo.title,
+          description: seo.description,
+          url: canonicalUrl,
+        }),
+      ];
+    }
+
+    const productName = getPrerenderProductName(product) || smartphoneDetailName;
+    const description = buildSmartphoneProductDescription(
+      product,
+      seo.description,
+    );
+    const offer = getProductOfferFromProduct(product);
+    const brand = getPrerenderProductBrand(product);
+    const breadcrumbs = [
+      { label: "Home", url: toCanonicalPageUrl("/", SITE_ORIGIN) },
+      {
+        label: "Smartphones",
+        url: toCanonicalPageUrl("/smartphones", SITE_ORIGIN),
+      },
+      ...(brand
+        ? [
+            {
+              label: brand,
+              url: toCanonicalPageUrl(
+                buildSmartphoneBrandPath(brand),
+                SITE_ORIGIN,
+              ),
+            },
+          ]
+        : []),
+      { label: productName, url: canonicalUrl },
+    ];
+
     return [
       createWebPageSchema({
         name: seo.title,
-        description: seo.description,
+        description,
         url: canonicalUrl,
       }),
+      createProductSchema({
+        name: productName,
+        description,
+        image: getProductImageUrls(product),
+        imageAlt: productName,
+        price: offer?.price,
+        priceCurrency: "INR",
+        offerUrl: offer?.url || null,
+        availability: offer?.availability || null,
+        url: canonicalUrl,
+        brand: brand || null,
+        sku: product.sku || null,
+        mpn: product.model_number || product.model || null,
+      }),
+      createBreadcrumbSchema(breadcrumbs),
     ];
   }
 
@@ -2662,17 +3322,62 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
 
   const tvDetailName = getTvDetailName(canonicalPath);
   if (tvDetailName) {
+    const product = getTvProductFromPayload(
+      canonicalPath,
+      preloadedApiPayload,
+    );
+    if (!product) {
+      return [
+        createWebPageSchema({
+          name: seo.title,
+          description: seo.description,
+          url: canonicalUrl,
+        }),
+      ];
+    }
+
+    const productName = getPrerenderProductName(product);
+    if (!productName) {
+      return [
+        createWebPageSchema({
+          name: seo.title,
+          description: seo.description,
+          url: canonicalUrl,
+        }),
+      ];
+    }
+    const description = buildTvProductDescription(product, seo.description);
+    const offer = getProductOfferFromProduct(product);
+    const brand = getPrerenderProductBrand(product);
     return [
       createWebPageSchema({
         name: seo.title,
-        description: seo.description,
+        description,
         url: canonicalUrl,
       }),
       createProductSchema({
-        name: tvDetailName,
-        description: seo.description,
+        name: productName,
+        description,
+        image: getProductImageUrls(product),
+        imageAlt: productName,
+        price: offer?.price,
+        priceCurrency: "INR",
+        offerUrl: offer?.url || null,
+        availability: offer?.availability || null,
         url: canonicalUrl,
+        brand: brand || null,
+        sku: product.sku || null,
+        mpn:
+          product.manufacturer_model ||
+          product.model_number ||
+          product.model ||
+          null,
       }),
+      createBreadcrumbSchema([
+        { label: "Home", url: toCanonicalPageUrl("/", SITE_ORIGIN) },
+        { label: "TVs", url: toCanonicalPageUrl("/tvs", SITE_ORIGIN) },
+        { label: productName, url: canonicalUrl },
+      ]),
     ];
   }
 
@@ -2782,11 +3487,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/smartphones")) {
-    const rows = getPreloadedRows(
-      preloadedApiPayload,
-      `${API_BASE_URL}/smartphones`,
-      ["smartphones"],
-    );
+    const rows = getListingPrerenderRows(canonicalPath, preloadedApiPayload);
     const items = buildItemListFromRows(rows, {
       basePath: "/smartphones",
       toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
@@ -2965,6 +3666,127 @@ const injectPreloadedPayload = (html, payload) => {
   if (html.includes('id="MobilesX-prerender-data"')) return html;
   const scriptTag = `<script id="hook-prerender-data">window.__HOOKS_PRERENDER_DATA__=${escapeInlineJson(payload)};</script>`;
   return html.replace("</head>", `${scriptTag}\n</head>`);
+};
+
+const isPreloadProductRow = (value) =>
+  Boolean(
+    value &&
+      typeof value === "object" &&
+      (value.product_id != null ||
+        value.productId != null ||
+        value.product_name ||
+        value.model_number ||
+        value.basic_info?.product_name),
+  );
+
+const limitPreloadedCollections = (value) => {
+  if (Array.isArray(value)) {
+    const rows = value.some(isPreloadProductRow) ? value.slice(0, 20) : value;
+    return rows.map((item) => limitPreloadedCollections(item));
+  }
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      limitPreloadedCollections(child),
+    ]),
+  );
+};
+
+const buildClientPreloadedPayload = (routePath, payload) => {
+  if (!payload?.byUrl || typeof payload.byUrl !== "object") return null;
+
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  let endpoints = [];
+  const smartphoneListingEndpoint = getSmartphoneListingApiEndpoint(
+    canonicalPath,
+  );
+
+  if (smartphoneListingEndpoint) {
+    endpoints = [smartphoneListingEndpoint];
+  } else if (canonicalPath === "/smartphones/upcoming") {
+    endpoints = [`${API_BASE_URL}/public/upcoming/smartphones`];
+  } else if (canonicalPath.startsWith("/trending/")) {
+    const category = canonicalPath.split("/")[2] || "smartphones";
+    endpoints = [
+      category === "smartphones"
+        ? `${API_BASE_URL}/public/trending/smartphones`
+        : `${API_BASE_URL}/public/trending/${category}?limit=120`,
+    ];
+  } else if (
+    canonicalPath === "/tvs" ||
+    canonicalPath === "/tvs/latest" ||
+    getTvListingRouteMeta(canonicalPath)?.type === "feature"
+  ) {
+    endpoints = [
+      canonicalPath === "/tvs/latest"
+        ? `${API_BASE_URL}/public/new/tvs`
+        : `${API_BASE_URL}/tvs`,
+    ];
+  } else if (canonicalPath === "/networking") {
+    endpoints = [`${API_BASE_URL}/networking`];
+  } else if (canonicalPath.startsWith("/compare/")) {
+    const compareSlug = getSingleSegmentRouteTail(canonicalPath, "/compare");
+    if (compareSlug) endpoints = [buildCompareResolveEndpoint(compareSlug)];
+  } else if (canonicalPath.startsWith("/smartphones/")) {
+    const routeSlug = getSingleSegmentRouteTail(
+      canonicalPath,
+      "/smartphones",
+    );
+    if (routeSlug.endsWith(SMARTPHONE_SEO_SUFFIX)) {
+      endpoints = [
+        `${API_BASE_URL}/public/smartphones/by-slug/${encodeURIComponent(
+          stripSmartphoneSeoSuffix(routeSlug),
+        )}`,
+      ];
+    }
+  } else if (
+    canonicalPath.startsWith("/tvs/") &&
+    getTvDetailName(canonicalPath)
+  ) {
+    const routeSlug = getSingleSegmentRouteTail(canonicalPath, "/tvs");
+    if (routeSlug) {
+      endpoints = [
+        `${API_BASE_URL}/public/tvs/by-slug/${encodeURIComponent(routeSlug)}`,
+      ];
+    }
+  }
+
+  const byUrl = {};
+  for (const endpoint of endpoints) {
+    if (!Object.prototype.hasOwnProperty.call(payload.byUrl, endpoint)) {
+      continue;
+    }
+    byUrl[endpoint] = limitPreloadedCollections(payload.byUrl[endpoint]);
+  }
+
+  if (
+    smartphoneListingEndpoint &&
+    canonicalPath.startsWith("/smartphones/") &&
+    Object.prototype.hasOwnProperty.call(byUrl, smartphoneListingEndpoint)
+  ) {
+    const routeBody = byUrl[smartphoneListingEndpoint];
+    delete byUrl[smartphoneListingEndpoint];
+    byUrl[`${API_BASE_URL}/smartphones?page=1&limit=20`] =
+      routeBody;
+  }
+
+  if (!Object.keys(byUrl).length) return null;
+  const clientPayload = {
+    version: payload.version || 1,
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    apiOrigin: payload.apiOrigin || API_ORIGIN,
+    byUrl,
+  };
+  const inlineJson = escapeInlineJson(clientPayload);
+  if (Buffer.byteLength(inlineJson, "utf8") > MAX_CLIENT_PRELOAD_BYTES) {
+    console.warn(
+      `[prerender] Omitting oversized route preload for ${canonicalPath}.`,
+    );
+    return null;
+  }
+  return clientPayload;
 };
 
 const injectStructuredData = (html, routePath, preloadedApiPayload) => {
@@ -3269,6 +4091,54 @@ const injectNewsRouteContent = (html, routePath, preloadedApiPayload) => {
   return html.replace(emptyRootPattern, `<div id="root">${markup}</div>`);
 };
 
+const SMARTPHONE_PRICE_FILTERS = {
+  "under-10000": { min: 0, max: 10000 },
+  "under-15000": { min: 0, max: 15000 },
+  "under-20000": { min: 0, max: 20000 },
+  "under-25000": { min: 0, max: 25000 },
+  "under-30000": { min: 0, max: 30000 },
+  "under-40000": { min: 0, max: 40000 },
+  "under-50000": { min: 0, max: 50000 },
+  "above-50000": { min: 50000, max: 300000 },
+};
+
+const getSmartphoneListingApiEndpoint = (canonicalPath) => {
+  const filterMatch = canonicalPath.match(
+    /^\/smartphones\/filter\/([^/]+)$/i,
+  );
+  if (filterMatch) {
+    const filterSlug = String(filterMatch[1] || "").toLowerCase();
+    if (filterSlug === "new") {
+      return `${API_BASE_URL}/public/new/smartphones`;
+    }
+    const priceRange = SMARTPHONE_PRICE_FILTERS[filterSlug];
+    if (priceRange) {
+      return `${API_BASE_URL}/smartphones?page=1&limit=20&filters=${encodeURIComponent(
+        JSON.stringify({ priceRange }),
+      )}`;
+    }
+    return null;
+  }
+
+  const listingRoute = parseSmartphoneListingPath(canonicalPath);
+  if (!listingRoute) return null;
+  if (!listingRoute.brandSlug && !listingRoute.featureSlug) {
+    return `${API_BASE_URL}/smartphones?page=1&limit=20`;
+  }
+
+  const filters = {};
+  if (listingRoute.brandSlug) {
+    filters.brand = [toReadableListingLabel(listingRoute.brandSlug)];
+  }
+  if (listingRoute.featureSlug) {
+    filters.additionalFeatures = [listingRoute.featureSlug];
+  }
+
+  return `${API_BASE_URL}/smartphones?page=1&limit=20&filters=${encodeURIComponent(
+    JSON.stringify(filters),
+  )}`;
+};
+
 const getListingPrerenderRows = (canonicalPath, payload) => {
   const candidates = [];
   if (canonicalPath.startsWith("/trending/")) {
@@ -3283,11 +4153,13 @@ const getListingPrerenderRows = (canonicalPath, payload) => {
       canonicalPath.includes("/filter/new")
     ) {
       candidates.push(`${API_BASE_URL}/public/new/smartphones`);
+    } else {
+      const routeEndpoint = getSmartphoneListingApiEndpoint(canonicalPath);
+      if (routeEndpoint) candidates.push(routeEndpoint);
+      if (canonicalPath === "/smartphones") {
+        candidates.push(`${API_BASE_URL}/smartphones?page=1&limit=20`);
+      }
     }
-    candidates.push(
-      `${API_BASE_URL}/smartphones?page=1&limit=20`,
-      `${API_BASE_URL}/smartphones`,
-    );
   } else if (canonicalPath.startsWith("/tvs")) {
     const tvListingRoute = getTvListingRouteMeta(canonicalPath);
     candidates.push(
@@ -3340,11 +4212,62 @@ const buildListingPrerenderMarkup = (canonicalPath, payload) => {
       item?.basic_info?.model_number ||
       item?.basic_info?.model,
   });
+  const getListingName = (item) =>
+    item?.product_name ||
+    item?.name ||
+    item?.model_number ||
+    item?.model ||
+    item?.basic_info?.product_name ||
+    item?.basic_info?.title ||
+    item?.basic_info?.model_number ||
+    item?.basic_info?.model ||
+    "";
+  const normalizeProductLabel = (value) =>
+    String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const rowByName = new Map(
+    rows.map((row) => [
+      normalizeProductLabel(getListingName(row)),
+      row,
+    ]),
+  );
   const productLinks = links
-    .map(
-      (item) =>
-        `<li><a href="${escapeHtml(item.url)}" class="font-semibold text-slate-800 hover:text-blue-700">${escapeHtml(item.name)}</a></li>`,
-    )
+    .map((item) => {
+      const row = rowByName.get(normalizeProductLabel(item.name));
+      const price = isSmartphoneRoute ? getPrerenderStartingPrice(row) : null;
+      const availableSpecs = isSmartphoneRoute
+        ? getSmartphoneSpecificationRows(row)
+        : [];
+      const featureSlug = canonicalPath.match(
+        /^\/smartphones\/feature\/([^/]+)/i,
+      )?.[1];
+      const prioritySpec = {
+        "high-camera": "Rear camera",
+        "long-battery": "Battery",
+        "fast-charging": "Charging",
+        amoled: "Display",
+      }[featureSlug];
+      const prioritizedSpec = prioritySpec
+        ? availableSpecs.find((spec) => spec.label === prioritySpec)
+        : null;
+      const specs = prioritizedSpec
+        ? [
+            prioritizedSpec,
+            ...availableSpecs.filter((spec) => spec !== prioritizedSpec),
+          ].slice(0, 3)
+        : availableSpecs.slice(0, 3);
+      const priceMarkup = price
+        ? `<p class="mt-2 text-sm font-bold text-slate-950"><span>Starting price:</span> ${escapeHtml(formatIndianRetailPrice(price))}</p>`
+        : "";
+      const specMarkup = specs.length
+        ? `<p class="mt-1 text-sm leading-6 text-slate-600">${specs
+            .map(
+              (spec) =>
+                `<span>${escapeHtml(spec.label)}: ${escapeHtml(spec.value)}</span>`,
+            )
+            .join(" <span aria-hidden=\"true\">·</span> ")}</p>`
+        : "";
+      return `<li data-prerendered-product="${escapeHtml(item.name)}" class="rounded-xl border border-slate-200 p-4"><a href="${escapeHtml(item.url)}" class="font-semibold text-slate-800 hover:text-blue-700">${escapeHtml(item.name)}</a>${priceMarkup}${specMarkup}</li>`;
+    })
     .join("\n");
 
   return `<main data-listing-prerendered="true" class="min-h-screen bg-white text-slate-950">
@@ -3396,14 +4319,82 @@ const injectListingRouteContent = (html, routePath, payload) => {
   );
 };
 
-const buildProductPrerenderMarkup = (canonicalPath) => {
+const buildProductPrerenderMarkup = (canonicalPath, payload) => {
   const isSmartphone = canonicalPath.startsWith("/smartphones/");
-  const productName = isSmartphone
-    ? getSmartphoneDetailName(canonicalPath)
-    : getTvDetailName(canonicalPath);
+  const isTv = canonicalPath.startsWith("/tvs/");
+  const product = isSmartphone
+    ? getSmartphoneProductFromPayload(canonicalPath, payload)
+    : isTv
+      ? getTvProductFromPayload(canonicalPath, payload)
+      : null;
+  const productName =
+    getPrerenderProductName(product) ||
+    (isSmartphone
+      ? getSmartphoneDetailName(canonicalPath)
+      : getTvDetailName(canonicalPath));
   const seo = resolveSeo(canonicalPath);
   const categoryPath = isSmartphone ? "/smartphones" : "/tvs";
   const categoryLabel = isSmartphone ? "Smartphones" : "TVs";
+  const specs = product
+    ? isSmartphone
+      ? getSmartphoneSpecificationRows(product)
+      : getTvSpecificationRows(product)
+    : [];
+  const price = product
+    ? isTv
+      ? getTvStartingPrice(product)
+      : getPrerenderStartingPrice(product)
+    : null;
+  const brand = product ? getPrerenderProductBrand(product) : "";
+  const description = product
+    ? isSmartphone
+      ? buildSmartphoneProductDescription(product, seo.description)
+      : buildTvProductDescription(product, seo.description)
+    : seo.description;
+  const priceMarkup = price
+    ? `<section aria-labelledby="product-price-heading" class="mt-8"><h2 id="product-price-heading" class="text-2xl font-bold text-slate-950">Price in India</h2><p class="mt-2 text-lg text-slate-700"><span class="font-semibold">Starting price:</span> ${escapeHtml(formatIndianRetailPrice(price))}</p></section>`
+    : "";
+  const specificationMarkup = specs.length
+    ? `<section aria-labelledby="product-specifications-heading" class="mt-8"><h2 id="product-specifications-heading" class="text-2xl font-bold text-slate-950">Key specifications</h2><dl class="mt-3 grid gap-3 sm:grid-cols-2">${specs
+        .map(
+          (spec) =>
+            `<div class="rounded-lg border border-slate-200 p-3"><dt class="text-sm font-semibold text-slate-500">${escapeHtml(spec.label)}</dt><dd class="mt-1 text-base text-slate-900">${escapeHtml(spec.value)}</dd></div>`,
+        )
+        .join("")}</dl></section>`
+    : "";
+  const variantRows = (Array.isArray(product?.variants)
+    ? product.variants
+    : [])
+    .slice(0, 12)
+    .map((variant) => {
+      const memory = [
+        variant?.ram ? `${toProductText(variant.ram)} RAM` : "",
+        variant?.storage ? toProductText(variant.storage) : "",
+        variant?.color_name || variant?.color
+          ? toProductText(variant.color_name || variant.color)
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" / ");
+      const label = memory || toProductText(variant?.variant_key || variant?.name);
+      const variantPrice = getVariantRetailPrice(variant);
+      if (!label && !variantPrice) return "";
+      return `<li class="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2"><span>${escapeHtml(label || "Variant")}</span>${variantPrice ? `<span class="font-semibold">${escapeHtml(formatIndianRetailPrice(variantPrice))}</span>` : ""}</li>`;
+    })
+    .filter(Boolean);
+  const variantsMarkup = variantRows.length
+    ? `<section aria-labelledby="product-variants-heading" class="mt-8"><h2 id="product-variants-heading" class="text-2xl font-bold text-slate-950">Available variants</h2><ul class="mt-3">${variantRows.join("")}</ul></section>`
+    : "";
+  const imageUrl = getProductImageUrls(product)[0];
+  const imageMarkup = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(productName)}" class="mt-6 max-h-80 w-auto rounded-xl object-contain" loading="eager">`
+    : "";
+  const productHeading = product
+    ? `${productName} Price and Specifications`
+    : productName;
+  const brandMarkup = brand
+    ? `<p class="mt-2 text-sm font-semibold text-slate-500">Brand: ${escapeHtml(brand)}</p>`
+    : "";
 
   return `<main data-product-prerendered="true" class="min-h-screen bg-white text-slate-950">
   <article class="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
@@ -3415,9 +4406,14 @@ const buildProductPrerenderMarkup = (canonicalPath) => {
       <span aria-current="page">${escapeHtml(productName)}</span>
     </nav>
     <header class="mt-6 max-w-4xl">
-      <h1 class="text-4xl font-black leading-tight tracking-tight text-slate-950">${escapeHtml(productName)}</h1>
-      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(seo.description)}</p>
+      <h1 class="text-4xl font-black leading-tight tracking-tight text-slate-950">${escapeHtml(productHeading)}</h1>
+      ${brandMarkup}
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(description)}</p>
     </header>
+    ${imageMarkup}
+    ${priceMarkup}
+    ${specificationMarkup}
+    ${variantsMarkup}
     <nav aria-label="Related product navigation" class="mt-8 flex flex-wrap gap-4 text-sm font-semibold">
       <a href="${categoryPath}" class="text-blue-700 hover:text-blue-900">Browse all ${categoryLabel.toLowerCase()}</a>
       <a href="/popular-comparisons" class="text-blue-700 hover:text-blue-900">Compare popular devices</a>
@@ -3426,7 +4422,7 @@ const buildProductPrerenderMarkup = (canonicalPath) => {
 </main>`;
 };
 
-const injectProductRouteContent = (html, routePath) => {
+const injectProductRouteContent = (html, routePath, payload) => {
   const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
   const smartphoneSlug = getSingleSegmentRouteTail(
     canonicalPath,
@@ -3442,7 +4438,7 @@ const injectProductRouteContent = (html, routePath) => {
   if (!emptyRootPattern.test(html)) return html;
   return html.replace(
     emptyRootPattern,
-    `<div id="root">${buildProductPrerenderMarkup(canonicalPath)}</div>`,
+    `<div id="root">${buildProductPrerenderMarkup(canonicalPath, payload)}</div>`,
   );
 };
 
@@ -3739,8 +4735,12 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
     preloadedApiPayload,
   );
 
-  if (preloadedApiPayload) {
-    nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
+  const clientPayload = buildClientPreloadedPayload(
+    normalizedRoute,
+    preloadedApiPayload,
+  );
+  if (clientPayload) {
+    nextHtml = injectPreloadedPayload(nextHtml, clientPayload);
   }
 
   nextHtml = injectCompareRouteContent(
@@ -3761,7 +4761,11 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
     preloadedApiPayload,
   );
 
-  nextHtml = injectProductRouteContent(nextHtml, normalizedRoute);
+  nextHtml = injectProductRouteContent(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
 
   nextHtml = injectPublicStaticRouteContent(nextHtml, normalizedRoute);
 
