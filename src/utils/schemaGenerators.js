@@ -83,6 +83,7 @@ export const createProductSchema = ({
   imageAlt = "",
   price,
   priceCurrency = "INR",
+  offerUrl = null,
   url,
   brand = null,
   rating = null,
@@ -134,13 +135,16 @@ export const createProductSchema = ({
   }
 
   if (normalizedPrice) {
-    schema.offers = {
+    const offer = {
       "@type": "Offer",
       price: normalizedPrice,
       priceCurrency: priceCurrency,
-      availability: `https://schema.org/${availability}`,
-      url: toAbsolutePageUrl(url || "/"),
+      url: toAbsoluteUrl(offerUrl || url || "/"),
     };
+    if (availability) {
+      offer.availability = `https://schema.org/${availability}`;
+    }
+    schema.offers = offer;
   }
 
   if (sku) schema.sku = String(sku);
