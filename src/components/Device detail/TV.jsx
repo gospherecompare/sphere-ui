@@ -2850,9 +2850,11 @@ const TVDetailCard = () => {
         image: ogImage || undefined,
         url: canonicalUrl,
         brand: metaBrand || undefined,
+        price: headlinePrice || undefined,
+        priceCurrency: "INR",
       }),
     ];
-    return JSON.stringify(schemas);
+    return JSON.stringify(schemas.filter(Boolean));
   })();
 
   const primarySpecs =

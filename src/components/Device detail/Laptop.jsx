@@ -1753,9 +1753,11 @@ const LaptopDetailCard = () => {
         image: ogImage || undefined,
         url: canonicalUrl,
         brand: metaBrand || undefined,
+        price: selectedVariantPrice || undefined,
+        priceCurrency: "INR",
       }),
     ];
-    return JSON.stringify(schemas);
+    return JSON.stringify(schemas.filter(Boolean));
   })();
   const showHiddenLaptopSections = false;
 
