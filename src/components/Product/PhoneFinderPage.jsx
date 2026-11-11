@@ -272,7 +272,7 @@ export default function PhoneFinderPage() {
       <SEO
         title="Phone Finder India | Find the Right Smartphone for You | MobilesX"
         description="Find the best smartphone for your needs in India. Choose your budget, priorities and must-have features to get personalized smartphone matches from MobilesX."
-        url="https://www.mobilesx.in/phone-finder"
+        url="https://mobilesx.in/phone-finder"
       />
       <section className="relative isolate overflow-hidden border-b border-blue-100/80 bg-transparent">
         <div className="pointer-events-none absolute -left-24 top-6 h-64 w-64 rounded-full bg-blue-100/60 blur-3xl" />

@@ -4,7 +4,7 @@ import {
   toCanonicalPageUrl,
 } from "./publicUrl";
 
-export const NEWS_SITE_ORIGIN = "https://www.mobilesx.in";
+export const NEWS_SITE_ORIGIN = "https://mobilesx.in";
 
 export const NEWS_LISTING_SEO = Object.freeze({
   title: "Tech News, Gadget Launches, Reviews & Buying Guides | MobilesX",

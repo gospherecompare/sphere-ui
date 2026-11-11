@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const MAX_COMPARE_PAYLOAD_BYTES = 75_000;
 const MAX_LISTING_PAYLOAD_BYTES = 512 * 1024;
 const MAX_HTML_BYTES = 2 * 1024 * 1024;

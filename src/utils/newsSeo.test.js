@@ -8,11 +8,11 @@ describe("normalizeLegacySiteUrls", () => {
   it("rewrites legacy site hosts while retaining paths", () => {
     const legacyOrigin = ["https://", "tryhook.shop"].join("");
     expect(normalizeLegacySiteUrls(`${legacyOrigin}/smartphones/example`)).toBe(
-      "https://www.mobilesx.in/smartphones/example",
+      "https://mobilesx.in/smartphones/example",
     );
     expect(
       normalizeLegacySiteUrls(`//www.${legacyOrigin.slice("https://".length)}/news`),
-    ).toBe("https://www.mobilesx.in/news");
+    ).toBe("https://mobilesx.in/news");
   });
 });
 
@@ -24,7 +24,7 @@ describe("sanitizeNewsArticleHtml", () => {
         `<p><a href="${legacyOrigin}/smartphones/example">Phone</a></p>`,
       ),
     ).toBe(
-      '<p><a href="https://www.mobilesx.in/smartphones/example">Phone</a></p>',
+      '<p><a href="https://mobilesx.in/smartphones/example">Phone</a></p>',
     );
   });
 });

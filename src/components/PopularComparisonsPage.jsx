@@ -297,7 +297,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
       <SEO
         title="Popular Mobile Comparisons in India | MobilesX"
         description="Explore popular smartphone comparisons in India with side-by-side specifications, key differences, features and buying insights."
-        url="https://www.mobilesx.in/popular-comparisons"
+        url="https://mobilesx.in/popular-comparisons"
       />
       <section
         className={`smartphones-matchups-section mx-auto w-full max-w-6xl bg-transparent py-4 text-slate-950 sm:py-6  ${className}`}

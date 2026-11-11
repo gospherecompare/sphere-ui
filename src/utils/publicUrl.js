@@ -1,4 +1,4 @@
-export const DEFAULT_SITE_ORIGIN = "https://www.mobilesx.in";
+export const DEFAULT_SITE_ORIGIN = "https://mobilesx.in";
 
 export const normalizeLegacySiteUrls = (value = "") =>
   String(value || "").replace(
@@ -9,7 +9,7 @@ export const normalizeLegacySiteUrls = (value = "") =>
 const isMobilesXOrigin = (value) => {
   try {
     const hostname = new URL(value).hostname.toLowerCase();
-    return hostname === "mobilesx.in" || hostname === "www.mobilesx.in";
+    return hostname.replace(/^www\./, "") === "mobilesx.in";
   } catch {
     return false;
   }

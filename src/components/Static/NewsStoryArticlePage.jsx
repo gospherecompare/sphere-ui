@@ -43,7 +43,7 @@ import "./news-article.css";
 
 import { buildNewsArticleSeo } from "../../utils/newsSeo";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",

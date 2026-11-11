@@ -5,15 +5,22 @@ import {
 } from "./publicUrl";
 
 describe("toCanonicalPageUrl", () => {
-  it("uses the www origin for relative page paths", () => {
+  it("uses the apex origin for relative page paths", () => {
     expect(toCanonicalPageUrl("/news/article")).toBe(
-      "https://www.mobilesx.in/news/article",
+      "https://mobilesx.in/news/article",
     );
   });
 
-  it("converts apex-domain URLs to the www origin", () => {
+  it("keeps apex-domain URLs on the apex origin", () => {
     expect(toCanonicalPageUrl("https://mobilesx.in/news/article?ref=home")).toBe(
       `${DEFAULT_SITE_ORIGIN}/news/article`,
+    );
+  });
+
+  it("normalizes legacy www URLs to the apex origin", () => {
+    const legacyUrl = ["https://www.", "mobilesx.in/news/article?ref=home"].join("");
+    expect(toCanonicalPageUrl(legacyUrl)).toBe(
+      "https://mobilesx.in/news/article",
     );
   });
 });

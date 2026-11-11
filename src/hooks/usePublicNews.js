@@ -1273,7 +1273,7 @@ export const useStoryListSchemaItems = (stories = []) =>
     () =>
       stories.map((story) => ({
         name: story.title,
-        url: `https://www.mobilesx.in${createNewsStoryPath(story.slug)}`,
+        url: `https://mobilesx.in${createNewsStoryPath(story.slug)}`,
         image: story.image,
       })),
     [stories],
