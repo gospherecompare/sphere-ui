@@ -39,7 +39,7 @@ export {
  *    - Usage:
  *      <SocialShareButtons
  *        title={article.title}
- *        url="https://www.mobilesx.in/news"
+ *        url="https://mobilesx.in/news"
  *        description={article.summary}
  *      />
  *

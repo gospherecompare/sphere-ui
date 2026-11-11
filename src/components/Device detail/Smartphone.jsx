@@ -108,7 +108,7 @@ const MobilesXScoreLogo = ({ className }) => (
 
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const LINKED_NEWS_LIMIT = 3;
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",

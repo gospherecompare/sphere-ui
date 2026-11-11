@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(scriptDir, "..");
 const distDir = path.join(clientRoot, "dist");
@@ -88,7 +88,7 @@ const assertCanonicalNewsLinks = (html, routeLabel) => {
     const parsedUrl = new URL(href, SITE_ORIGIN);
     const pathname = parsedUrl.pathname;
     assert(
-      ["mobilesx.in", "www.mobilesx.in"].includes(parsedUrl.hostname),
+      parsedUrl.hostname === "mobilesx.in",
       `${routeLabel} links to an unexpected site hostname: ${href}`,
     );
     assert(

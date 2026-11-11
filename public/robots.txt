@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.mobilesx.in/sitemap.xml
-Sitemap: https://www.mobilesx.in/news-sitemap.xml
+Sitemap: https://mobilesx.in/sitemap.xml
+Sitemap: https://mobilesx.in/news-sitemap.xml

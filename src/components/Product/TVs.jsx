@@ -90,7 +90,7 @@ import ProductCardFooter from "../ui/ProductCardFooter";
 import ProductVariantSelector from "../ui/ProductVariantSelector";
 import Breadcrumbs from "../Breadcrumbs";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const formatTvHighlightValue = (label, value) => {
   const text = String(value ?? "—").trim() || "—";
 
@@ -3279,7 +3279,7 @@ const TVs = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://www.mobilesx.in";
+      : "https://mobilesx.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";

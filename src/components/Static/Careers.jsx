@@ -4,7 +4,7 @@ import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import { buildApiUrl } from "../../utils/apiUrl";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const CAREERS_API_URL = buildApiUrl("/career-submissions");
 const CURRENT_YEAR = new Date().getFullYear();
 

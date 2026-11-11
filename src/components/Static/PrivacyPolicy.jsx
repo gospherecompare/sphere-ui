@@ -13,7 +13,7 @@ import SEO from "../SEO";
 import CompanyPageShell from "../ui/CompanyPageShell";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 
@@ -42,7 +42,7 @@ const sections = [
     id: "scope",
     title: "Scope of this policy",
     paragraphs: [
-      "This Privacy Policy explains how MobilesX handles information when you visit www.mobilesx.in, use smartphone discovery and comparison features, read editorial content, submit a contact request or interact with related services.",
+      "This Privacy Policy explains how MobilesX handles information when you visit mobilesx.in, use smartphone discovery and comparison features, read editorial content, submit a contact request or interact with related services.",
       "This policy applies to information handled by MobilesX. Third-party retailers, analytics providers, advertising platforms and external websites operate under their own privacy policies.",
     ],
   },

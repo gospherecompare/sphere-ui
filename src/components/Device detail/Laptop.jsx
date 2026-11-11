@@ -41,7 +41,7 @@ import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { toCloudinaryOgImage } from "../../utils/cloudinaryImage";
 
-const SITE_ORIGIN = "https://www.mobilesx.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const normalizeScore100 = (value) => {
   if (value === null || value === undefined || value === "") return null;
