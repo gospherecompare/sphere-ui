@@ -206,7 +206,7 @@ const parseRetailPrice = (value) => {
     .trim()
     .replace(/^(?:₹|rs\.?|inr)\s*/i, "")
     .replace(/\s*(?:inr|rs\.?)$/i, "")
-    .replace(/\s*\/\-\s*$/, "")
+    .replace(/\s*\/-\s*$/, "")
     .replace(/,/g, "")
     .trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
@@ -702,12 +702,92 @@ const loadCompareSuggestionPhones = async (suggestion, signal) => {
   }
 };
 
+const buildComparePageResolveUrl = (slug) =>
+  buildApiUrl(
+    `/public/compare-pages/resolve?slug=${encodeURIComponent(String(slug || "").trim())}`,
+  );
+
+const buildProductResolveUrl = (productId) =>
+  buildApiUrl(`/public/product/${encodeURIComponent(String(productId || ""))}`);
+
+const toCompareSelection = (summary = {}, details = null) => {
+  const productId =
+    getProductId(details) ?? getProductId(summary);
+  if (productId == null) return null;
+
+  const image =
+    getImage(details) ||
+    getImage(summary) ||
+    String(summary?.image_url || "").trim();
+  const productType =
+    details?.product_type ||
+    details?.productType ||
+    summary?.product_type ||
+    summary?.productType ||
+    "smartphone";
+
+  return normalizeSelected(
+    {
+      ...summary,
+      ...(details && typeof details === "object" ? details : {}),
+      id: details?.id ?? summary?.product_id ?? productId,
+      productId,
+      product_id: details?.product_id ?? summary?.product_id ?? productId,
+      name:
+        details?.name ||
+        details?.product_name ||
+        summary?.product_name ||
+        summary?.name ||
+        "Device",
+      product_name:
+        summary?.product_name || details?.product_name || details?.name || "Device",
+      product_type: productType,
+      deviceType: productType,
+      brand:
+        details?.brand ||
+        details?.manufacturer ||
+        summary?.brand_name ||
+        summary?.brand ||
+        "",
+      price: details?.price ?? summary?.best_price ?? summary?.price ?? null,
+      image_url: details?.image_url || summary?.image_url || image,
+      images:
+        Array.isArray(details?.images) && details.images.length
+          ? details.images
+          : image
+            ? [image]
+            : [],
+    },
+    0,
+  );
+};
+
 const MobileCompare = () => {
   const location = useLocation();
   const { compareSlug = "" } = useParams();
   const routeCompareNames = getCompareNamesFromSlug(compareSlug);
   const [showPicker, setShowPicker] = useState(false);
   const searchParams = new URLSearchParams(location.search || "");
+  const hasInitialProducts =
+    (Array.isArray(location.state?.initialProducts) &&
+      location.state.initialProducts.length > 0) ||
+    Boolean(location.state?.initialProduct);
+  const hasExplicitSelection =
+    hasInitialProducts || searchParams.has("devices") || searchParams.has("add");
+  const [routeCompareLoadState, setRouteCompareLoadState] = useState(() => ({
+    slug: compareSlug,
+    status: compareSlug ? "loading" : "idle",
+  }));
+  const routeCompareLoading =
+    Boolean(compareSlug) &&
+    !hasExplicitSelection &&
+    (routeCompareLoadState.slug !== compareSlug ||
+      routeCompareLoadState.status === "loading");
+  const routeCompareFailed =
+    Boolean(compareSlug) &&
+    !hasExplicitSelection &&
+    routeCompareLoadState.slug === compareSlug &&
+    routeCompareLoadState.status === "error";
   const needsDeviceCatalog =
     showPicker ||
     Boolean(compareSlug) ||
@@ -882,22 +962,6 @@ const MobileCompare = () => {
         (item) => String(getProductId(item)) === String(addParam),
       );
       if (device) resolve(device, 0);
-    } else if (compareSlug) {
-      const cleanSlug = compareSlug.replace(/-comparison$/i, "");
-      const parts = cleanSlug.split("-and-").filter(Boolean);
-      parts.forEach((part) => {
-        const match = availableDevices.find((item) => {
-          const nameSlug = slugify(getProductName(item));
-          const modelSlug = slugify(item?.model || "");
-          return (
-            nameSlug === part ||
-            modelSlug === part ||
-            nameSlug.startsWith(`${part}-`) ||
-            part.startsWith(`${nameSlug}-`)
-          );
-        });
-        if (match) resolve(match, 0);
-      });
     }
 
     const unique = Array.from(
@@ -915,6 +979,90 @@ const MobileCompare = () => {
     location.search,
     location.state,
   ]);
+
+  useEffect(() => {
+    if (!compareSlug) {
+      if (!hasExplicitSelection) setSelectedDevices([]);
+      setRouteCompareLoadState({ slug: "", status: "idle" });
+      return undefined;
+    }
+
+    if (hasExplicitSelection) {
+      setRouteCompareLoadState({ slug: compareSlug, status: "idle" });
+      return undefined;
+    }
+
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    const signal = controller?.signal;
+    const routeSlug = compareSlug;
+
+    setSelectedDevices([]);
+    setRouteCompareLoadState({ slug: routeSlug, status: "loading" });
+
+    const loadRouteComparison = async () => {
+      try {
+        const resolveUrl = buildComparePageResolveUrl(routeSlug);
+        let payload = readPreloadedApiResponse(resolveUrl);
+        const preloadedItems = Array.isArray(payload?.page?.items)
+          ? payload.page.items
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+        if (preloadedItems.length < MIN_COMPARE_DEVICES) {
+          payload = await fetchPublicJson(resolveUrl, { signal });
+        }
+        const items = Array.isArray(payload?.page?.items)
+          ? payload.page.items
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+        if (items.length < MIN_COMPARE_DEVICES) {
+          throw new Error("This published comparison is unavailable.");
+        }
+
+        const selections = await Promise.all(
+          items.slice(0, MAX_COMPARE_DEVICES).map(async (item) => {
+            const productId = getProductId(item);
+            if (productId == null) return null;
+
+            let details = null;
+            const productUrl = buildProductResolveUrl(productId);
+            details = readPreloadedApiResponse(productUrl);
+            try {
+              if (!details?.id && !details?.product_id) {
+                details = await fetchPublicJson(productUrl, { signal });
+              }
+            } catch (error) {
+              if (error?.name === "AbortError") throw error;
+            }
+
+            return toCompareSelection(item, details);
+          }),
+        );
+        const resolvedSelections = selections.filter(Boolean);
+        if (resolvedSelections.length < MIN_COMPARE_DEVICES) {
+          throw new Error("The products in this comparison could not be loaded.");
+        }
+
+        if (cancelled) return;
+        setSelectedDevices(resolvedSelections);
+        setRouteCompareLoadState({ slug: routeSlug, status: "ready" });
+      } catch (error) {
+        if (cancelled || error?.name === "AbortError") return;
+        console.error("Failed to load the published comparison:", error);
+        setSelectedDevices([]);
+        setRouteCompareLoadState({ slug: routeSlug, status: "error" });
+      }
+    };
+
+    void loadRouteComparison();
+    return () => {
+      cancelled = true;
+      controller?.abort?.();
+    };
+  }, [compareSlug, hasExplicitSelection]);
 
   const selectedType = getProductType(selectedDevices[0]);
   const suggestedMobileDevices = useMemo(() => {
@@ -1300,7 +1448,53 @@ const MobileCompare = () => {
           </div>
         </header>
 
-        {selectedDevices.length === 0 ? (
+        {selectedDevices.length === 0 && routeCompareLoading ? (
+          <section
+            aria-live="polite"
+            aria-busy="true"
+            className="mx-auto flex min-h-64 max-w-3xl flex-col items-center justify-center border border-slate-200 bg-white px-6 py-12 text-center sm:min-h-72"
+          >
+            <span
+              aria-hidden="true"
+              className="mb-4 h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"
+            />
+            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+              Loading your comparison
+            </h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
+              {routeCompareNames.length
+                ? `Getting prices and specifications for ${routeCompareNames.join(" and ")}.`
+                : "Getting product prices and specifications."}
+            </p>
+          </section>
+        ) : selectedDevices.length === 0 && routeCompareFailed ? (
+          <section
+            role="alert"
+            className="mx-auto flex min-h-64 max-w-3xl flex-col items-center justify-center border border-slate-200 bg-white px-6 py-12 text-center sm:min-h-72"
+          >
+            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+              This comparison could not be loaded
+            </h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
+              Try again in a moment, or choose phones to build a new comparison.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex min-h-10 items-center justify-center bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                Retry
+              </button>
+              <Link
+                to="/compare"
+                className="inline-flex min-h-10 items-center justify-center border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Compare phones
+              </Link>
+            </div>
+          </section>
+        ) : selectedDevices.length === 0 ? (
           <>
             <section className="flex min-h-64 flex-col items-center justify-center px-4 py-10 text-center sm:min-h-72">
               <span

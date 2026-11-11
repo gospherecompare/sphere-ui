@@ -95,12 +95,15 @@ export const createProductSchema = ({
   const normalizedPrice = (() => {
     if (price == null || price === "") return null;
     if (typeof price === "number" && Number.isFinite(price)) {
-      return String(price);
+      return price > 0 ? String(price) : null;
     }
     const cleaned = String(price)
       .replace(/[^\d.]/g, "")
       .trim();
-    return cleaned || null;
+    const numericPrice = Number(cleaned);
+    return Number.isFinite(numericPrice) && numericPrice > 0
+      ? cleaned
+      : null;
   })();
 
   const schema = {
@@ -150,7 +153,7 @@ export const createProductSchema = ({
   if (sku) schema.sku = String(sku);
   if (mpn) schema.mpn = String(mpn);
 
-  if (rating && ratingCount) {
+  if (Number(rating) > 0 && Number(ratingCount) > 0) {
     schema.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: String(rating),
@@ -158,7 +161,7 @@ export const createProductSchema = ({
     };
   }
 
-  return schema;
+  return schema.offers || schema.aggregateRating ? schema : null;
 };
 
 /**

@@ -208,7 +208,9 @@ const SEO = ({
       return next;
     };
 
-    return Array.isArray(base) ? base.map(applyDefaults) : applyDefaults(base);
+    return Array.isArray(base)
+      ? base.map(applyDefaults).filter(Boolean)
+      : applyDefaults(base);
   }, [schema, schemaType, canonicalUrl, pathname]);
 
   const schemaJson = React.useMemo(() => {

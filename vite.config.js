@@ -3288,7 +3288,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         description,
         image: getProductImageUrls(product),
         imageAlt: productName,
-        price: offer?.price,
+        price: offer?.price ?? getPrerenderStartingPrice(product),
         priceCurrency: "INR",
         offerUrl: offer?.url || null,
         availability: offer?.availability || null,
@@ -3360,7 +3360,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         description,
         image: getProductImageUrls(product),
         imageAlt: productName,
-        price: offer?.price,
+        price: getTvStartingPrice(product),
         priceCurrency: "INR",
         offerUrl: offer?.url || null,
         availability: offer?.availability || null,
@@ -3802,7 +3802,9 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
     toCanonicalPath(normalizePath(routePath || "/")),
     SITE_ORIGIN,
   );
-  const entries = Array.isArray(schemas) ? schemas : [schemas];
+  const entries = (Array.isArray(schemas) ? schemas : [schemas]).filter(
+    Boolean,
+  );
   const scripts = entries
     .map(
       (schema) =>

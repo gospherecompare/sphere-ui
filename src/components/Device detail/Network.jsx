@@ -1362,9 +1362,11 @@ const NetworkingDetailCard = () => {
         image: ogImage || undefined,
         url: canonicalUrl,
         brand: deviceData?.brand || deviceData?.brand_name || undefined,
+        price: currentVariant?.base_price || undefined,
+        priceCurrency: "INR",
       }),
     ];
-    return JSON.stringify(schemas);
+    return JSON.stringify(schemas.filter(Boolean));
   })();
 
   return (
