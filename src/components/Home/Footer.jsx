@@ -22,6 +22,7 @@ const footerSections = [
       { label: "All smartphones", href: "/smartphones" },
       { label: "Latest smartphones", href: "/smartphones/filter/new" },
       { label: "Upcoming smartphones", href: "/smartphones/upcoming" },
+      { label: "Internet speed test", href: "/speed-test" },
       { label: "TV buying discovery", href: "/tvs" },
       { label: "Trending technology", href: "/trending/smartphones" },
     ],

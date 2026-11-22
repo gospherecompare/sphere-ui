@@ -22,6 +22,27 @@ const fromBase64Url = (value) => {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 };
 
+const encryptEnvelope = async (payload, responseKey) => {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = new TextEncoder().encode(JSON.stringify(payload));
+  const authenticatedData = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    responseKey,
+    plaintext,
+  );
+  const ciphertext = new Uint8Array(authenticatedData);
+  const data = ciphertext.slice(0, ciphertext.length - 16);
+  const tag = ciphertext.slice(ciphertext.length - 16);
+  return {
+    encrypted: true,
+    version: 1,
+    algorithm: "AES-256-GCM",
+    iv: toBase64Url(iv),
+    tag: toBase64Url(tag),
+    data: toBase64Url(data),
+  };
+};
+
 const getApiOrigins = () => {
   const origins = new Set([window.location.origin]);
   try {
@@ -184,11 +205,69 @@ const decryptResponse = async (response, responseKey) => {
   });
 };
 
-const attachClientKey = async (input, init, requestPublicKey) => {
+export const installEncryptedImageServiceWorker = () => {
+  if (
+    typeof window === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    window.location.protocol !== "https:" &&
+      window.location.hostname !== "localhost"
+  ) {
+    return;
+  }
+
+  const workerUrl = new URL("/encrypted-image-worker.js", window.location.origin);
+  workerUrl.searchParams.set("apiBaseUrl", API_BASE_URL);
+  void navigator.serviceWorker
+    .register(workerUrl, { scope: "/" })
+    .then(() => {
+      if (navigator.serviceWorker.controller) return;
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => window.location.reload(),
+        { once: true },
+      );
+    })
+    .catch((error) => {
+      console.error("Encrypted image worker registration failed.", error);
+    });
+};
+
+const attachClientKey = async (input, init, context) => {
   const headers = new Headers(input instanceof Request ? input.headers : undefined);
   new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
-  headers.set(CLIENT_KEY_HEADER, requestPublicKey);
-  return new Request(input, { ...init, headers });
+  headers.set(CLIENT_KEY_HEADER, context.requestPublicKey);
+
+  const request = new Request(input, { ...init, headers });
+  const method = request.method.toUpperCase();
+  if (!["POST", "PUT", "PATCH"].includes(method)) return request;
+
+  let bodyText;
+  if (init?.body !== undefined) {
+    if (typeof init.body === "string") bodyText = init.body;
+    else if (init.body && typeof init.body === "object" &&
+      typeof init.body.arrayBuffer !== "function") {
+      bodyText = JSON.stringify(init.body);
+    }
+  } else if (typeof input === "object" && input?.clone) {
+    bodyText = await request.clone().text();
+  }
+
+  if (!bodyText) return request;
+
+  let payload;
+  try {
+    payload = JSON.parse(bodyText);
+  } catch {
+    return request;
+  }
+
+  const envelope = await encryptEnvelope(payload, context.responseKey);
+  const encryptedHeaders = new Headers(request.headers);
+  encryptedHeaders.set("Content-Type", "application/vnd.mobilesx.encrypted+json");
+  return new Request(request, {
+    body: JSON.stringify(envelope),
+    headers: encryptedHeaders,
+  });
 };
 
 export const installApiResponseEncryption = () => {
@@ -207,14 +286,14 @@ export const installApiResponseEncryption = () => {
     const url = getApiUrl(input);
     if (!url || isBootstrapUrl(url)) return innerFetch(input, init);
 
-    const context = readyContexts.get(url.origin);
-    if (!context) {
-      // Do not put initial page data behind the ECDH bootstrap request.
-      void getContext(url.origin, innerFetch).catch(() => {});
+    let context;
+    try {
+      context = readyContexts.get(url.origin) || await getContext(url.origin, innerFetch);
+    } catch {
       return innerFetch(input, init);
     }
 
-    const request = await attachClientKey(input, init, context.requestPublicKey);
+    const request = await attachClientKey(input, init, context);
     const response = await innerFetch(request);
     return decryptResponse(response, context.responseKey);
   };

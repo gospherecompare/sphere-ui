@@ -78,6 +78,9 @@ const TVs = React.lazy(() => import("./components/Product/TVs"));
 const PhoneFinderPage = React.lazy(
   () => import("./components/Product/PhoneFinderPage"),
 );
+const SpeedTestPage = React.lazy(
+  () => import("./components/SpeedTest/SpeedTestPage"),
+);
 const TrendingProductsHub = React.lazy(
   () => import("./components/Product/TrendingProductsHub"),
 );
@@ -279,6 +282,11 @@ function App() {
             <Route path="/brands" element={<BrandsRedirect />} />
             <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
             <Route path="/phone-finder" element={<PhoneFinderPage />} />
+            <Route path="/speed-test" element={<SpeedTestPage />} />
+            <Route
+              path="/speedtest"
+              element={<Navigate to="/speed-test" replace />}
+            />
             <Route path="/smartphones" element={<Smartphones />} />
             <Route path="/laptops/*" element={<Laptops />} />
             <Route path="/smartphone" element={<Smartphones />} />

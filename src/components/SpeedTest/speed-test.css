@@ -1,0 +1,519 @@
+.speedtest-page {
+  padding: clamp(2.5rem, 6vw, 5.5rem) 1rem 5rem;
+}
+
+.speedtest-shell {
+  width: min(100%, 70rem);
+  margin: 0 auto;
+}
+
+.speedtest-heading {
+  max-width: 47rem;
+  margin: 0 auto 2.25rem;
+  text-align: center;
+}
+
+.speedtest-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.speedtest-heading h1 {
+  margin: 0.8rem 0 0;
+  color: #101c31;
+  font-family: var(--font-heading, system-ui, sans-serif);
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+
+.speedtest-heading > p {
+  max-width: 42rem;
+  margin: 1rem auto 0;
+  color: #52617a;
+  font-size: clamp(1rem, 1.6vw, 1.12rem);
+  line-height: 1.75;
+}
+
+.speedtest-console {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(20rem, 1.1fr);
+  overflow: hidden;
+  border: 1px solid #dfe7f2;
+  border-radius: 1.8rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 75px rgba(26, 49, 86, 0.12);
+}
+
+.speedtest-console__main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2rem, 4vw, 3rem) 1.5rem;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(49, 122, 250, 0.11), transparent 16rem),
+    linear-gradient(160deg, #fff, #f8faff);
+  text-align: center;
+}
+
+.speedtest-gauge {
+  position: relative;
+  display: grid;
+  width: clamp(12.5rem, 25vw, 16.25rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  filter: drop-shadow(0 13px 20px rgba(42, 105, 221, 0.14));
+}
+
+.speedtest-gauge::before {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 225deg,
+    #276ef1 0deg,
+    #56a0ff 215deg,
+    #e7edf7 216deg 270deg,
+    transparent 271deg 360deg
+  );
+  content: "";
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+}
+
+.speedtest-gauge__inner {
+  display: flex;
+  width: 82%;
+  aspect-ratio: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  z-index: 1;
+}
+
+.speedtest-gauge__label {
+  color: #687790;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.speedtest-gauge__inner strong {
+  margin: 0.1rem 0 -0.18rem;
+  color: #101d34;
+  font-size: clamp(2.5rem, 5vw, 3.55rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: -0.07em;
+  line-height: 1.1;
+}
+
+.speedtest-gauge__unit {
+  color: #79869b;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.speedtest-status {
+  min-height: 1.5rem;
+  margin: 1.25rem 0 0;
+  color: #33435e;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.speedtest-transfer-note {
+  min-height: 1.2rem;
+  margin: 0.3rem 0 0;
+  color: #78859a;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.speedtest-start {
+  display: inline-flex;
+  min-height: 3.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #286fee, #5948df);
+  box-shadow: 0 13px 25px rgba(55, 94, 217, 0.24);
+  color: white;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 850;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.speedtest-start:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 17px 29px rgba(55, 94, 217, 0.3);
+}
+
+.speedtest-start:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.speedtest-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: speedtest-spin 750ms linear infinite;
+}
+
+@keyframes speedtest-spin {
+  to { transform: rotate(360deg); }
+}
+
+.speedtest-error {
+  max-width: 25rem;
+  margin: 1rem 0 0;
+  color: #b4233e;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.speedtest-server {
+  display: inline-flex;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.15rem;
+  color: #64728a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.speedtest-server svg {
+  flex: 0 0 auto;
+  color: #3b6fd4;
+}
+
+.speedtest-console__metrics {
+  display: grid;
+  align-content: center;
+  gap: 0.9rem;
+  padding: clamp(1.4rem, 3vw, 2.6rem);
+}
+
+.speedtest-metric {
+  display: flex;
+  min-height: 6rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #e6ebf3;
+  border-radius: 1.15rem;
+  background: #fff;
+}
+
+.speedtest-metric__icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #edf4ff;
+  color: #2563eb;
+  font-size: 1rem;
+}
+
+.speedtest-metric--violet .speedtest-metric__icon {
+  background: #f2efff;
+  color: #7255de;
+}
+
+.speedtest-metric--green .speedtest-metric__icon {
+  background: #e9f8f2;
+  color: #168560;
+}
+
+.speedtest-metric p {
+  margin: 0;
+  color: #718099;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.speedtest-metric strong {
+  display: inline-block;
+  margin: 0.13rem 0 0;
+  color: #17243b;
+  font-size: 1.65rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.speedtest-metric__unit {
+  margin-left: 0.42rem;
+  color: #7e8aa0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.speedtest-details {
+  margin-top: 2.5rem;
+}
+
+.speedtest-details__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.speedtest-details__heading h2 {
+  margin: 0.4rem 0 0;
+  color: #15223a;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.speedtest-result-size {
+  padding-bottom: 0.35rem;
+  color: #75829a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.speedtest-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.speedtest-detail-card {
+  min-height: 9rem;
+  padding: 1.15rem;
+  border: 1px solid #e1e8f2;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.speedtest-detail-card > span {
+  display: block;
+  color: #728098;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.speedtest-detail-card strong {
+  display: block;
+  margin-top: 0.55rem;
+  color: #16243c;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.speedtest-detail-card p {
+  margin: 0.5rem 0 0;
+  color: #77849a;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.speedtest-method {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #e1e8f2;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.speedtest-method__icon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: #eef3ff;
+  color: #3468ca;
+}
+
+.speedtest-method h2 {
+  margin: 0;
+  color: #25334b;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.speedtest-method p {
+  max-width: 58rem;
+  margin: 0.35rem 0 0;
+  color: #718098;
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.speedtest-network {
+  margin-top: 2rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid #dfe7f2;
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 45px rgba(26, 49, 86, 0.07);
+}
+
+.speedtest-network__heading h2 {
+  margin: 0.4rem 0 0;
+  color: #15223a;
+  font-size: clamp(1.3rem, 2.6vw, 1.8rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.speedtest-network__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}
+
+.speedtest-network__grid > div {
+  min-width: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #e8edf5;
+  border-radius: 0.9rem;
+  background: #fbfcfe;
+}
+
+.speedtest-network__grid span {
+  display: block;
+  color: #77849a;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.speedtest-network__grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 0.3rem;
+  color: #1e2a40;
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.speedtest-network__note {
+  margin: 0.85rem 0 0;
+  color: #7a879b;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .speedtest-console {
+    grid-template-columns: 1fr;
+  }
+
+  .speedtest-console__main {
+    padding: 2rem 1.1rem;
+  }
+
+  .speedtest-console__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding: 0 1rem 1rem;
+  }
+
+  .speedtest-metric {
+    min-height: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .speedtest-metric__icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.7rem;
+  }
+
+  .speedtest-metric strong {
+    font-size: clamp(1rem, 4vw, 1.35rem);
+  }
+
+  .speedtest-metric__unit {
+    display: block;
+    margin: 0.08rem 0 0;
+    font-size: 0.65rem;
+  }
+
+  .speedtest-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .speedtest-network__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 440px) {
+  .speedtest-page {
+    padding-inline: 0.75rem;
+  }
+
+  .speedtest-details__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .speedtest-result-size {
+    white-space: normal;
+  }
+
+  .speedtest-detail-grid {
+    gap: 0.55rem;
+  }
+
+  .speedtest-detail-card {
+    min-height: 8rem;
+    padding: 0.85rem;
+  }
+
+  .speedtest-network__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speedtest-spinner {
+    animation-duration: 1.8s;
+  }
+
+  .speedtest-start {
+    transition: none;
+  }
+}

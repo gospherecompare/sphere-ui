@@ -1745,24 +1745,18 @@ html[data-route-group="company"] h1 {
 
 /* Apple-inspired smartphone catalog cards. */
 .smartphone-catalog-card {
-  border: 1px solid rgba(210, 214, 220, 0.78);
+  border: 0 !important;
   border-radius: 22px !important;
-  background: #ffffff !important;
-  box-shadow:
-    0 12px 32px rgba(15, 23, 42, 0.07),
-    0 2px 8px rgba(15, 23, 42, 0.04);
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: none;
 }
 
 .smartphone-catalog-card:hover {
-  border-color: rgba(0, 113, 227, 0.28);
-  box-shadow:
-    0 18px 38px rgba(15, 23, 42, 0.11),
-    0 4px 12px rgba(0, 113, 227, 0.06);
-  transform: translateY(-2px);
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none;
 }
 
 .smartphone-catalog-card .smartphone-card-media {
@@ -1829,6 +1823,32 @@ html[data-route-group="company"] h1 {
   line-height: 1.25;
   white-space: nowrap;
 }
+
+.smartphone-catalog-card.is-compare-selected {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.smartphone-catalog-card .smartphone-card-media {
+  min-height: 11.5rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.smartphone-catalog-card .smartphone-card-spec-highlights {
+  background: linear-gradient(120deg, #edf5ff 0%, #f8fbff 52%, #eef4ff 100%);
+}
+
+.smartphone-catalog-card .smartphone-card-spec-highlights > div:not(:first-child) {
+  border-color: rgba(191, 211, 242, 0.78) !important;
+}
+
+.smartphone-catalog-card .smartphone-card-footer {
+  margin-top: 0.75rem;
+}
+
+.smartphone-catalog-card button[aria-haspopup="dialog"] {
+  justify-content: center;
+}
 /* Shared MobilesX storefront design tokens and component styling */
 :root {
   --mx-primary: #0866ff;
@@ -1891,7 +1911,7 @@ html[data-route-group="company"] h1 {
 
 .mx-search-panel {
   border: 1px solid var(--mx-border) !important;
-  border-radius: var(--mx-radius-card) !important;
+  border-radius: 0 !important;
   background: var(--mx-surface);
   box-shadow: var(--mx-shadow-popup) !important;
 }
@@ -1993,7 +2013,7 @@ html[data-route-group="company"] h1 {
 @media (min-width: 1024px) {
   .mx-search-modal {
     border: 1px solid var(--mx-border) !important;
-    border-radius: var(--mx-radius-card) !important;
+    border-radius: 0 !important;
     box-shadow: var(--mx-shadow-popup) !important;
   }
 }

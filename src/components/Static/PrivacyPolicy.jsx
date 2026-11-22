@@ -17,7 +17,7 @@ const SITE_ORIGIN = "https://mobilesx.in";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 
-const EFFECTIVE_DATE = "October 5, 2026";
+const EFFECTIVE_DATE = "November 15, 2026";
 
 const highlights = [
   {
@@ -58,6 +58,7 @@ const sections = [
       "Usage information such as pages viewed, searches, comparison interactions, clicks and session timing",
       "The notification categories selected for your browser push token. Browser permission is checked locally by your browser and is not sent to MobilesX",
       "A browser push token and selected notification categories after you allow notifications; Firebase Cloud Messaging processes the token and notification content to deliver updates",
+      "When you use the internet speed test, the test server processes your IP address to identify the connection. If network lookup is enabled, that IP address is sent to IPinfo to return network organization, ASN, hostname and approximate location details",
       "Diagnostic information used to detect errors, abuse, performance issues and security incidents",
     ],
   },
@@ -71,6 +72,7 @@ const sections = [
       "Improve search relevance, navigation, page performance and product data quality",
       "Measure aggregated engagement and understand which content is useful",
       "Protect the platform against spam, fraud, misuse and technical threats",
+      "Show the IP address and, when configured, approximate network details for an internet speed test; speed test results are not saved to an account",
       "Comply with valid legal obligations and enforce platform terms",
     ],
   },
@@ -89,6 +91,7 @@ const sections = [
     title: "When information may be shared",
     paragraphs: [
       "MobilesX does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
+      "If network lookup is enabled for the speed test, the visitor's IP address is sent to IPinfo for network and approximate location data. IPinfo processes it under its own privacy terms. MobilesX caches a successful lookup in server memory for up to 15 minutes and does not store the speed test result with an account.",
       "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets. Firebase Cloud Messaging processes browser push tokens and notification content to deliver the update categories selected in MobilesX settings.",
     ],
   },

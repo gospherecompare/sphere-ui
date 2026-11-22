@@ -295,6 +295,7 @@ const STATIC_PRERENDER_ROUTES = [
   "/tvs",
   "/tvs/latest",
   "/networking",
+  "/speed-test",
   "/compare",
   "/popular-comparisons",
   "/trending/smartphones",
@@ -2416,6 +2417,14 @@ const resolveSeo = (routePath) => {
         "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
     },
     {
+      test: (p) => p === "/speed-test",
+      title: "Internet Speed Test | Download, Upload and Ping | MobilesX",
+      description:
+        "Measure your internet download and upload speeds, ping, jitter, probe loss, and latency under load with the free MobilesX speed test.",
+      keywords:
+        "internet speed test, broadband speed test, download speed, upload speed, ping test, jitter test, MobilesX",
+    },
+    {
       test: (p) => p === "/popular-comparisons",
       title: "Popular Smartphone Comparisons in India | MobilesX",
       description:
@@ -4454,6 +4463,11 @@ const PUBLIC_STATIC_PRERENDER_CONTENT = {
     heading: "About MobilesX",
     description:
       "Learn about MobilesX and how we help people discover, compare, and understand technology products with structured information.",
+  },
+  "/speed-test": {
+    heading: "Internet Speed Test",
+    description:
+      "Measure download speed, upload speed, idle ping, jitter, probe loss, and latency while your connection is busy.",
   },
   "/careers": {
     heading: "Careers at MobilesX",
