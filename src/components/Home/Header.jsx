@@ -1377,6 +1377,7 @@ const Header = () => {
       title: "Explore More",
       icon: FaCompass,
       items: [
+        { label: "Internet Speed Test", href: "/speed-test" },
         { label: "Popular Comparisons", href: "/popular-comparisons" },
         { label: "Networking", href: "/networking" },
         { label: "Smartphones", href: "/smartphones" },
@@ -1671,6 +1672,23 @@ const Header = () => {
       setSelectedSuggestionIndex(-1);
       setIsDesktopSearchOpen(false);
     }
+  };
+
+  const openAssistantFromSearch = (rawPrompt = "") => {
+    const prompt = String(rawPrompt || "").trim();
+    if (prompt) rememberSearchTerm(prompt);
+    setIsSearchOpen(false);
+    setIsDesktopSearchOpen(false);
+    setSearchQuery("");
+    setSearchSuggestions([]);
+    setShowSearchSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+    setActiveSearchCategory("All");
+    window.dispatchEvent(
+      new CustomEvent(MOBILE_OPEN_ASSISTANT_EVENT, {
+        detail: prompt ? { prompt } : {},
+      }),
+    );
   };
 
   const openSearchOverlay = () => {
@@ -2026,8 +2044,49 @@ const Header = () => {
     </section>
   );
 
+  const SearchAssistantBanner = ({ query = "" }) => (
+    <section className="border-b border-blue-100 bg-gradient-to-br from-slate-950 to-blue-950 p-4 text-white sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-blue-200">
+          <FaComments aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-bold sm:text-base">
+            Describe the phone or TV you need
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-300">
+            Add your budget, priorities, or what you’ll use it for. The assistant will find options and explain the trade-offs.
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {["Gaming phone under Rs 25,000", "Compare Samsung and OnePlus"].map(
+          (prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => openAssistantFromSearch(prompt)}
+              className="min-h-9 rounded-full border border-white/20 bg-white/10 px-3 text-left text-[11px] font-semibold text-white transition hover:bg-white/20"
+            >
+              {prompt}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => openAssistantFromSearch(query)}
+          className="min-h-9 rounded-full bg-blue-500 px-3 text-[11px] font-bold text-white transition hover:bg-blue-400"
+        >
+          Ask the assistant
+        </button>
+      </div>
+    </section>
+  );
+
   const SearchStartingPoints = () => (
-    <div className="grid divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0">
+    <div className="grid divide-y divide-slate-100 md:grid-cols-[minmax(210px,0.82fr)_minmax(0,1.18fr)] md:divide-x md:divide-y-0">
       <SearchTermSection
         title="Recent searches"
         terms={recentSearches.slice(0, 5)}
@@ -2456,12 +2515,13 @@ const Header = () => {
     const brandSuggestions = getSearchBrandSuggestions(query, searchSuggestions);
 
     return (
-      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(680px,calc(100vw-2rem))] overflow-hidden rounded-[18px] border border-[#e2eaf5] bg-white shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-panel">
+      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(680px,calc(100vw-2rem))] overflow-hidden rounded-none border border-[#e2eaf5] bg-white shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-panel">
         <div className="max-h-[min(640px,calc(100dvh-7rem))] overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <SearchAssistantBanner query={query} />
           {!query ? (
             <SearchStartingPoints />
           ) : (
-            <div className="grid divide-y divide-slate-100 lg:grid-cols-[minmax(210px,0.82fr)_minmax(0,1.18fr)] lg:divide-x lg:divide-y-0">
+            <div className="grid divide-y divide-slate-100 md:grid-cols-[minmax(210px,0.82fr)_minmax(0,1.18fr)] md:divide-x md:divide-y-0">
               <aside className="min-w-0 bg-slate-50/60">
                 <SearchTermSection
                   title="Suggestions"
@@ -2571,7 +2631,7 @@ const Header = () => {
 
             {/* Search Modal - Full screen on mobile using 100dvh */}
             <div
-              className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-white lg:inset-auto lg:left-1/2 lg:top-16 lg:h-[calc(100dvh-5rem)] lg:max-h-[calc(100dvh-5rem)] lg:w-[min(720px,calc(100vw-2rem))] lg:-translate-x-1/2 lg:rounded-[18px] lg:border lg:border-[#e2eaf5] lg:shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-modal"
+              className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-white lg:inset-auto lg:left-1/2 lg:top-16 lg:h-[calc(100dvh-5rem)] lg:max-h-[calc(100dvh-5rem)] lg:w-[min(720px,calc(100vw-2rem))] lg:-translate-x-1/2 lg:rounded-none lg:border lg:border-[#e2eaf5] lg:shadow-[0_12px_36px_rgba(15,35,75,0.12)] mx-search-modal"
               role="dialog"
               aria-modal="true"
               aria-label="Search MobilesX"
@@ -2598,7 +2658,7 @@ const Header = () => {
                       ref={searchInputRef}
                       autoFocus
                       type="text"
-                      placeholder="Search phones, brands, specifications..."
+                      placeholder="Describe what you need or search a product..."
                       value={searchQuery}
                       onChange={(e) => handleSearchInputChange(e.target.value)}
                       onKeyDown={(e) => {
@@ -2635,6 +2695,7 @@ const Header = () => {
               {/* Scrollable Content Area */}
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
                 <div className="min-h-full px-2.5 py-3 sm:px-6 sm:py-5">
+                  <SearchAssistantBanner query={query} />
                   {query ? (
                     <>
                       {activeSearchCategory === "All" ? (
@@ -2913,7 +2974,7 @@ const Header = () => {
                     if (searchQuery.trim()) setShowSearchSuggestions(true);
                   }}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search phones, brands, specifications..."
+                  placeholder="Describe what you need or search a product..."
                   aria-label="Search MobilesX"
                   className="w-full border-0 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />

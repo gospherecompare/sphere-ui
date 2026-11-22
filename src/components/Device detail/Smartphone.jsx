@@ -77,6 +77,9 @@ import {
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
+import SmartphoneImageGallery, {
+  buildSmartphoneImageGroups,
+} from "../ui/SmartphoneImageGallery";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 import { resolveSmartphoneDisplayState } from "../../utils/canonicalLifecycle";
 import {
@@ -716,6 +719,7 @@ const SmartphoneDetailArtwork = () => (
 const MobileDetailCard = () => {
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
+  const [showImageGallery, setShowImageGallery] = useState(false);
   const [showAllSpecs, setShowAllSpecs] = useState(false);
   const [expandedSpecSections, setExpandedSpecSections] = useState({});
   const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
@@ -1875,8 +1879,19 @@ const MobileDetailCard = () => {
   const carouselImages = Array.isArray(mobileData?.images)
     ? mobileData.images.filter(Boolean)
     : [];
+  const imageGalleryGroups = buildSmartphoneImageGroups(
+    mobileData,
+    carouselImages,
+  );
+  const imageGalleryCount = new Set(
+    imageGalleryGroups.flatMap((group) => group.images),
+  ).size;
   const activeCarouselImage =
     carouselImages[activeImage] || carouselImages[0] || "/placeholder-image.jpg";
+
+  const closeImageGallery = useCallback(() => {
+    setShowImageGallery(false);
+  }, []);
 
   useEffect(() => {
     setActiveImage(0);
@@ -5471,10 +5486,22 @@ Price: ${price}
                           </div>
                         ) : null}
                       </div>
-                      {carouselImages.length > 0 ? (
-                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500">
-                          {activeImage + 1} / {carouselImages.length}
-                        </p>
+                      {imageGalleryCount > 0 ? (
+                        <div className="mt-2 flex flex-col items-center gap-1.5">
+                          {carouselImages.length > 0 ? (
+                            <p className="text-center text-[11px] font-medium text-slate-500">
+                              {activeImage + 1} / {carouselImages.length}
+                            </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => setShowImageGallery(true)}
+                            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-400 hover:text-blue-700"
+                            aria-haspopup="dialog"
+                          >
+                            View all photos ({imageGalleryCount})
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   </div>
@@ -6089,6 +6116,15 @@ Price: ${price}
           </DeferredSection>
         ) : null}
       </main>
+      {showImageGallery ? (
+        <SmartphoneImageGallery
+          device={mobileData}
+          images={carouselImages}
+          productName={headerTitle}
+          initialIndex={activeImage}
+          onClose={closeImageGallery}
+        />
+      ) : null}
     </div>
   );
 };

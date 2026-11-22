@@ -335,14 +335,19 @@ const AiChat = () => {
   const inputRef = useRef(null);
   const sessionExpiryTimerRef = useRef(null);
   const productNavigationTimerRef = useRef(null);
+  const sendMessageRef = useRef(null);
   useEffect(() => {
-    const openAssistant = () => {
+    const openAssistant = (event) => {
       if (productNavigationTimerRef.current) {
         window.clearTimeout(productNavigationTimerRef.current);
         productNavigationTimerRef.current = null;
       }
       setIsClosing(false);
       setIsOpen(true);
+      const prompt = String(event?.detail?.prompt || "").trim();
+      if (prompt) {
+        window.setTimeout(() => sendMessageRef.current?.(prompt), 0);
+      }
     };
 
     window.addEventListener(MOBILE_OPEN_ASSISTANT_EVENT, openAssistant);
@@ -450,6 +455,7 @@ const AiChat = () => {
       window.setTimeout(() => inputRef.current?.focus(), 0);
     }
   };
+  sendMessageRef.current = sendMessage;
 
   const handleSuggestion = (suggestion) => {
     if (suggestion.toLowerCase().includes("first result") && context.currentResultIds?.[0]) {

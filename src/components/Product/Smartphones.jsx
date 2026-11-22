@@ -3,7 +3,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   FaStar,
   FaBatteryFull,
+  FaCamera,
   FaMemory,
+  FaMicrochip,
   FaSyncAlt,
   FaFingerprint,
   FaWifi,
@@ -85,6 +87,9 @@ import {
 } from "../../utils/canonicalLifecycle";
 import MobilesXSpecScore from "../ui/MobileXSpecScore";
 import ProductFilterSheet from "../ui/ProductFilterSheet";
+import SmartphoneImageGallery, {
+  buildSmartphoneImageGroups,
+} from "../ui/SmartphoneImageGallery";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const SMARTPHONES_PER_PAGE = 20;
@@ -403,6 +408,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     listFilter === "upcoming";
 
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
+  const [imageGalleryDevice, setImageGalleryDevice] = useState(null);
+  const closeSmartphoneImageGallery = useCallback(() => {
+    setImageGalleryDevice(null);
+  }, []);
 
   const phonesForFeatureList = useMemo(() => {
     if (Array.isArray(smartphoneAll) && smartphoneAll.length)
@@ -5952,6 +5961,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           ? formatSmartphoneBadgeScore(scoreValueRaw)
                           : null;
                         const isAiDevice = hasAiPhoneSignal(device);
+                        const cardImageGroups = buildSmartphoneImageGroups(
+                          device,
+                          Array.isArray(device.images) ? device.images : [],
+                        );
+                        const cardPhotoCount = new Set(
+                          cardImageGroups.flatMap((group) => group.images),
+                        ).size;
                         const statusLabel = isUpcomingCard
                           ? null
                           : device.display_status ||
@@ -6178,7 +6194,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {
                             label: "Camera",
                             value: cameraSummary,
-                            Icon: FaMobileAlt,
+                            Icon: FaCamera,
                           },
                           {
                             label: "Battery",
@@ -6188,7 +6204,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {
                             label: "Chipset",
                             value: processorSummary,
-                            Icon: FaRobot,
+                            Icon: FaMicrochip,
                           },
                         ];
                         const formatStorePrice = (price) => {
@@ -6438,8 +6454,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           <div
                             key={`${device.id ?? device.model ?? ""}-${_idx}`}
                             onClick={(e) => handleView(device, e)}
-                            className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full                 ${
-                              isCompareSelected(device) ? "bg-blue-50/50" : ""
+                            className={`smartphone-catalog-card mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full                 ${
+                              isCompareSelected(device) ? "is-compare-selected" : ""
                             }`}
                           >
                             <div className="flex h-auto flex-col p-0 md:h-full">
@@ -6611,26 +6627,41 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                               <div className="flex-1">
                                 <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
-                                  <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px]    ">
-                                    {cardBadgeLabel ? (
-                                      <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
-                                        <FaRobot aria-hidden="true" />
-                                        {cardBadgeLabel}
-                                      </span>
+                                  <div className="min-w-0">
+                                    <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px]    ">
+                                      {cardBadgeLabel ? (
+                                        <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
+                                          <FaRobot aria-hidden="true" />
+                                          {cardBadgeLabel}
+                                        </span>
+                                      ) : null}
+                                      <ImageCarousel
+                                        images={device.images}
+                                        fallbackTitle=""
+                                        fallbackSubtitle=""
+                                        fallbackLogo={brandLogoSrc}
+                                        compact
+                                        priority={_idx < 4}
+                                        altText={
+                                          device.name ||
+                                          device.model ||
+                                          "Smartphone"
+                                        }
+                                      />
+                                    </div>
+                                    {cardPhotoCount > 0 ? (
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          setImageGalleryDevice(device);
+                                        }}
+                                        className="mt-1.5 flex min-h-8 w-full items-center justify-center gap-1 text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
+                                        aria-haspopup="dialog"
+                                      >
+                                        View Photos ({cardPhotoCount})
+                                      </button>
                                     ) : null}
-                                    <ImageCarousel
-                                      images={device.images}
-                                      fallbackTitle=""
-                                      fallbackSubtitle=""
-                                      fallbackLogo={brandLogoSrc}
-                                      compact
-                                      priority={_idx < 4}
-                                      altText={
-                                        device.name ||
-                                        device.model ||
-                                        "Smartphone"
-                                      }
-                                    />
                                   </div>
 
                                   <div className="min-w-0 pt-0.5">
@@ -6675,14 +6706,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   </div>
                                 </div>
 
-                                <div className="mx-2.5 grid grid-cols-4 divide-x divide-slate-200/70 overflow-hidden rounded-xl bg-slate-50 sm:mx-3">
+                                <div className="smartphone-card-spec-highlights mx-2.5 grid grid-cols-4 divide-x divide-slate-200/70 overflow-hidden rounded-xl sm:mx-3">
                                   {specHighlights.map(
                                     ({ label, value, Icon }) => (
                                       <div
                                         className="flex min-w-0 flex-col items-center px-1 py-2 text-center sm:px-2 sm:py-2.5"
                                         key={`mobile-${label}`}
                                       >
-                                        <span className="mb-1 grid h-7 w-7 place-items-center rounded-lg bg-blue-50 text-[9px] text-blue-600 sm:h-8 sm:w-8 sm:text-[10px]">
+                                        <span className="mb-1 grid h-9 w-9 place-items-center rounded-full bg-white/80 text-[13px] text-blue-600 ring-1 ring-blue-100 sm:text-sm">
                                           <Icon />
                                         </span>
                                         <small className="text-[8px] font-bold uppercase tracking-[0.04em] text-slate-500 sm:text-[9px]">
@@ -6763,6 +6794,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       })}
                     </div>
                   )}
+
+                  {imageGalleryDevice ? (
+                    <SmartphoneImageGallery
+                      device={imageGalleryDevice}
+                      images={
+                        Array.isArray(imageGalleryDevice.images)
+                          ? imageGalleryDevice.images
+                          : []
+                      }
+                      productName={
+                        imageGalleryDevice.name ||
+                        imageGalleryDevice.model ||
+                        "Smartphone"
+                      }
+                      onClose={closeSmartphoneImageGallery}
+                    />
+                  ) : null}
 
                   {/* Floating Compare Bar - Appears when 2+ items selected */}
                   {compareItems.length >= 2 && (
